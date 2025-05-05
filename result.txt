@@ -1,0 +1,2411 @@
+1:import 'dart:ui';
+2:import 'dart:convert';
+3:import 'package:flutter/material.dart';
+4:import 'package:flutter/services.dart';
+5:import 'package:google_fonts/google_fonts.dart';
+6:import 'package:healthcare/views/screens/appointment/all_appoinments.dart';
+7:import 'package:healthcare/views/screens/appointment/appointment_detail.dart';
+8:import 'package:healthcare/views/screens/complete_profile/profile1.dart';
+9:import 'package:healthcare/views/screens/dashboard/analytics.dart';
+10:import 'package:healthcare/views/screens/dashboard/finances.dart';
+11:import 'package:healthcare/views/screens/dashboard/menu.dart';
+12:import 'package:healthcare/views/screens/doctor/complete_profile/doctor_profile_page1.dart';
+13:import 'package:healthcare/views/screens/doctor/availability/hospital_selection_screen.dart';
+14:import 'package:healthcare/views/screens/doctor/availability/doctor_availability_screen.dart';
+15:import 'package:healthcare/views/screens/menu/appointment_history.dart';
+16:import 'package:healthcare/views/screens/menu/settings.dart';
+17:import 'package:healthcare/views/screens/doctor/reviews/doctor_reviews_screen.dart';
+18:import 'package:lucide_icons_flutter/lucide_icons.dart';
+19:import 'package:healthcare/utils/navigation_helper.dart';
+20:import 'package:firebase_auth/firebase_auth.dart';
+21:import 'package:cloud_firestore/cloud_firestore.dart';
+22:import 'package:healthcare/services/auth_service.dart';
+23:import 'package:healthcare/services/doctor_profile_service.dart';
+24:import 'package:intl/intl.dart';
+25:import 'package:shared_preferences/shared_preferences.dart';
+26:import '../notifications/notification_screen.dart';
+27:import 'package:healthcare/views/screens/menu/help_center.dart';
+28:
+29:class HomeScreen extends StatefulWidget {
+30:  final String profileStatus;
+31:  final String userType;
+32:  const HomeScreen({
+33:    super.key, 
+34:    this.profileStatus = "incomplete", 
+35:    this.userType = "Doctor"
+36:  });
+37:
+38:  @override
+39:  State<HomeScreen> createState() => _HomeScreenState();
+40:}
+41:
+42:class _HomeScreenState extends State<HomeScreen> {
+43:  late String profileStatus;
+44:  late String userType;
+45:  int _selectedIndex = 0;
+46:  int _selectedAppointmentCategoryIndex = 0; // For appointment tabs
+47:  
+48:  // Firebase instances
+49:  final FirebaseAuth _auth = FirebaseAuth.instance;
+50:  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+51:  final AuthService _authService = AuthService();
+52:  final DoctorProfileService _doctorProfileService = DoctorProfileService();
+53:  
+54:  // User data
+55:  String _userName = "Dr. Asmara";
+56:  String _specialty = "";
+57:  String? _profileImageUrl;
+58:  bool _isLoading = true;
+59:  bool _isRefreshing = false;
+60:  
+61:  // Financial data
+62:  double _totalEarnings = 0.0;
+63:  
+64:  // Rating data
+65:  double _overallRating = 0.0;
+66:  int _reviewCount = 0;
+67:
+68:  // Appointment data
+69:  List<Map<String, dynamic>> _appointments = [];
+70:  List<String> _appointmentCategories = ["Upcoming", "Completed"];
+71:  bool _isLoadingAppointments = false;
+72:  bool _isSyncingAppointments = false;
+73:  DateTime? _lastAppointmentSync;
+74:
+75:  // Cache keys
+76:  static const String _doctorCacheKey = 'doctor_home_data';
+77:  static const String _doctorAppointmentsCacheKey = 'doctor_appointments_cache';
+78:  static const String _appointmentLastSyncKey = 'appointment_last_sync';
+79:
+80:  @override
+81:  void initState() {
+82:    super.initState();
+83:    profileStatus = widget.profileStatus;
+84:    userType = widget.userType;
+85:    
+86:    // Set system UI overlay style for immersive experience
+87:    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+88:      statusBarColor: Colors.transparent,
+89:      statusBarIconBrightness: Brightness.light,
+90:      systemNavigationBarColor: Colors.white,
+91:      systemNavigationBarIconBrightness: Brightness.dark,
+92:    ));
+93:    
+94:    _initializeData();
+95:  }
+96:
+97:  @override
+98:  void dispose() {
+99:    // Reset system UI when leaving
+100:    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+101:      statusBarColor: Colors.transparent,
+102:      statusBarIconBrightness: Brightness.dark,
+103:    ));
+104:    super.dispose();
+105:  }
+106:
+107:  Future<void> _initializeData() async {
+108:    print('***** HOME SCREEN INITIALIZED WITH USER TYPE: $userType *****');
+109:    
+110:    // Load data (first from cache, then from Firebase)
+111:    await _loadData();
+112:    
+113:    // Check profile completion status
+114:    WidgetsBinding.instance.addPostFrameCallback((_) {
+115:      if (profileStatus != "complete") {
+116:        if (userType == "Doctor") {
+117:          Navigator.of(context).pushReplacement(
+118:            MaterialPageRoute(
+119:              builder: (context) => const DoctorProfilePage1Screen(),
+120:            ),
+121:          );
+122:        } else {
+123:          Navigator.of(context).pushReplacement(
+124:            MaterialPageRoute(
+125:              builder: (context) => const CompleteProfileScreen(),
+126:            ),
+127:          );
+128:        }
+129:      }
+130:    });
+131:  }
+132:
+133:  Future<void> _loadData() async {
+134:    try {
+135:      setState(() {
+136:        _isLoading = true;
+137:      });
+138:
+139:      // First immediately load data from cache before anything else
+140:      await _loadCachedData();
+141:      await _loadAppointmentsFromCache();
+142:      
+143:      // Now we can set isLoading to false since we have cache data
+144:      setState(() {
+145:        _isLoading = false;
+146:      });
+147:      
+148:      // Then fetch fresh data from Firebase in background
+149:      _loadUserData();
+150:      _syncAppointmentsInBackground();
+151:    } catch (e) {
+152:      print('Error in _loadData: $e');
+153:      setState(() {
+154:        _isLoading = false;
+155:      });
+156:    }
+157:  }
+158:
+159:  Future<void> _loadCachedData() async {
+160:    try {
+161:      final prefs = await SharedPreferences.getInstance();
+162:      final String? cachedData = prefs.getString(_doctorCacheKey);
+163:      
+164:      if (cachedData != null) {
+165:        final Map<String, dynamic> data = json.decode(cachedData);
+166:        
+167:        setState(() {
+168:          _userName = data['userName'] ?? "Doctor";
+169:          _specialty = data['specialty'] ?? "";
+170:          _profileImageUrl = data['profileImageUrl'];
+171:          _totalEarnings = (data['totalEarnings'] as num?)?.toDouble() ?? 0.0;
+172:          _overallRating = (data['overallRating'] as num?)?.toDouble() ?? 0.0;
+173:          _reviewCount = data['reviewCount'] as int? ?? 0;
+174:          _isLoading = false;
+175:        });
+176:      }
+177:    } catch (e) {
+178:      print('Error loading cached data: $e');
+179:    }
+180:  }
+181:
+182:  Future<void> _loadUserData() async {
+183:    if (!mounted) return;
+184:    
+185:    setState(() {
+186:      _isRefreshing = true;
+187:    });
+188:    
+189:    try {
+190:      final User? currentUser = _auth.currentUser;
+191:      if (currentUser == null) {
+192:          setState(() {
+193:          _isRefreshing = false;
+194:            _isLoading = false;
+195:          });
+196:        return;
+197:      }
+198:      
+199:      if (userType == "Doctor") {
+200:        await _loadDoctorProfileData();
+201:      } else {
+202:        await _loadProfileData();
+203:      }
+204:    } catch (e) {
+205:      print('Error loading user data: $e');
+206:    } finally {
+207:      if (mounted) {
+208:        setState(() {
+209:          _isRefreshing = false;
+210:          _isLoading = false;
+211:        });
+212:      }
+213:    }
+214:  }
+215:  
+216:  Future<void> _loadDoctorProfileData() async {
+217:    try {
+218:      final doctorProfile = await _doctorProfileService.getDoctorProfile();
+219:      final doctorStats = await _doctorProfileService.getDoctorStats();
+220:      
+221:      final User? currentUser = _auth.currentUser;
+222:      if (currentUser != null) {
+223:        final String doctorId = currentUser.uid;
+224:        
+225:        final QuerySnapshot reviewsSnapshot = await _firestore
+226:            .collection('doctor_reviews')
+227:            .where('doctorId', isEqualTo: doctorId)
+228:            .get();
+229:        
+230:        double totalRating = 0;
+231:        int reviewCount = reviewsSnapshot.docs.length;
+232:        
+233:        for (var doc in reviewsSnapshot.docs) {
+234:          final data = doc.data() as Map<String, dynamic>;
+235:          if (data.containsKey('rating')) {
+236:            totalRating += (data['rating'] as num).toDouble();
+237:          }
+238:        }
+239:        
+240:        double averageRating = reviewCount > 0 ? totalRating / reviewCount : 0.0;
+241:      
+242:        // Prepare data for caching
+243:        final Map<String, dynamic> cacheData = {
+244:          'userName': doctorProfile['fullName'] ?? "Doctor",
+245:          'specialty': doctorProfile['specialty'] ?? "",
+246:          'profileImageUrl': doctorProfile['profileImageUrl'],
+247:          'totalEarnings': doctorStats['totalEarnings'] ?? 0.0,
+248:          'overallRating': averageRating,
+249:          'reviewCount': reviewCount,
+250:          'lastUpdated': DateTime.now().toIso8601String(),
+251:        };
+252:        
+253:        // Save to cache
+254:        final prefs = await SharedPreferences.getInstance();
+255:        await prefs.setString(_doctorCacheKey, json.encode(cacheData));
+256:        
+257:      if (mounted) {
+258:        setState(() {
+259:            _userName = cacheData['userName'];
+260:            _specialty = cacheData['specialty'];
+261:            _profileImageUrl = cacheData['profileImageUrl'];
+262:            _totalEarnings = cacheData['totalEarnings'];
+263:            _overallRating = cacheData['overallRating'];
+264:            _reviewCount = cacheData['reviewCount'];
+265:        });
+266:        }
+267:      }
+268:    } catch (e) {
+269:      print('Error loading doctor profile data: $e');
+270:      rethrow;
+271:    }
+272:  }
+273:  
+274:  Future<void> _loadProfileData() async {
+275:    try {
+276:      final userData = await _authService.getUserData();
+277:      
+278:      if (userData != null && mounted) {
+279:        setState(() {
+280:          _userName = userData['fullName'] ?? "User";
+281:          _profileImageUrl = userData['profileImageUrl'];
+282:        });
+283:      }
+284:    } catch (e) {
+285:      print('Error loading profile data: $e');
+286:      rethrow;
+287:    }
+288:  }
+289:
+290:  Future<void> _loadAppointmentsData() async {
+291:    if (!mounted) return;
+292:
+293:    try {
+294:      // First try to load from cache
+295:      await _loadAppointmentsFromCache();
+296:      
+297:      // Then fetch fresh data from Firestore
+298:      await _fetchAppointments();
+299:    } catch (e) {
+300:      print('Error loading appointments data: $e');
+301:    }
+302:  }
+303:
+304:  Future<void> _loadAppointmentsFromCache() async {
+305:    if (!mounted) return;
+306:
+307:    try {
+308:      final prefs = await SharedPreferences.getInstance();
+309:      
+310:      // Get last sync time
+311:      final String? lastSyncStr = prefs.getString(_appointmentLastSyncKey);
+312:      if (lastSyncStr != null) {
+313:        _lastAppointmentSync = DateTime.parse(lastSyncStr);
+314:      }
+315:      
+316:      // Load appointments from cache
+317:      final String? cachedData = prefs.getString(_doctorAppointmentsCacheKey);
+318:      
+319:      if (cachedData != null) {
+320:        final List<dynamic> decodedData = json.decode(cachedData);
+321:        final List<Map<String, dynamic>> appointments = 
+322:            decodedData.map((item) => Map<String, dynamic>.from(item)).toList();
+323:        
+324:        if (mounted) {
+325:          setState(() {
+326:            _appointments = appointments;
+327:            _isLoadingAppointments = false;
+328:          });
+329:          print('Loaded ${appointments.length} appointments from cache');
+330:        }
+331:      } else {
+332:        if (mounted) {
+333:          setState(() {
+334:            _isLoadingAppointments = false;
+335:          });
+336:        }
+337:      }
+338:    } catch (e) {
+339:      print('Error loading cached appointments: $e');
+340:      if (mounted) {
+341:        setState(() {
+342:          _isLoadingAppointments = false;
+343:        });
+344:      }
+345:    }
+346:  }
+347:
+348:  void _syncAppointmentsInBackground() async {
+349:    // Don't sync if already syncing
+350:    if (_isSyncingAppointments) return;
+351:    
+352:    // Don't sync too frequently (at most once every 1 minute)
+353:    if (_lastAppointmentSync != null) {
+354:      final Duration sinceLastSync = DateTime.now().difference(_lastAppointmentSync!);
+355:      if (sinceLastSync.inMinutes < 1) {
+356:        print('Skipping appointment sync, last synced ${sinceLastSync.inSeconds} seconds ago');
+357:        return;
+358:      }
+359:    }
+360:    
+361:    setState(() {
+362:      _isSyncingAppointments = true;
+363:    });
+364:    
+365:    try {
+366:      await _fetchAppointments();
+367:      
+368:      // Update last sync time
+369:      final prefs = await SharedPreferences.getInstance();
+370:      final String now = DateTime.now().toIso8601String();
+371:      await prefs.setString(_appointmentLastSyncKey, now);
+372:      
+373:      setState(() {
+374:        _lastAppointmentSync = DateTime.now();
+375:      });
+376:    } catch (e) {
+377:      print('Error syncing appointments in background: $e');
+378:    } finally {
+379:      if (mounted) {
+380:        setState(() {
+381:          _isSyncingAppointments = false;
+382:        });
+383:      }
+384:    }
+385:  }
+386:
+387:  Future<void> _fetchAppointments() async {
+388:    if (!mounted) return;
+389:    
+390:    try {
+391:      final String? doctorId = _auth.currentUser?.uid;
+392:      if (doctorId == null) {
+393:        return;
+394:      }
+395:      
+396:      // Query appointments where this doctor is assigned
+397:      final QuerySnapshot appointmentsSnapshot = await _firestore
+398:          .collection('appointments')
+399:          .where('doctorId', isEqualTo: doctorId)
+400:          .orderBy('date', descending: false)  // Sort by date (ascending)
+401:          .limit(50)  // Limit to 50 appointments for performance
+402:          .get();
+403:      
+404:      if (appointmentsSnapshot.docs.isEmpty) {
+405:        print('No appointments found for doctor ID: $doctorId');
+406:      } else {
+407:        print('Found ${appointmentsSnapshot.docs.length} appointments for doctor ID: $doctorId');
+408:      }
+409:      
+410:      final List<Map<String, dynamic>> appointments = [];
+411:      
+412:      for (var doc in appointmentsSnapshot.docs) {
+413:        final data = doc.data() as Map<String, dynamic>;
+414:        print('Processing appointment: ${doc.id}');
+415:        
+416:        // Convert all Timestamp objects to ISO string format
+417:        Map<String, dynamic> processedData = {};
+418:        data.forEach((key, value) {
+419:          if (value is Timestamp) {
+420:            processedData[key] = value.toDate().toIso8601String();
+421:          } else {
+422:            processedData[key] = value;
+423:          }
+424:        });
+425:        
+426:        // Get patient details
+427:        String patientName = "Patient";
+428:        
+429:        if (processedData['patientId'] != null) {
+430:          try {
+431:            final patientDoc = await _firestore
+432:                .collection('users')
+433:                .doc(processedData['patientId'])
+434:                .get();
+435:            
+436:            if (patientDoc.exists) {
+437:              final patientData = patientDoc.data();
+438:              patientName = patientData?['fullName'] ?? "Patient";
+439:            }
+440:          } catch (e) {
+441:            print('Error fetching patient data: $e');
+442:          }
+443:        }
+444:        
+445:        // Get hospital details - check multiple possible field names
+446:        String hospitalName = "Not specified";
+447:        
+448:        // Try different field names for hospital
+449:        if (processedData['hospital'] != null && processedData['hospital'].toString().isNotEmpty) {
+450:          hospitalName = processedData['hospital'].toString();
+451:        } else if (processedData['hospitalName'] != null && processedData['hospitalName'].toString().isNotEmpty) {
+452:          hospitalName = processedData['hospitalName'].toString();
+453:        } else if (processedData['hospitalId'] != null) {
+454:          // If we have hospitalId but no name, try to fetch from hospitals collection
+455:          try {
+456:            final hospitalDoc = await _firestore
+457:                .collection('hospitals')
+458:                .doc(processedData['hospitalId'].toString())
+459:                .get();
+460:            
+461:            if (hospitalDoc.exists) {
+462:              final hospitalData = hospitalDoc.data();
+463:              hospitalName = hospitalData?['name'] ?? hospitalData?['hospitalName'] ?? "Not specified";
+464:              print('Retrieved hospital name from Firestore: $hospitalName');
+465:            }
+466:          } catch (e) {
+467:            print('Error fetching hospital data: $e');
+468:          }
+469:        }
+470:
+471:        // Parse appointment date and time
+472:        DateTime? appointmentDateTime;
+473:        try {
+474:          String dateStr = processedData['date'] ?? "";
+475:          String timeStr = processedData['time'] ?? "";
+476:          
+477:          if (dateStr.isNotEmpty && timeStr.isNotEmpty) {
+478:            // Convert AM/PM time to 24-hour format
+479:            int hour = 0;
+480:            int minute = 0;
+481:            
+482:            if (timeStr.contains("AM") || timeStr.contains("PM")) {
+483:              // Parse 12-hour format time
+484:              final isPM = timeStr.contains("PM");
+485:              final timeParts = timeStr.replaceAll(RegExp(r'[APM]'), '').trim().split(':');
+486:              hour = int.parse(timeParts[0]);
+487:              minute = int.parse(timeParts[1]);
+488:              
+489:              // Convert to 24-hour format
+490:              if (isPM && hour != 12) {
+491:                hour += 12;
+492:              } else if (!isPM && hour == 12) {
+493:                hour = 0;
+494:              }
+495:            } else {
+496:              // Parse 24-hour format time
+497:              final timeParts = timeStr.split(':');
+498:              hour = int.parse(timeParts[0]);
+499:              minute = int.parse(timeParts[1]);
+500:            }
+501:            
+502:            // Parse date
+503:            final dateParts = dateStr.split('-');
+504:            if (dateParts.length == 3) {
+505:              final year = int.parse(dateParts[0]);
+506:              final month = int.parse(dateParts[1]);
+507:              final day = int.parse(dateParts[2]);
+508:              
+509:              appointmentDateTime = DateTime(year, month, day, hour, minute);
+510:            }
+511:          }
+512:        } catch (e) {
+513:          print('Error parsing appointment date/time: $e');
+514:        }
+515:        
+516:        // Determine dynamic status based on original status or date/time
+517:        String status = processedData['status'] ?? "Pending";
+518:        DateTime now = DateTime.now();
+519:        
+520:        // Determine dynamic status based on date/time
+521:        if (appointmentDateTime != null) {
+522:          // If appointment is in the past, mark as completed
+523:          if (appointmentDateTime.isBefore(now)) {
+524:            status = "Completed";
+525:          } else {
+526:            // If appointment is in the future, mark as confirmed/upcoming
+527:            if (status.toLowerCase() != "cancelled") {
+528:              status = "Confirmed";
+529:            }
+530:          }
+531:        }
+532:        
+533:        // Format appointment data
+534:        appointments.add({
+535:          'id': doc.id,
+536:          'patientName': patientName,
+537:          'patientImage': 'assets/images/User.png', // Use default image
+538:          'date': processedData['date'] ?? "No date",
+539:          'time': processedData['time'] ?? "No time",
+540:          'type': processedData['type'] ?? "In-person",
+541:          'status': status, // Use dynamically determined status
+542:          'reason': processedData['reason'] ?? "General checkup",
+543:          'hospitalName': hospitalName,
+544:          'fee': processedData['fee'] ?? "0",
+545:          'syncedAt': DateTime.now().toIso8601String(),
+546:          'appointmentDateTime': appointmentDateTime?.toIso8601String(),
+547:        });
+548:      }
+549:      
+550:      if (mounted) {
+551:        setState(() {
+552:          _appointments = appointments;
+553:        });
+554:        print('Updated appointments with ${appointments.length} records from server');
+555:        
+556:        // Cache the appointments data
+557:        if (appointments.isNotEmpty) {
+558:          final prefs = await SharedPreferences.getInstance();
+559:          await prefs.setString(_doctorAppointmentsCacheKey, json.encode(appointments));
+560:        }
+561:      }
+562:    } catch (e) {
+563:      print('Error fetching appointments: $e');
+564:    }
+565:  }
+566:
+567:  Future<void> _refreshData() async {
+568:    await _loadUserData();
+569:    await _fetchAppointments();
+570:  }
+571:
+572:  void _onItemTapped(int index) {
+573:    NavigationHelper.navigateToTab(context, index);
+574:  }
+575:
+576:  @override
+577:  Widget build(BuildContext context) {
+578:    // Get screen size for responsive design
+579:    final Size screenSize = MediaQuery.of(context).size;
+580:    final double screenWidth = screenSize.width;
+581:    final double screenHeight = screenSize.height;
+582:    
+583:    // Calculate responsive values
+584:    final double headerHeight = screenHeight * 0.25; // Reduced from 0.28
+585:    final double horizontalPadding = screenWidth * 0.06;
+586:    final double verticalSpacing = screenHeight * 0.025;
+587:    
+588:    // Get status bar height
+589:    final double statusBarHeight = MediaQuery.of(context).padding.top;
+590:    
+591:    return Scaffold(
+592:      backgroundColor: Colors.grey.shade50,
+593:      drawer: _buildDrawer(context, screenWidth),
+594:      body: Stack(
+595:        children: [
+596:          // Background gradient that extends behind status bar
+597:          Positioned(
+598:            top: 0,
+599:            left: 0,
+600:            right: 0,
+601:            height: statusBarHeight + kToolbarHeight,
+602:            child: Container(
+603:              decoration: BoxDecoration(
+604:                gradient: LinearGradient(
+605:                  begin: Alignment.topLeft,
+606:                  end: Alignment.bottomRight,
+607:                  colors: [
+608:                    Color.fromRGBO(64, 124, 226, 1),
+609:                    Color.fromRGBO(46, 106, 208, 1),
+610:                  ],
+611:                ),
+612:              ),
+613:            ),
+614:          ),
+615:          
+616:          // Main content
+617:          Column(
+618:            children: [
+619:              // Custom AppBar
+620:              Container(
+621:                padding: EdgeInsets.only(top: statusBarHeight),
+622:                height: statusBarHeight + kToolbarHeight,
+623:                child: Row(
+624:                  children: [
+625:                    // Menu button
+626:                    Builder(
+627:                      builder: (context) => IconButton(
+628:                        icon: Icon(LucideIcons.menu, color: Colors.white),
+629:                        onPressed: () {
+630:                          Scaffold.of(context).openDrawer();
+631:                        },
+632:                        tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
+633:                      ),
+634:                    ),
+635:                    
+636:                    // Title
+637:                    Expanded(
+638:                      child: Center(
+639:                        child: FittedBox(
+640:                          fit: BoxFit.scaleDown,
+641:                          child: Row(
+642:                            mainAxisSize: MainAxisSize.min,
+643:                            children: [
+644:                              Text(
+645:                                "Asan",
+646:                                style: GoogleFonts.poppins(
+647:                                  fontSize: screenWidth * 0.048,
+648:                                  fontWeight: FontWeight.w600,
+649:                                  color: Colors.white,
+650:                                  letterSpacing: 0.5,
+651:                                ),
+652:                              ),
+653:                              Text(
+654:                                " Ilaaj",
+655:                                style: GoogleFonts.poppins(
+656:                                  fontSize: screenWidth * 0.048,
+657:                                  fontWeight: FontWeight.w300,
+658:                                  color: Colors.white,
+659:                                  letterSpacing: 0.5,
+660:                                ),
+661:                              ),
+662:                              Container(
+663:                                width: 6,
+664:                                height: 6,
+665:                                margin: EdgeInsets.only(left: 4),
+666:                                decoration: BoxDecoration(
+667:                                  color: Colors.white,
+668:                                  shape: BoxShape.circle,
+669:                                  boxShadow: [
+670:                                    BoxShadow(
+671:                                      color: Colors.white.withOpacity(0.5),
+672:                                      blurRadius: 4,
+673:                                      spreadRadius: 0.5,
+674:                                    ),
+675:                                  ],
+676:                                ),
+677:                              ),
+678:                            ],
+679:                          ),
+680:                        ),
+681:                      ),
+682:                    ),
+683:                    
+684:                    // Notification button
+685:                    IconButton(
+686:                      icon: Icon(LucideIcons.bell, color: Colors.white),
+687:                      onPressed: () {
+688:                        Navigator.push(
+689:                          context,
+690:                          MaterialPageRoute(builder: (context) => NotificationScreen()),
+691:                        );
+692:                      },
+693:                    ),
+694:                  ],
+695:                ),
+696:              ),
+697:              
+698:              // Rest of the content
+699:              Expanded(
+700:                child: _isLoading
+701:                  ? Center(
+702:                      child: CircularProgressIndicator(),
+703:                    )
+704:                  : Stack(
+705:                      children: [
+706:                        // Main scrollable content
+707:                        SingleChildScrollView(
+708:                          physics: BouncingScrollPhysics(),
+709:                          child: Column(
+710:                            crossAxisAlignment: CrossAxisAlignment.start,
+711:                            children: [
+712:                              // Header with gradient background
+713:                              Container(
+714:                                height: headerHeight,
+715:                                decoration: BoxDecoration(
+716:                                  gradient: LinearGradient(
+717:                                    begin: Alignment.topCenter,
+718:                                    end: Alignment.bottomCenter,
+719:                                    colors: [
+720:                                      Color.fromRGBO(64, 124, 226, 1),
+721:                                      Color.fromRGBO(46, 106, 208, 1),
+722:                                    ],
+723:                                  ),
+724:                                  borderRadius: BorderRadius.only(
+725:                                    bottomLeft: Radius.circular(30),
+726:                                    bottomRight: Radius.circular(30),
+727:                                  ),
+728:                                  boxShadow: [
+729:                                    BoxShadow(
+730:                                      color: Colors.blue.shade200.withOpacity(0.3),
+731:                                      blurRadius: 20,
+732:                                      offset: Offset(0, 10),
+733:                                    ),
+734:                                  ],
+735:                                ),
+736:                                padding: EdgeInsets.symmetric(
+737:                                  horizontal: horizontalPadding,
+738:                                  vertical: verticalSpacing * 0.6,
+739:                                ),
+740:                                child: Column(
+741:                                  crossAxisAlignment: CrossAxisAlignment.start,
+742:                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+743:                                  children: [
+744:                                    // Top row with user info
+745:                                    Row(
+746:                                      children: [
+747:                                        // Profile image
+748:                                        GestureDetector(
+749:                                          onTap: () {
+750:                                            NavigationHelper.navigateToTab(context, 3); // Navigate to Menu tab
+751:                                          },
+752:                                          child: Container(
+753:                                            decoration: BoxDecoration(
+754:                                              shape: BoxShape.circle,
+755:                                              border: Border.all(color: Colors.white, width: 2),
+756:                                              boxShadow: [
+757:                                                BoxShadow(
+758:                                                  color: Colors.black12,
+759:                                                  blurRadius: 8,
+760:                                                  offset: Offset(0, 3),
+761:                                                ),
+762:                                              ],
+763:                                            ),
+764:                                            child: Hero(
+765:                                              tag: 'profileImage',
+766:                                              child: _profileImageUrl != null && _profileImageUrl!.isNotEmpty
+767:                                                  ? CircleAvatar(
+768:                                                      radius: screenWidth * 0.065,
+769:                                                      backgroundImage: NetworkImage(_profileImageUrl!),
+770:                                                    )
+771:                                                  : CircleAvatar(
+772:                                                      radius: screenWidth * 0.065,
+773:                                                      backgroundImage: AssetImage("assets/images/User.png"),
+774:                                                    ),
+775:                                            ),
+776:                                          ),
+777:                                        ),
+778:                                        SizedBox(width: horizontalPadding * 0.8),
+779:                                        // User name and specialty with flexible width
+780:                                        Expanded(
+781:                                          child: Column(
+782:                                            crossAxisAlignment: CrossAxisAlignment.start,
+783:                                            children: [
+784:                                              Text(
+785:                                                "Welcome",
+786:                                                style: GoogleFonts.poppins(
+787:                                                  fontSize: screenWidth * 0.04,
+788:                                                  fontWeight: FontWeight.w500,
+789:                                                  color: Colors.white.withOpacity(0.9),
+790:                                                ),
+791:                                                maxLines: 1,
+792:                                                overflow: TextOverflow.ellipsis,
+793:                                              ),
+794:                                              Text(
+795:                                                _userName,
+796:                                                style: GoogleFonts.poppins(
+797:                                                  fontSize: screenWidth * 0.055,
+798:                                                  fontWeight: FontWeight.w600,
+799:                                                  color: Colors.white,
+800:                                                ),
+801:                                                maxLines: 1,
+802:                                                overflow: TextOverflow.ellipsis,
+803:                                              ),
+804:                                              if (_specialty.isNotEmpty)
+805:                                                Text(
+806:                                                  _specialty,
+807:                                                  style: GoogleFonts.poppins(
+808:                                                    fontSize: screenWidth * 0.035,
+809:                                                    color: Colors.white.withOpacity(0.9),
+810:                                                  ),
+811:                                                  maxLines: 1,
+812:                                                  overflow: TextOverflow.ellipsis,
+813:                                                ),
+814:                                            ],
+815:                                          ),
+816:                                        ),
+817:                                      ],
+818:                                    ),
+819:                                    
+820:                                    // Earnings info in header
+821:                                    Container(
+822:                                      margin: EdgeInsets.only(top: verticalSpacing * 0.8),
+823:                                      padding: EdgeInsets.all(screenWidth * 0.035),
+824:                                      decoration: BoxDecoration(
+825:                                        color: Colors.white.withOpacity(0.15),
+826:                                        borderRadius: BorderRadius.circular(15),
+827:                                      ),
+828:                                      child: Row(
+829:                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+830:                                        children: [
+831:                                          // Icon and labels
+832:                                          Expanded(
+833:                                            child: Row(
+834:                                              children: [
+835:                                                Container(
+836:                                                  padding: EdgeInsets.all(screenWidth * 0.02),
+837:                                                  decoration: BoxDecoration(
+838:                                                    color: Colors.white,
+839:                                                    borderRadius: BorderRadius.circular(10),
+840:                                                  ),
+841:                                                  child: Icon(
+842:                                                    Icons.paid_outlined,
+843:                                                    color: Color.fromRGBO(64, 124, 226, 1),
+844:                                                    size: screenWidth * 0.055,
+845:                                                  ),
+846:                                                ),
+847:                                                SizedBox(width: screenWidth * 0.03),
+848:                                                Expanded(
+849:                                                  child: Column(
+850:                                                    crossAxisAlignment: CrossAxisAlignment.start,
+851:                                                    mainAxisSize: MainAxisSize.min,
+852:                                                    children: [
+853:                                                      Text(
+854:                                                        "Total Earning",
+855:                                                        style: GoogleFonts.poppins(
+856:                                                          color: Colors.white,
+857:                                                          fontSize: screenWidth * 0.032,
+858:                                                        ),
+859:                                                      ),
+860:                                                      Text(
+861:                                                        "Rs ${_totalEarnings.toStringAsFixed(2)}",
+862:                                                        style: GoogleFonts.poppins(
+863:                                                          color: Colors.white,
+864:                                                          fontSize: screenWidth * 0.045,
+865:                                                          fontWeight: FontWeight.bold,
+866:                                                        ),
+867:                                                        maxLines: 1,
+868:                                                        overflow: TextOverflow.ellipsis,
+869:                                                      ),
+870:                                                    ],
+871:                                                  ),
+872:                                                ),
+873:                                              ],
+874:                                            ),
+875:                                          ),
+876:                                          // Arrow button
+877:                                          Container(
+878:                                            width: screenWidth * 0.08,
+879:                                            height: screenWidth * 0.08,
+880:                                            decoration: BoxDecoration(
+881:                                              color: Colors.white.withOpacity(0.2),
+882:                                              shape: BoxShape.circle,
+883:                                            ),
+884:                                            child: IconButton(
+885:                                              onPressed: () {
+886:                                                NavigationHelper.navigateToTab(context, 2); // Navigate to Finances tab
+887:                                              },
+888:                                              icon: Icon(
+889:                                                LucideIcons.arrowRight,
+890:                                                color: Colors.white,
+891:                                                size: screenWidth * 0.04,
+892:                                              ),
+893:                                              padding: EdgeInsets.zero,
+894:                                            ),
+895:                                          ),
+896:                                        ],
+897:                                      ),
+898:                                    ),
+899:                                  ],
+900:                                ),
+901:                              ),
+902:                              
+903:                              Padding(
+904:                                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+905:                                child: Column(
+906:                                  crossAxisAlignment: CrossAxisAlignment.start,
+907:                                  children: [
+908:                                    SizedBox(height: verticalSpacing),
+909:                                    
+910:                                    // Redesigned ratings Card with modern design
+911:                                    Container(
+912:                                      width: double.infinity,
+913:                                      padding: EdgeInsets.all(screenWidth * 0.05),
+914:                                      decoration: BoxDecoration(
+915:                                        gradient: LinearGradient(
+916:                                          begin: Alignment.topLeft,
+917:                                          end: Alignment.bottomRight,
+918:                                          colors: [
+919:                                            Color(0xFF2754C3),
+920:                                            Color(0xFF2754C3),
+921:                                          ],
+922:                                        ),
+923:                                        borderRadius: BorderRadius.circular(20),
+924:                                        boxShadow: [
+925:                                          BoxShadow(
+926:                                            color: Color(0xFF2754C3).withOpacity(0.3),
+927:                                            blurRadius: 15,
+928:                                            offset: Offset(0, 5),
+929:                                          ),
+930:                                        ],
+931:                                      ),
+932:                                      child: Column(
+933:                                        crossAxisAlignment: CrossAxisAlignment.start,
+934:                                        children: [
+935:                                          Row(
+936:                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+937:                                            children: [
+938:                                              // Title section
+939:                                              Row(
+940:                                                children: [
+941:                                                  Container(
+942:                                                    padding: EdgeInsets.all(screenWidth * 0.02),
+943:                                                    decoration: BoxDecoration(
+944:                                                      color: Colors.white.withOpacity(0.2),
+945:                                                      borderRadius: BorderRadius.circular(10),
+946:                                                    ),
+947:                                                    child: Icon(
+948:                                                      LucideIcons.star,
+949:                                                      color: Colors.white,
+950:                                                      size: screenWidth * 0.05,
+951:                                                    ),
+952:                                                  ),
+953:                                                  SizedBox(width: screenWidth * 0.03),
+954:                                                  Text(
+955:                                                    "Doctor Rating",
+956:                                                    style: GoogleFonts.poppins(
+957:                                                      fontSize: screenWidth * 0.04,
+958:                                                      fontWeight: FontWeight.w600,
+959:                                                      color: Colors.white,
+960:                                                    ),
+961:                                                  ),
+962:                                                ],
+963:                                              ),
+964:                                              // Review count pill
+965:                                              Container(
+966:                                                padding: EdgeInsets.symmetric(
+967:                                                  horizontal: screenWidth * 0.03,
+968:                                                  vertical: screenWidth * 0.015,
+969:                                                ),
+970:                                                decoration: BoxDecoration(
+971:                                                  color: Colors.white.withOpacity(0.2),
+972:                                                  borderRadius: BorderRadius.circular(screenWidth * 0.05),
+973:                                                ),
+974:                                                child: Text(
+975:                                                  "$_reviewCount ${_reviewCount == 1 ? 'Review' : 'Reviews'}",
+976:                                                  style: GoogleFonts.poppins(
+977:                                                    fontSize: screenWidth * 0.03,
+978:                                                    fontWeight: FontWeight.w500,
+979:                                                    color: Colors.white,
+980:                                                  ),
+981:                                                ),
+982:                                              ),
+983:                                            ],
+984:                                          ),
+985:                                          SizedBox(height: verticalSpacing * 0.7),
+986:                                          // Rating display
+987:                                          Row(
+988:                                            crossAxisAlignment: CrossAxisAlignment.center,
+989:                                            children: [
+990:                                              // Rating number
+991:                                              Text(
+992:                                                _overallRating.toStringAsFixed(1),
+993:                                                style: GoogleFonts.poppins(
+994:                                                  fontSize: screenWidth * 0.09,
+995:                                                  fontWeight: FontWeight.bold,
+996:                                                  color: Colors.white,
+997:                                                ),
+998:                                              ),
+999:                                              SizedBox(width: screenWidth * 0.03),
+1000:                                              // Rating stars
+1001:                                              Expanded(
+1002:                                                child: Column(
+1003:                                                  crossAxisAlignment: CrossAxisAlignment.start,
+1004:                                                  children: [
+1005:                                                    Row(
+1006:                                                      children: [
+1007:                                                        for (int i = 1; i <= 5; i++)
+1008:                                                          Icon(
+1009:                                                            i <= _overallRating
+1010:                                                                ? Icons.star
+1011:                                                                : i <= _overallRating + 0.5
+1012:                                                                    ? Icons.star_half
+1013:                                                                    : Icons.star_border,
+1014:                                                            color: Colors.amber,
+1015:                                                            size: screenWidth * 0.05,
+1016:                                                          ),
+1017:                                                      ],
+1018:                                                    ),
+1019:                                                    SizedBox(height: screenWidth * 0.02),
+1020:                                                    // Progress indicator
+1021:                                                    ClipRRect(
+1022:                                                      borderRadius: BorderRadius.circular(10),
+1023:                                                      child: LinearProgressIndicator(
+1024:                                                        value: _overallRating / 5,
+1025:                                                        backgroundColor: Colors.white.withOpacity(0.2),
+1026:                                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.amber),
+1027:                                                        minHeight: 5,
+1028:                                                      ),
+1029:                                                    ),
+1030:                                                  ],
+1031:                                                ),
+1032:                                              ),
+1033:                                            ],
+1034:                                          ),
+1035:                                          SizedBox(height: verticalSpacing * 0.7),
+1036:                                          // View all reviews button
+1037:                                          Center(
+1038:                                            child: ElevatedButton.icon(
+1039:                                              onPressed: () {
+1040:                                                Navigator.push(
+1041:                                                  context,
+1042:                                                  MaterialPageRoute(
+1043:                                                    builder: (context) => DoctorReviewsScreen(
+1044:                                                      doctorId: _auth.currentUser?.uid,
+1045:                                                    ),
+1046:                                                  ),
+1047:                                                );
+1048:                                              },
+1049:                                              style: ElevatedButton.styleFrom(
+1050:                                                backgroundColor: Colors.white,
+1051:                                                foregroundColor: Color(0xFF2754C3),
+1052:                                                elevation: 0,
+1053:                                                padding: EdgeInsets.symmetric(
+1054:                                                  horizontal: screenWidth * 0.05,
+1055:                                                  vertical: screenWidth * 0.025,
+1056:                                                ),
+1057:                                                shape: RoundedRectangleBorder(
+1058:                                                  borderRadius: BorderRadius.circular(screenWidth * 0.04),
+1059:                                                ),
+1060:                                              ),
+1061:                                              icon: Icon(
+1062:                                                LucideIcons.clipboardList,
+1063:                                                size: screenWidth * 0.04,
+1064:                                              ),
+1065:                                              label: Text(
+1066:                                                "View All Reviews",
+1067:                                                style: GoogleFonts.poppins(
+1068:                                                  fontSize: screenWidth * 0.035,
+1069:                                                  fontWeight: FontWeight.w600,
+1070:                                                ),
+1071:                                              ),
+1072:                                            ),
+1073:                                          ),
+1074:                                        ],
+1075:                                      ),
+1076:                                    ),
+1077:                                    
+1078:                                    SizedBox(height: verticalSpacing),
+1079:                                    
+1080:                                    // My Appointments Section
+1081:                                    _buildAppointmentsSection(screenWidth, screenHeight, horizontalPadding, verticalSpacing),
+1082:
+1083:                                    // Add extra space at the bottom
+1084:                                    SizedBox(height: verticalSpacing),
+1085:                                  ],
+1086:                                ),
+1087:                              ),
+1088:                            ],
+1089:                          ),
+1090:                        ),
+1091:                      ],
+1092:                    ),
+1093:              ],
+1094:            ),
+1095:          ),
+1096:          
+1097:          // Bottom refresh indicator - adding this back
+1098:          if (_isRefreshing)
+1099:            Positioned(
+1100:              bottom: 16,
+1101:              left: 0,
+1102:              right: 0,
+1103:              child: Center(
+1104:                child: Container(
+1105:                  padding: EdgeInsets.symmetric(
+1106:                    horizontal: screenWidth * 0.04, 
+1107:                    vertical: screenHeight * 0.01
+1108:                  ),
+1109:                  decoration: BoxDecoration(
+1110:                    color: Colors.white,
+1111:                    borderRadius: BorderRadius.circular(20),
+1112:                    boxShadow: [
+1113:                      BoxShadow(
+1114:                        color: Colors.black.withOpacity(0.1),
+1115:                        blurRadius: 8,
+1116:                        offset: Offset(0, 2),
+1117:                      ),
+1118:                    ],
+1119:                  ),
+1120:                  child: Row(
+1121:                    mainAxisSize: MainAxisSize.min,
+1122:                    children: [
+1123:                      SizedBox(
+1124:                        width: screenWidth * 0.04,
+1125:                        height: screenWidth * 0.04,
+1126:                        child: CircularProgressIndicator(
+1127:                          strokeWidth: 2,
+1128:                          valueColor: AlwaysStoppedAnimation<Color>(
+1129:                            Color.fromRGBO(64, 124, 226, 1),
+1130:                          ),
+1131:                        ),
+1132:                      ),
+1133:                      SizedBox(width: screenWidth * 0.02),
+1134:                      Text(
+1135:                        "Refreshing...",
+1136:                        style: GoogleFonts.poppins(
+1137:                          fontSize: screenWidth * 0.03,
+1138:                          color: Colors.grey.shade700,
+1139:                        ),
+1140:                      ),
+1141:                    ],
+1142:                  ),
+1143:                ),
+1144:              ),
+1145:            ),
+1146:        ],
+1147:      ),
+1148:    );
+1149:  }
+1150:  
+1151:  Widget _buildEnhancedActionButton({
+1152:    required IconData icon,
+1153:    required String label,
+1154:    required Color color,
+1155:    required VoidCallback onTap,
+1156:    required double width,
+1157:    required double height,
+1158:  }) {
+1159:    return GestureDetector(
+1160:      onTap: onTap,
+1161:      child: Container(
+1162:        width: width,
+1163:        height: height,
+1164:        decoration: BoxDecoration(
+1165:          color: Colors.white,
+1166:          borderRadius: BorderRadius.circular(24),
+1167:          boxShadow: [
+1168:            BoxShadow(
+1169:              color: color.withOpacity(0.15),
+1170:              blurRadius: 12,
+1171:              offset: Offset(0, 6),
+1172:              spreadRadius: 0,
+1173:            ),
+1174:          ],
+1175:        ),
+1176:        child: ClipRRect(
+1177:          borderRadius: BorderRadius.circular(24),
+1178:          child: Stack(
+1179:            children: [
+1180:              // Gradient background with accent color in corner
+1181:              Positioned(
+1182:                right: -width * 0.2,
+1183:                bottom: -width * 0.2,
+1184:                child: Container(
+1185:                  width: width * 0.7,
+1186:                  height: width * 0.7,
+1187:                  decoration: BoxDecoration(
+1188:                    gradient: RadialGradient(
+1189:                      colors: [
+1190:                        color.withOpacity(0.18),
+1191:                        color.withOpacity(0.0),
+1192:                      ],
+1193:                      stops: const [0.0, 0.9],
+1194:                    ),
+1195:                  ),
+1196:                ),
+1197:              ),
+1198:              
+1199:              // Content
+1200:              Padding(
+1201:                padding: EdgeInsets.all(width * 0.08),
+1202:                child: Column(
+1203:                  crossAxisAlignment: CrossAxisAlignment.start,
+1204:                  children: [
+1205:                    // Icon container with creative design
+1206:                    Container(
+1207:                      padding: EdgeInsets.all(width * 0.06),
+1208:                      decoration: BoxDecoration(
+1209:                        color: color.withOpacity(0.12),
+1210:                        borderRadius: BorderRadius.circular(16),
+1211:                        boxShadow: [
+1212:                          BoxShadow(
+1213:                            color: color.withOpacity(0.1),
+1214:                            blurRadius: 6,
+1215:                            offset: Offset(0, 3),
+1216:                            spreadRadius: 0,
+1217:                          ),
+1218:                        ],
+1219:                      ),
+1220:                      child: Icon(
+1221:                        icon,
+1222:                        color: color,
+1223:                        size: width * 0.13,
+1224:                      ),
+1225:                    ),
+1226:                    Spacer(),
+1227:                    // Label with thicker weight for emphasis
+1228:                    Text(
+1229:                      label.split('\n')[0],
+1230:                      style: GoogleFonts.poppins(
+1231:                        fontSize: width * 0.12,
+1232:                        fontWeight: FontWeight.w700,
+1233:                        color: Colors.black87,
+1234:                        height: 0.9,
+1235:                      ),
+1236:                    ),
+1237:                    if (label.contains('\n'))
+1238:                      Text(
+1239:                        label.split('\n')[1],
+1240:                        style: GoogleFonts.poppins(
+1241:                          fontSize: width * 0.12,
+1242:                          fontWeight: FontWeight.w700,
+1243:                          color: Colors.black87,
+1244:                          height: 0.9,
+1245:                        ),
+1246:                      ),
+1247:                    SizedBox(height: width * 0.05),
+1248:                    // View button with animation hint
+1249:                    Row(
+1250:                      mainAxisSize: MainAxisSize.min,
+1251:                      children: [
+1252:                        // Mini pill-shaped button
+1253:                        Container(
+1254:                          padding: EdgeInsets.symmetric(
+1255:                            horizontal: width * 0.08,
+1256:                            vertical: width * 0.04,
+1257:                          ),
+1258:                          decoration: BoxDecoration(
+1259:                            color: color.withOpacity(0.15),
+1260:                            borderRadius: BorderRadius.circular(width * 0.1),
+1261:                          ),
+1262:                          child: Row(
+1263:                            mainAxisSize: MainAxisSize.min,
+1264:                            children: [
+1265:                              Text(
+1266:                                'View',
+1267:                                style: GoogleFonts.poppins(
+1268:                                  fontSize: width * 0.08,
+1269:                                  fontWeight: FontWeight.w600,
+1270:                                  color: color,
+1271:                                ),
+1272:                              ),
+1273:                              SizedBox(width: width * 0.02),
+1274:                              Icon(
+1275:                                LucideIcons.arrowRight,
+1276:                                color: color,
+1277:                                size: width * 0.08,
+1278:                              ),
+1279:                            ],
+1280:                          ),
+1281:                        ),
+1282:                      ],
+1283:                    ),
+1284:                  ],
+1285:                ),
+1286:              ),
+1287:            ],
+1288:          ),
+1289:        ),
+1290:      ),
+1291:    );
+1292:  }
+1293:
+1294:  // Build the appointments section widget
+1295:  Widget _buildAppointmentsSection(
+1296:    double screenWidth, 
+1297:    double screenHeight, 
+1298:    double horizontalPadding, 
+1299:    double verticalSpacing
+1300:  ) {
+1301:    // Filter appointments based on the selected category and current date/time
+1302:    List<Map<String, dynamic>> filteredAppointments = [];
+1303:    
+1304:    if (_appointments.isNotEmpty) {
+1305:      // Get current date/time for comparison
+1306:      final now = DateTime.now();
+1307:      
+1308:      if (_selectedAppointmentCategoryIndex == 0) {
+1309:        // Upcoming appointments - filter by dynamic status and date/time
+1310:        filteredAppointments = _appointments.where((appointment) {
+1311:          // First check if appointment has been marked as completed by our dynamic logic
+1312:          if (appointment['status']?.toString().toLowerCase() == 'completed') {
+1313:            return false;
+1314:          }
+1315:          
+1316:          // Then check if it's cancelled
+1317:          if (appointment['status']?.toString().toLowerCase() == 'cancelled') {
+1318:            return false;
+1319:          }
+1320:          
+1321:          // Check appointment date/time if available
+1322:          if (appointment.containsKey('appointmentDateTime') && 
+1323:              appointment['appointmentDateTime'] != null) {
+1324:            try {
+1325:              final appointmentDateTime = DateTime.parse(appointment['appointmentDateTime']);
+1326:              // Only include if appointment is in the future
+1327:              return appointmentDateTime.isAfter(now);
+1328:            } catch (e) {
+1329:              print('Error parsing appointmentDateTime: $e');
+1330:            }
+1331:          }
+1332:          
+1333:          // If we can't determine from date/time, use status
+1334:          return appointment['status']?.toString().toLowerCase() == 'upcoming' || 
+1335:                 appointment['status']?.toString().toLowerCase() == 'confirmed' ||
+1336:                 appointment['status']?.toString().toLowerCase() == 'pending';
+1337:        }).toList();
+1338:      } else if (_selectedAppointmentCategoryIndex == 1) {
+1339:        // Completed appointments - filter by dynamic status and date/time
+1340:        filteredAppointments = _appointments.where((appointment) {
+1341:          // First check if appointment has been marked as completed
+1342:          if (appointment['status']?.toString().toLowerCase() == 'completed') {
+1343:            return true;
+1344:          }
+1345:          
+1346:          // Then check appointment date/time if available
+1347:          if (appointment.containsKey('appointmentDateTime') && 
+1348:              appointment['appointmentDateTime'] != null) {
+1349:            try {
+1350:              final appointmentDateTime = DateTime.parse(appointment['appointmentDateTime']);
+1351:              // Include if appointment is in the past (and not cancelled)
+1352:              return appointmentDateTime.isBefore(now) && 
+1353:                    appointment['status']?.toString().toLowerCase() != 'cancelled';
+1354:            } catch (e) {
+1355:              print('Error parsing appointmentDateTime: $e');
+1356:            }
+1357:          }
+1358:          
+1359:          // If we can't determine from date/time, fall back to status
+1360:          return false;
+1361:        }).toList();
+1362:      }
+1363:    }
+1364:    
+1365:    return Column(
+1366:      crossAxisAlignment: CrossAxisAlignment.start,
+1367:      children: [
+1368:        Row(
+1369:          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+1370:          children: [
+1371:            Text(
+1372:              "My Appointments",
+1373:              style: GoogleFonts.poppins(
+1374:                fontSize: screenWidth * 0.045,
+1375:                fontWeight: FontWeight.w600,
+1376:                color: Colors.black87,
+1377:              ),
+1378:            ),
+1379:            Row(
+1380:              children: [
+1381:                if (_isSyncingAppointments)
+1382:                  Container(
+1383:                    width: screenWidth * 0.04,
+1384:                    height: screenWidth * 0.04,
+1385:                    margin: EdgeInsets.only(right: screenWidth * 0.02),
+1386:                    child: CircularProgressIndicator(
+1387:                      strokeWidth: 2,
+1388:                      valueColor: AlwaysStoppedAnimation<Color>(
+1389:                        Color(0xFF3366CC).withOpacity(0.7),
+1390:                      ),
+1391:                    ),
+1392:                  ),
+1393:                TextButton(
+1394:                  onPressed: () {
+1395:                    // Navigate to AppointmentHistoryScreen instead of AppointmentsScreen
+1396:                    Navigator.push(
+1397:                      context,
+1398:                      MaterialPageRoute(builder: (context) => const AppointmentHistoryScreen()),
+1399:                    ).then((_) {
+1400:                      // Refresh appointments when returning from the history screen
+1401:                      _syncAppointmentsInBackground();
+1402:                    });
+1403:                  },
+1404:                  child: Text(
+1405:                    "See all",
+1406:                    style: GoogleFonts.poppins(
+1407:                      fontSize: screenWidth * 0.035,
+1408:                      fontWeight: FontWeight.w500,
+1409:                      color: Color(0xFF3366CC),
+1410:                    ),
+1411:                  ),
+1412:                ),
+1413:              ],
+1414:            ),
+1415:          ],
+1416:        ),
+1417:        if (_lastAppointmentSync != null)
+1418:          Padding(
+1419:            padding: EdgeInsets.only(top: verticalSpacing * 0.2),
+1420:            child: Text(
+1421:              "Last updated: ${_formatLastUpdateTime(_lastAppointmentSync!)}",
+1422:              style: GoogleFonts.poppins(
+1423:                fontSize: screenWidth * 0.025,
+1424:                color: Colors.grey.shade500,
+1425:              ),
+1426:            ),
+1427:          ),
+1428:        SizedBox(height: verticalSpacing * 0.5),
+1429:        
+1430:        // Category tabs
+1431:        SizedBox(
+1432:          height: screenHeight * 0.05,
+1433:          child: ListView.builder(
+1434:            scrollDirection: Axis.horizontal,
+1435:            itemCount: _appointmentCategories.length,
+1436:            itemBuilder: (context, index) {
+1437:              return GestureDetector(
+1438:                onTap: () {
+1439:                  setState(() {
+1440:                    _selectedAppointmentCategoryIndex = index;
+1441:                  });
+1442:                },
+1443:                child: Container(
+1444:                  margin: EdgeInsets.only(right: horizontalPadding * 0.5),
+1445:                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding * 0.7),
+1446:                  decoration: BoxDecoration(
+1447:                    color: _selectedAppointmentCategoryIndex == index
+1448:                        ? Color(0xFF3366CC)
+1449:                        : Color(0xFFF5F7FF),
+1450:                    borderRadius: BorderRadius.circular(screenWidth * 0.05),
+1451:                  ),
+1452:                  alignment: Alignment.center,
+1453:                  child: Text(
+1454:                    _appointmentCategories[index],
+1455:                    style: GoogleFonts.poppins(
+1456:                      fontSize: screenWidth * 0.035,
+1457:                      fontWeight: FontWeight.w500,
+1458:                      color: _selectedAppointmentCategoryIndex == index
+1459:                          ? Colors.white
+1460:                          : Colors.grey.shade600,
+1461:                    ),
+1462:                  ),
+1463:                ),
+1464:              );
+1465:            },
+1466:          ),
+1467:        ),
+1468:        SizedBox(height: verticalSpacing),
+1469:        
+1470:        // Appointments list - only show loading if no cache data and this is first load
+1471:        filteredAppointments.isEmpty && _isLoadingAppointments
+1472:        ? Center(
+1473:            child: SizedBox(
+1474:              height: screenHeight * 0.15,
+1475:              child: Column(
+1476:                mainAxisAlignment: MainAxisAlignment.center,
+1477:                children: [
+1478:                  SizedBox(
+1479:                    width: screenWidth * 0.06,
+1480:                    height: screenWidth * 0.06,
+1481:                    child: CircularProgressIndicator(
+1482:                      strokeWidth: 2,
+1483:                      valueColor: AlwaysStoppedAnimation<Color>(
+1484:                        Color(0xFF3366CC),
+1485:                      ),
+1486:                    ),
+1487:                  ),
+1488:                  SizedBox(height: verticalSpacing * 0.5),
+1489:                  Text(
+1490:                    "Loading appointments...",
+1491:                    style: GoogleFonts.poppins(
+1492:                      fontSize: screenWidth * 0.035,
+1493:                      color: Colors.grey.shade600,
+1494:                    ),
+1495:                  ),
+1496:                ],
+1497:              ),
+1498:            ),
+1499:          )
+1500:        : filteredAppointments.isEmpty
+1501:          ? Container(
+1502:            width: double.infinity,
+1503:            padding: EdgeInsets.symmetric(
+1504:              vertical: screenHeight * 0.03,
+1505:              horizontal: screenWidth * 0.05
+1506:            ),
+1507:            decoration: BoxDecoration(
+1508:              color: Colors.white,
+1509:              borderRadius: BorderRadius.circular(screenWidth * 0.04),
+1510:              boxShadow: [
+1511:                BoxShadow(
+1512:                  color: Colors.black.withOpacity(0.05),
+1513:                  blurRadius: 10,
+1514:                  offset: Offset(0, 5),
+1515:                ),
+1516:              ],
+1517:            ),
+1518:            child: Column(
+1519:              children: [
+1520:                Icon(
+1521:                  LucideIcons.calendar,
+1522:                  size: screenWidth * 0.15,
+1523:                  color: Colors.grey.shade300,
+1524:                ),
+1525:                SizedBox(height: verticalSpacing * 0.5),
+1526:                Text(
+1527:                  "No ${_appointmentCategories[_selectedAppointmentCategoryIndex].toLowerCase()} appointments",
+1528:                  style: GoogleFonts.poppins(
+1529:                    fontSize: screenWidth * 0.04,
+1530:                    fontWeight: FontWeight.w500,
+1531:                    color: Colors.grey.shade600,
+1532:                  ),
+1533:                  textAlign: TextAlign.center,
+1534:                ),
+1535:              ],
+1536:            ),
+1537:          )
+1538:          : LayoutBuilder(
+1539:            builder: (context, constraints) {
+1540:              return Column(
+1541:                children: filteredAppointments.take(3).map((appointment) => 
+1542:                  _buildAppointmentCard(
+1543:                    appointment, 
+1544:                    screenWidth, 
+1545:                    screenHeight, 
+1546:                    horizontalPadding, 
+1547:                    verticalSpacing,
+1548:                    constraints.maxWidth
+1549:                  )
+1550:                ).toList(),
+1551:              );
+1552:            },
+1553:          ),
+1554:          
+1555:        // Only show refresh button if we have appointments to show
+1556:        if (filteredAppointments.isNotEmpty) 
+1557:          Center(
+1558:            child: Padding(
+1559:              padding: EdgeInsets.only(top: verticalSpacing),
+1560:              child: InkWell(
+1561:                onTap: _syncAppointmentsInBackground,
+1562:                child: Container(
+1563:                  padding: EdgeInsets.symmetric(
+1564:                    vertical: screenHeight * 0.01, 
+1565:                    horizontal: screenWidth * 0.04
+1566:                  ),
+1567:                  decoration: BoxDecoration(
+1568:                    color: Colors.white,
+1569:                    borderRadius: BorderRadius.circular(20),
+1570:                    boxShadow: [
+1571:                      BoxShadow(
+1572:                        color: Colors.black.withOpacity(0.05),
+1573:                        blurRadius: 5,
+1574:                        offset: Offset(0, 2),
+1575:                      ),
+1576:                    ],
+1577:                  ),
+1578:                  child: Row(
+1579:                    mainAxisSize: MainAxisSize.min,
+1580:                    children: [
+1581:                      Icon(
+1582:                        LucideIcons.refreshCw,
+1583:                        size: screenWidth * 0.04,
+1584:                        color: Color(0xFF3366CC),
+1585:                      ),
+1586:                      SizedBox(width: screenWidth * 0.02),
+1587:                      Text(
+1588:                        "Refresh",
+1589:                        style: GoogleFonts.poppins(
+1590:                          fontSize: screenWidth * 0.035,
+1591:                          fontWeight: FontWeight.w500,
+1592:                          color: Color(0xFF3366CC),
+1593:                        ),
+1594:                      ),
+1595:                    ],
+1596:                  ),
+1597:                ),
+1598:              ),
+1599:            ),
+1600:          ),
+1601:      ],
+1602:    );
+1603:  }
+1604:
+1605:  // Helper function to format the last update time
+1606:  String _formatLastUpdateTime(DateTime time) {
+1607:    final Duration difference = DateTime.now().difference(time);
+1608:    
+1609:    if (difference.inMinutes < 1) {
+1610:      return "Just now";
+1611:    } else if (difference.inMinutes < 60) {
+1612:      return "${difference.inMinutes} ${difference.inMinutes == 1 ? 'minute' : 'minutes'} ago";
+1613:    } else if (difference.inHours < 24) {
+1614:      return "${difference.inHours} ${difference.inHours == 1 ? 'hour' : 'hours'} ago";
+1615:    } else {
+1616:      return DateFormat('MMM d, h:mm a').format(time);
+1617:    }
+1618:  }
+1619:
+1620:  // Build a single appointment card
+1621:  Widget _buildAppointmentCard(
+1622:    Map<String, dynamic> appointment, 
+1623:    double screenWidth, 
+1624:    double screenHeight, 
+1625:    double horizontalPadding, 
+1626:    double verticalSpacing,
+1627:    [double cardWidth = 0]
+1628:  ) {
+1629:    // Determine status color
+1630:    Color statusColor;
+1631:    String displayStatus = appointment['status'];
+1632:    
+1633:    switch (displayStatus.toLowerCase()) {
+1634:      case 'completed':
+1635:        statusColor = Colors.green;
+1636:        break;
+1637:      case 'upcoming':
+1638:      case 'confirmed':
+1639:        statusColor = Color(0xFF3366CC);
+1640:        break;
+1641:      case 'pending':
+1642:        statusColor = Colors.orange;
+1643:        break;
+1644:      default:
+1645:        statusColor = Colors.grey;
+1646:    }
+1647:    
+1648:    // Calculate responsive values based on container width
+1649:    final double imageSizeMultiplier = 0.06;
+1650:    final double textSizeMultiplier = 0.035;
+1651:    final double detailIconSize = screenWidth * 0.04;
+1652:    final double detailSpacing = screenWidth * 0.02;
+1653:    final bool isSmallScreen = screenWidth < 360;
+1654:    
+1655:    return GestureDetector(
+1656:      onTap: () {
+1657:        // Navigate to appointment details
+1658:        Navigator.push(
+1659:          context,
+1660:          MaterialPageRoute(
+1661:            builder: (context) => AppointmentDetailsScreen(
+1662:              appointmentId: appointment['id'],
+1663:            ),
+1664:          ),
+1665:        );
+1666:      },
+1667:      child: Container(
+1668:        width: cardWidth > 0 ? cardWidth : double.infinity,
+1669:        margin: EdgeInsets.only(bottom: verticalSpacing),
+1670:        decoration: BoxDecoration(
+1671:          color: Colors.white,
+1672:          borderRadius: BorderRadius.circular(screenWidth * 0.04),
+1673:          boxShadow: [
+1674:            BoxShadow(
+1675:              color: Colors.black.withOpacity(0.06),
+1676:              blurRadius: 12,
+1677:              offset: Offset(0, 6),
+1678:              spreadRadius: 0,
+1679:            ),
+1680:          ],
+1681:          border: Border.all(
+1682:            color: Colors.grey.shade100,
+1683:            width: 1,
+1684:          ),
+1685:        ),
+1686:        child: Column(
+1687:          children: [
+1688:            Container(
+1689:              width: double.infinity,
+1690:              padding: EdgeInsets.all(horizontalPadding * 0.6),
+1691:              decoration: BoxDecoration(
+1692:                color: Color(0xFF3366CC).withOpacity(0.05),
+1693:                borderRadius: BorderRadius.only(
+1694:                  topLeft: Radius.circular(screenWidth * 0.04),
+1695:                  topRight: Radius.circular(screenWidth * 0.04),
+1696:                ),
+1697:              ),
+1698:              child: Row(
+1699:                children: [
+1700:                  // Patient image
+1701:                  Container(
+1702:                    decoration: BoxDecoration(
+1703:                      shape: BoxShape.circle,
+1704:                      boxShadow: [
+1705:                        BoxShadow(
+1706:                          color: Colors.black.withOpacity(0.1),
+1707:                          blurRadius: 8,
+1708:                          offset: Offset(0, 4),
+1709:                        ),
+1710:                      ],
+1711:                    ),
+1712:                    child: CircleAvatar(
+1713:                      radius: screenWidth * imageSizeMultiplier,
+1714:                      backgroundImage: appointment['patientImage'].startsWith('assets/')
+1715:                          ? AssetImage(appointment['patientImage'])
+1716:                          : NetworkImage(appointment['patientImage']) as ImageProvider,
+1717:                    ),
+1718:                  ),
+1719:                  SizedBox(width: horizontalPadding * 0.6),
+1720:                  // Patient name
+1721:                  Expanded(
+1722:                    child: Column(
+1723:                      crossAxisAlignment: CrossAxisAlignment.start,
+1724:                      children: [
+1725:                        Text(
+1726:                          appointment['patientName'],
+1727:                          style: GoogleFonts.poppins(
+1728:                            fontSize: screenWidth * textSizeMultiplier,
+1729:                            fontWeight: FontWeight.w600,
+1730:                            color: Colors.black87,
+1731:                            letterSpacing: 0.2,
+1732:                          ),
+1733:                          maxLines: 1,
+1734:                          overflow: TextOverflow.ellipsis,
+1735:                        ),
+1736:                        SizedBox(height: verticalSpacing * 0.1),
+1737:                        Text(
+1738:                          appointment['reason'],
+1739:                          style: GoogleFonts.poppins(
+1740:                            fontSize: isSmallScreen 
+1741:                                ? screenWidth * (textSizeMultiplier - 0.01)
+1742:                                : screenWidth * (textSizeMultiplier - 0.005),
+1743:                            color: Colors.grey.shade600,
+1744:                            fontWeight: FontWeight.w500,
+1745:                          ),
+1746:                          maxLines: 1,
+1747:                          overflow: TextOverflow.ellipsis,
+1748:                        ),
+1749:                      ],
+1750:                    ),
+1751:                  ),
+1752:                  // Status badge
+1753:                  Container(
+1754:                    padding: EdgeInsets.symmetric(
+1755:                      horizontal: horizontalPadding * 0.5,
+1756:                      vertical: verticalSpacing * 0.3
+1757:                    ),
+1758:                    decoration: BoxDecoration(
+1759:                      color: statusColor.withOpacity(0.1),
+1760:                      borderRadius: BorderRadius.circular(screenWidth * 0.05),
+1761:                      border: Border.all(
+1762:                        color: statusColor.withOpacity(0.2),
+1763:                        width: 1,
+1764:                      ),
+1765:                    ),
+1766:                    child: Text(
+1767:                      displayStatus,
+1768:                      style: GoogleFonts.poppins(
+1769:                        fontSize: isSmallScreen 
+1770:                            ? screenWidth * 0.025
+1771:                            : screenWidth * 0.03,
+1772:                        fontWeight: FontWeight.w600,
+1773:                        color: statusColor,
+1774:                      ),
+1775:                    ),
+1776:                  ),
+1777:                ],
+1778:              ),
+1779:            ),
+1780:            // Appointment details
+1781:            Padding(
+1782:              padding: EdgeInsets.all(horizontalPadding * 0.6),
+1783:              child: Column(
+1784:                children: [
+1785:                  // Use Wrap instead of Row for better responsiveness on smaller screens
+1786:                  Wrap(
+1787:                    spacing: horizontalPadding * 0.6,
+1788:                    runSpacing: verticalSpacing * 0.6,
+1789:                    children: [
+1790:                      _buildAppointmentDetail(
+1791:                        LucideIcons.calendar,
+1792:                        "Date",
+1793:                        appointment['date'],
+1794:                        screenWidth,
+1795:                        detailIconSize,
+1796:                        detailSpacing,
+1797:                        isSmallScreen
+1798:                      ),
+1799:                      _buildAppointmentDetail(
+1800:                        LucideIcons.clock,
+1801:                        "Time",
+1802:                        appointment['time'],
+1803:                        screenWidth,
+1804:                        detailIconSize,
+1805:                        detailSpacing,
+1806:                        isSmallScreen
+1807:                      ),
+1808:                    ],
+1809:                  ),
+1810:                  SizedBox(height: verticalSpacing * 0.6),
+1811:                  Wrap(
+1812:                    spacing: horizontalPadding * 0.6,
+1813:                    runSpacing: verticalSpacing * 0.6,
+1814:                    children: [
+1815:                      _buildAppointmentDetail(
+1816:                        LucideIcons.building2,
+1817:                        "Hospital",
+1818:                        appointment['hospitalName'],
+1819:                        screenWidth,
+1820:                        detailIconSize,
+1821:                        detailSpacing,
+1822:                        isSmallScreen
+1823:                      ),
+1824:                      _buildAppointmentDetail(
+1825:                        LucideIcons.tag,
+1826:                        "Type",
+1827:                        appointment['type'],
+1828:                        screenWidth,
+1829:                        detailIconSize,
+1830:                        detailSpacing,
+1831:                        isSmallScreen
+1832:                      ),
+1833:                    ],
+1834:                  ),
+1835:                  SizedBox(height: verticalSpacing * 0.9),
+1836:                  Row(
+1837:                    children: [
+1838:                      Expanded(
+1839:                        child: ElevatedButton.icon(
+1840:                          onPressed: () {
+1841:                            // Navigate to appointment details
+1842:                            Navigator.push(
+1843:                              context,
+1844:                              MaterialPageRoute(
+1845:                                builder: (context) => AppointmentDetailsScreen(
+1846:                                  appointmentId: appointment['id'],
+1847:                                ),
+1848:                              ),
+1849:                            );
+1850:                          },
+1851:                          style: ElevatedButton.styleFrom(
+1852:                            backgroundColor: Color(0xFF3366CC),
+1853:                            foregroundColor: Colors.white,
+1854:                            padding: EdgeInsets.symmetric(vertical: verticalSpacing * 0.6),
+1855:                            shape: RoundedRectangleBorder(
+1856:                              borderRadius: BorderRadius.circular(screenWidth * 0.03),
+1857:                            ),
+1858:                            elevation: 2,
+1859:                            shadowColor: Color(0xFF3366CC).withOpacity(0.3),
+1860:                          ),
+1861:                          icon: Icon(LucideIcons.fileText, size: screenWidth * 0.045),
+1862:                          label: Text(
+1863:                            "View Details",
+1864:                            style: GoogleFonts.poppins(
+1865:                              fontSize: screenWidth * 0.035,
+1866:                              fontWeight: FontWeight.w500,
+1867:                              letterSpacing: 0.3,
+1868:                            ),
+1869:                          ),
+1870:                        ),
+1871:                      ),
+1872:                    ],
+1873:                  ),
+1874:                ],
+1875:              ),
+1876:            ),
+1877:          ],
+1878:        ),
+1879:      ),
+1880:    );
+1881:  }
+1882:
+1883:  // Helper method to build appointment detail items
+1884:  Widget _buildAppointmentDetail(
+1885:    IconData icon, 
+1886:    String label, 
+1887:    String value, 
+1888:    double screenWidth,
+1889:    double iconSize,
+1890:    double spacing,
+1891:    bool isSmallScreen
+1892:  ) {
+1893:    return Container(
+1894:      width: isSmallScreen ? double.infinity : screenWidth * 0.38,
+1895:      child: Row(
+1896:        crossAxisAlignment: CrossAxisAlignment.center,
+1897:        mainAxisSize: MainAxisSize.min,
+1898:        children: [
+1899:          Container(
+1900:            padding: EdgeInsets.all(screenWidth * 0.02),
+1901:            decoration: BoxDecoration(
+1902:              color: Color.fromRGBO(64, 124, 226, 0.1),
+1903:              borderRadius: BorderRadius.circular(screenWidth * 0.02),
+1904:            ),
+1905:            child: Icon(
+1906:              icon,
+1907:              size: iconSize,
+1908:              color: Color.fromRGBO(64, 124, 226, 1),
+1909:            ),
+1910:          ),
+1911:          SizedBox(width: spacing),
+1912:          Expanded(
+1913:            child: Column(
+1914:              crossAxisAlignment: CrossAxisAlignment.start,
+1915:              children: [
+1916:                Text(
+1917:                  label,
+1918:                  style: GoogleFonts.poppins(
+1919:                    fontSize: isSmallScreen ? screenWidth * 0.025 : screenWidth * 0.03,
+1920:                    color: Colors.grey.shade600,
+1921:                  ),
+1922:                ),
+1923:                Text(
+1924:                  value,
+1925:                  style: GoogleFonts.poppins(
+1926:                    fontSize: isSmallScreen ? screenWidth * 0.03 : screenWidth * 0.035,
+1927:                    fontWeight: FontWeight.w500,
+1928:                    color: Colors.black87,
+1929:                  ),
+1930:                  overflow: TextOverflow.ellipsis,
+1931:                  maxLines: 1,
+1932:                ),
+1933:              ],
+1934:            ),
+1935:          ),
+1936:        ],
+1937:      ),
+1938:    );
+1939:  }
+1940:
+1941:  // Build drawer for sidebar navigation - provides quick access to key features
+1942:  // This drawer complements the bottom navigation tabs with direct shortcuts
+1943:  Widget _buildDrawer(BuildContext context, double screenWidth) {
+1944:    return Drawer(
+1945:      elevation: 5,
+1946:      child: Container(
+1947:        color: Colors.white,
+1948:        child: Column(
+1949:          children: [
+1950:            // Drawer header with user info
+1951:            Container(
+1952:              padding: EdgeInsets.fromLTRB(20, 50, 20, 20),
+1953:              decoration: BoxDecoration(
+1954:                gradient: LinearGradient(
+1955:                  begin: Alignment.topLeft,
+1956:                  end: Alignment.bottomRight,
+1957:                  colors: [
+1958:                    Color.fromRGBO(64, 124, 226, 1),
+1959:                    Color.fromRGBO(46, 106, 208, 1),
+1960:                  ],
+1961:                ),
+1962:              ),
+1963:              child: Column(
+1964:                crossAxisAlignment: CrossAxisAlignment.start,
+1965:                children: [
+1966:                  // Profile image
+1967:                  Row(
+1968:                    children: [
+1969:                      Container(
+1970:                        decoration: BoxDecoration(
+1971:                          shape: BoxShape.circle,
+1972:                          border: Border.all(color: Colors.white, width: 2),
+1973:                          boxShadow: [
+1974:                            BoxShadow(
+1975:                              color: Colors.black.withOpacity(0.1),
+1976:                              blurRadius: 8,
+1977:                              offset: Offset(0, 3),
+1978:                            ),
+1979:                          ],
+1980:                        ),
+1981:                        child: CircleAvatar(
+1982:                          radius: 36,
+1983:                          backgroundColor: Colors.white,
+1984:                          backgroundImage: _profileImageUrl != null && _profileImageUrl!.isNotEmpty
+1985:                              ? NetworkImage(_profileImageUrl!)
+1986:                              : AssetImage("assets/images/User.png") as ImageProvider,
+1987:                        ),
+1988:                      ),
+1989:                      SizedBox(width: 15),
+1990:                      Expanded(
+1991:                        child: Column(
+1992:                          crossAxisAlignment: CrossAxisAlignment.start,
+1993:                          children: [
+1994:                            Text(
+1995:                              _userName,
+1996:                              style: GoogleFonts.poppins(
+1997:                                fontSize: 18,
+1998:                                fontWeight: FontWeight.w600,
+1999:                                color: Colors.white,
+2000:                              ),
+2001:                              maxLines: 1,
+2002:                              overflow: TextOverflow.ellipsis,
+2003:                            ),
+2004:                            if (_specialty.isNotEmpty)
+2005:                              Text(
+2006:                                _specialty,
+2007:                                style: GoogleFonts.poppins(
+2008:                                  fontSize: 14,
+2009:                                  color: Colors.white.withOpacity(0.9),
+2010:                                ),
+2011:                                maxLines: 1,
+2012:                                overflow: TextOverflow.ellipsis,
+2013:                              ),
+2014:                            SizedBox(height: 5),
+2015:                            Container(
+2016:                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+2017:                              decoration: BoxDecoration(
+2018:                                color: Colors.white.withOpacity(0.2),
+2019:                                borderRadius: BorderRadius.circular(20),
+2020:                              ),
+2021:                              child: Text(
+2022:                                "Doctor",
+2023:                                style: GoogleFonts.poppins(
+2024:                                  fontSize: 12,
+2025:                                  color: Colors.white,
+2026:                                  fontWeight: FontWeight.w500,
+2027:                                ),
+2028:                              ),
+2029:                            ),
+2030:                          ],
+2031:                        ),
+2032:                      ),
+2033:                    ],
+2034:                  ),
+2035:                  SizedBox(height: 15),
+2036:                  Container(
+2037:                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+2038:                    decoration: BoxDecoration(
+2039:                      color: Colors.white.withOpacity(0.15),
+2040:                      borderRadius: BorderRadius.circular(10),
+2041:                    ),
+2042:                    child: Row(
+2043:                      children: [
+2044:                        Icon(
+2045:                          LucideIcons.wallet,
+2046:                          color: Colors.white,
+2047:                          size: 16,
+2048:                        ),
+2049:                        SizedBox(width: 8),
+2050:                        Text(
+2051:                          "Rs ${_totalEarnings.toStringAsFixed(0)}",
+2052:                          style: GoogleFonts.poppins(
+2053:                            fontSize: 14,
+2054:                            fontWeight: FontWeight.w600,
+2055:                            color: Colors.white,
+2056:                          ),
+2057:                        ),
+2058:                      ],
+2059:                    ),
+2060:                  ),
+2061:                ],
+2062:              ),
+2063:            ),
+2064:            
+2065:            // Menu items
+2066:            Expanded(
+2067:              child: ListView(
+2068:                padding: EdgeInsets.symmetric(vertical: 10),
+2069:                children: [
+2070:                  _buildDrawerItem(
+2071:                    icon: Icons.home,
+2072:                    title: "Home",
+2073:                    isSelected: true,
+2074:                    onTap: () {
+2075:                      Navigator.pop(context);
+2076:                    },
+2077:                  ),
+2078:                  _buildDrawerItem(
+2079:                    icon: LucideIcons.stethoscope,
+2080:                    title: "My Appointments",
+2081:                    onTap: () {
+2082:                      Navigator.pop(context);
+2083:                      Navigator.push(
+2084:                        context,
+2085:                        MaterialPageRoute(builder: (context) => AppointmentHistoryScreen()),
+2086:                      );
+2087:                    },
+2088:                  ),
+2089:                  _buildDrawerItem(
+2090:                    icon: LucideIcons.calendarClock,
+2091:                    title: "Set Availability",
+2092:                    onTap: () {
+2093:                      Navigator.pop(context);
+2094:                      Navigator.push(
+2095:                        context,
+2096:                        MaterialPageRoute(builder: (context) => DoctorAvailabilityScreen()),
+2097:                      );
+2098:                    },
+2099:                  ),
+2100:                  _buildDrawerItem(
+2101:                    icon: LucideIcons.building2,
+2102:                    title: "Add Hospital",
+2103:                    onTap: () {
+2104:                      Navigator.pop(context);
+2105:                      Navigator.push(
+2106:                        context,
+2107:                        MaterialPageRoute(
+2108:                          builder: (context) => HospitalSelectionScreen(selectedHospitals: []),
+2109:                        ),
+2110:                      );
+2111:                    },
+2112:                  ),
+2113:                  _buildDrawerItem(
+2114:                    icon: Icons.bar_chart,
+2115:                    title: "Analytics",
+2116:                    onTap: () {
+2117:                      Navigator.pop(context);
+2118:                      NavigationHelper.navigateToTab(context, 1);
+2119:                    },
+2120:                  ),
+2121:                  _buildDrawerItem(
+2122:                    icon: LucideIcons.wallet,
+2123:                    title: "Finances",
+2124:                    onTap: () {
+2125:                      Navigator.pop(context);
+2126:                      NavigationHelper.navigateToTab(context, 2);
+2127:                    },
+2128:                  ),
+2129:                  Divider(height: 30, thickness: 1, indent: 20, endIndent: 20),
+2130:                  _buildDrawerItem(
+2131:                    icon: LucideIcons.settings,
+2132:                    title: "Settings",
+2133:                    onTap: () {
+2134:                      Navigator.pop(context);
+2135:                      Navigator.push(
+2136:                        context,
+2137:                        MaterialPageRoute(builder: (context) => const SettingsScreen()),
+2138:                      );
+2139:                    },
+2140:                  ),
+2141:                  _buildDrawerItem(
+2142:                    icon: Icons.help_outline,
+2143:                    title: "Help & Support",
+2144:                    onTap: () {
+2145:                      Navigator.pop(context);
+2146:                      Navigator.push(
+2147:                        context,
+2148:                        MaterialPageRoute(builder: (context) => const HelpCenterScreen()),
+2149:                      );
+2150:                    },
+2151:                  ),
+2152:                  _buildDrawerItem(
+2153:                    icon: LucideIcons.logOut,
+2154:                    title: "Sign Out",
+2155:                    textColor: Color(0xFFE53935),
+2156:                    iconColor: Color(0xFFE53935),
+2157:                    onTap: () async {
+2158:                      final shouldLogout = await _showLogoutConfirmationDialog(context);
+2159:                      if (shouldLogout) {
+2160:                        await _authService.signOut();
+2161:                        // Navigate to login screen after logout
+2162:                        Navigator.of(context).pushNamedAndRemoveUntil(
+2163:                          '/login', 
+2164:                          (Route<dynamic> route) => false,
+2165:                        );
+2166:                      }
+2167:                    },
+2168:                  ),
+2169:                ],
+2170:              ),
+2171:            ),
+2172:            
+2173:            // App version at bottom
+2174:            Padding(
+2175:              padding: EdgeInsets.symmetric(vertical: 15),
+2176:              child: Text(
+2177:                "Version 1.0.0",
+2178:                style: GoogleFonts.poppins(
+2179:                  fontSize: 12,
+2180:                  color: Colors.grey.shade600,
+2181:                ),
+2182:              ),
+2183:            ),
+2184:          ],
+2185:        ),
+2186:      ),
+2187:    );
+2188:  }
+2189:  
+2190:  // Build drawer item
+2191:  Widget _buildDrawerItem({
+2192:    required IconData icon,
+2193:    required String title,
+2194:    Color iconColor = const Color(0xFF555555),
+2195:    Color textColor = const Color(0xFF333333),
+2196:    bool isSelected = false,
+2197:    required VoidCallback onTap,
+2198:  }) {
+2199:    return Material(
+2200:      color: isSelected ? Color(0xFFEDF1FD) : Colors.transparent,
+2201:      child: InkWell(
+2202:        onTap: onTap,
+2203:        child: Container(
+2204:          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+2205:          decoration: BoxDecoration(
+2206:            border: isSelected
+2207:                ? Border(
+2208:                    left: BorderSide(
+2209:                      color: Color.fromRGBO(64, 124, 226, 1),
+2210:                      width: 4,
+2211:                    ),
+2212:                  )
+2213:                : null,
+2214:          ),
+2215:          child: Row(
+2216:            children: [
+2217:              Icon(
+2218:                icon,
+2219:                size: 20,
+2220:                color: isSelected ? Color.fromRGBO(64, 124, 226, 1) : iconColor,
+2221:              ),
+2222:              SizedBox(width: 15),
+2223:              Text(
+2224:                title,
+2225:                style: GoogleFonts.poppins(
+2226:                  fontSize: 15,
+2227:                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+2228:                  color: isSelected ? Color.fromRGBO(64, 124, 226, 1) : textColor,
+2229:                ),
+2230:              ),
+2231:            ],
+2232:          ),
+2233:        ),
+2234:      ),
+2235:    );
+2236:  }
+2237:  
+2238:  // Logout confirmation dialog
+2239:  Future<bool> _showLogoutConfirmationDialog(BuildContext context) async {
+2240:    return await showDialog<bool>(
+2241:      context: context,
+2242:      builder: (BuildContext context) {
+2243:        return AlertDialog(
+2244:          shape: RoundedRectangleBorder(
+2245:            borderRadius: BorderRadius.circular(20),
+2246:          ),
+2247:          title: Text(
+2248:            "Sign Out",
+2249:            style: GoogleFonts.poppins(
+2250:              fontWeight: FontWeight.w600,
+2251:              color: Color(0xFF333333),
+2252:            ),
+2253:          ),
+2254:          content: Text(
+2255:            "Are you sure you want to sign out?",
+2256:            style: GoogleFonts.poppins(
+2257:              fontSize: 14,
+2258:              color: Color(0xFF555555),
+2259:            ),
+2260:          ),
+2261:          actions: [
+2262:            TextButton(
+2263:              child: Text(
+2264:                "Cancel",
+2265:                style: GoogleFonts.poppins(
+2266:                  color: Color(0xFF555555),
+2267:                  fontWeight: FontWeight.w500,
+2268:                ),
+2269:              ),
+2270:              onPressed: () {
+2271:                Navigator.of(context).pop(false);
+2272:              },
+2273:            ),
+2274:            ElevatedButton(
+2275:              style: ElevatedButton.styleFrom(
+2276:                backgroundColor: Color(0xFFE53935),
+2277:                foregroundColor: Colors.white,
+2278:                shape: RoundedRectangleBorder(
+2279:                  borderRadius: BorderRadius.circular(10),
+2280:                ),
+2281:                padding: EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+2282:              ),
+2283:              child: Text(
+2284:                "Sign Out",
+2285:                style: GoogleFonts.poppins(
+2286:                  fontWeight: FontWeight.w500,
+2287:                ),
+2288:              ),
+2289:              onPressed: () {
+2290:                Navigator.of(context).pop(true);
+2291:              },
+2292:            ),
+2293:          ],
+2294:        );
+2295:      },
+2296:    ) ?? false;
+2297:  }
+2298:}
+2299:
+2300:Future<bool> showExitDialog(BuildContext context) async {
+2301:  final Size screenSize = MediaQuery.of(context).size;
+2302:  final double screenWidth = screenSize.width;
+2303:  
+2304:  return await showDialog(
+2305:    context: context,
+2306:    builder: (BuildContext context) {
+2307:      return Dialog(
+2308:        shape: RoundedRectangleBorder(
+2309:          borderRadius: BorderRadius.circular(20),
+2310:        ),
+2311:        child: Padding(
+2312:          padding: EdgeInsets.all(screenWidth * 0.05),
+2313:          child: Column(
+2314:            mainAxisSize: MainAxisSize.min,
+2315:            children: [
+2316:              Container(
+2317:                padding: EdgeInsets.all(screenWidth * 0.04),
+2318:                decoration: BoxDecoration(
+2319:                  color: const Color(0xFFFFEBEB),
+2320:                  shape: BoxShape.circle,
+2321:                ),
+2322:                child: Icon(
+2323:                  Icons.exit_to_app,
+2324:                  color: Color(0xFFFF5252),
+2325:                  size: screenWidth * 0.075,
+2326:                ),
+2327:              ),
+2328:              SizedBox(height: screenWidth * 0.05),
+2329:              FittedBox(
+2330:                fit: BoxFit.scaleDown,
+2331:                child: Text(
+2332:                "Exit App",
+2333:                style: GoogleFonts.poppins(
+2334:                    fontSize: screenWidth * 0.05,
+2335:                  fontWeight: FontWeight.bold,
+2336:                  color: Colors.black87,
+2337:                  ),
+2338:                ),
+2339:              ),
+2340:              SizedBox(height: screenWidth * 0.025),
+2341:              Text(
+2342:                "Are you sure you want to exit the app?",
+2343:                textAlign: TextAlign.center,
+2344:                style: GoogleFonts.poppins(
+2345:                  fontSize: screenWidth * 0.035,
+2346:                  color: Colors.grey.shade600,
+2347:                ),
+2348:              ),
+2349:              SizedBox(height: screenWidth * 0.06),
+2350:              Row(
+2351:                children: [
+2352:                  Expanded(
+2353:                    child: TextButton(
+2354:                      onPressed: () => Navigator.of(context).pop(false),
+2355:                      style: TextButton.styleFrom(
+2356:                        foregroundColor: Colors.grey.shade800,
+2357:                        backgroundColor: Colors.grey.shade100,
+2358:                        shape: RoundedRectangleBorder(
+2359:                          borderRadius: BorderRadius.circular(12),
+2360:                        ),
+2361:                        padding: EdgeInsets.symmetric(vertical: screenWidth * 0.03),
+2362:                      ),
+2363:                      child: FittedBox(
+2364:                        fit: BoxFit.scaleDown,
+2365:                      child: Text(
+2366:                        "Cancel",
+2367:                        style: GoogleFonts.poppins(
+2368:                            fontSize: screenWidth * 0.035,
+2369:                          fontWeight: FontWeight.w600,
+2370:                          ),
+2371:                        ),
+2372:                      ),
+2373:                    ),
+2374:                  ),
+2375:                  SizedBox(width: screenWidth * 0.04),
+2376:                  Expanded(
+2377:                    child: ElevatedButton(
+2378:                      onPressed: () {
+2379:                        Navigator.of(context).pop(true);
+2380:                        SystemNavigator.pop();
+2381:                      },
+2382:                      style: ElevatedButton.styleFrom(
+2383:                        backgroundColor: const Color(0xFFFF5252),
+2384:                        foregroundColor: Colors.white,
+2385:                        shape: RoundedRectangleBorder(
+2386:                          borderRadius: BorderRadius.circular(12),
+2387:                        ),
+2388:                        padding: EdgeInsets.symmetric(vertical: screenWidth * 0.03),
+2389:                        elevation: 0,
+2390:                      ),
+2391:                      child: FittedBox(
+2392:                        fit: BoxFit.scaleDown,
+2393:                      child: Text(
+2394:                        "Exit",
+2395:                        style: GoogleFonts.poppins(
+2396:                            fontSize: screenWidth * 0.035,
+2397:                          fontWeight: FontWeight.w600,
+2398:                          ),
+2399:                        ),
+2400:                      ),
+2401:                    ),
+2402:                  ),
+2403:                ],
+2404:              ),
+2405:            ],
+2406:          ),
+2407:        ),
+2408:      );
+2409:    },
+2410:  ) ?? false;
+2411:}

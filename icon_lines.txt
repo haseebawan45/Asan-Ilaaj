@@ -1,0 +1,80 @@
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:  // Icon size scaling based on screen width
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:  static double scaleIconSize(BuildContext context, double size) {
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:    final double iconSize = ResponsiveUtils.scaleIconSize(context, isSmall ? 20 : 24);
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                                  Icon(
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                                    Icons.payments_rounded,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                                    size: ResponsiveUtils.scaleIconSize(context, 16),
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                        icon: Icons.star_rounded,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                        icon: Icons.people_alt_rounded,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                        icon: Icons.medical_services_rounded,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                                    Icon(
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                                      LucideIcons.building2,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                                      size: ResponsiveUtils.scaleIconSize(context, 16),
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                  Icon(
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                    MdiIcons.hospitalBuilding,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:    final double iconSize = ResponsiveUtils.scaleIconSize(context, 24);
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                          child: Icon(
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                            MdiIcons.hospitalBuilding,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                            Icon(
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                              Icons.location_on,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                              size: ResponsiveUtils.scaleIconSize(context, 14),
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                            ? Icon(
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                                Icons.check,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                        child: Icon(
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                          MdiIcons.hospitalBuilding,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                                  Icon(
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                                    Icons.location_on,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                                    size: ResponsiveUtils.scaleIconSize(context, 14),
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                            ? Icon(
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                                Icons.check,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:    final double iconSize = ResponsiveUtils.scaleIconSize(context, isSmall ? 20 : 24);
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                leftChevronIcon: Icon(Icons.chevron_left, color: kPrimaryColor),
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                rightChevronIcon: Icon(Icons.chevron_right, color: kPrimaryColor),
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:              child: Icon(
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                    Icons.calendar_today,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:              child: Icon(
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                    Icons.event_busy,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                        icon: Icon(Icons.arrow_forward, size: ResponsiveUtils.scaleIconSize(context, 18)),
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                        icon: Icon(Icons.local_hospital, size: ResponsiveUtils.scaleIconSize(context, 18)),
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                        icon: Icon(Icons.arrow_forward, size: ResponsiveUtils.scaleIconSize(context, 18)),
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                        icon: Icon(Icons.local_hospital, size: ResponsiveUtils.scaleIconSize(context, 18)),
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                  Icon(
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                    Icons.support_agent,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:              Icon(Icons.info_outline, size: ResponsiveUtils.scaleIconSize(context, 16), color: Colors.grey.shade600),
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:    final double iconSize = ResponsiveUtils.scaleIconSize(context, isSmall ? 20 : 24);
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:              Icon(
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                Icons.warning_amber_rounded,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                icon: MdiIcons.doctor,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                icon: MdiIcons.hospitalBuilding,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                icon: MdiIcons.calendar,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                  icon: MdiIcons.cash,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                      Icon(
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                        Icons.info_outline,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:              Icon(
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                Icons.verified_user,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:    required IconData icon,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:    final double iconSize = ResponsiveUtils.scaleIconSize(context, isSmall ? 20 : 22);
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:          child: Icon(
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:        leading: IconButton(
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:          icon: Icon(
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:            Icons.arrow_back_ios_new, 
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:            size: ResponsiveUtils.scaleIconSize(context, 20)
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:          IconButton(
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:            icon: Icon(
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:              Icons.help_outline, 
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:              size: ResponsiveUtils.scaleIconSize(context, 22)
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                Icon(
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                  Icons.error_outline, 
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                  size: ResponsiveUtils.scaleIconSize(context, 24),
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:              final double iconSize = ResponsiveUtils.scaleIconSize(
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:    final IconData buttonIcon = isPaymentStep ? Icons.payment_rounded : Icons.arrow_forward;
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                    Icon(
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                      buttonIcon,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:    final double iconSize = ResponsiveUtils.scaleIconSize(context, isSmall ? 28 : 32);
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:    final double innerIconSize = ResponsiveUtils.scaleIconSize(context, isSmall ? 24 : 28);
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                ? Icon(Icons.check, color: Colors.white, size: ResponsiveUtils.scaleIconSize(context, 16))
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                    width: isActive ? innerIconSize : innerIconSize * 0.95,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:                    height: isActive ? innerIconSize : innerIconSize * 0.95,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:    required IconData icon,
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:          Icon(
+lib\views\screens\patient\appointment\simplified_booking_flow.dart:            size: ResponsiveUtils.scaleIconSize(context, 24),
