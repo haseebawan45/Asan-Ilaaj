@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:healthcare/views/screens/dashboard/menu.dart'; // Import for UserType enum
+import 'package:healthcare/utils/ui_helper.dart'; // Add this import for status bar handling
 
 class FAQScreen extends StatefulWidget {
   final UserType? userType; // Make parameter nullable
@@ -402,6 +403,10 @@ class _FAQScreenState extends State<FAQScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    
+    // Apply transparent status bar for this screen
+    UIHelper.applyTransparentStatusBar(withPostFrameCallback: true);
+    
     _expanded = List.generate(_faqData.length, (index) => false);
     _controllers = List.generate(
       _faqData.length, 
@@ -414,6 +419,9 @@ class _FAQScreenState extends State<FAQScreen> with TickerProviderStateMixin {
   
   @override
   void dispose() {
+    // Restore pink status bar before leaving
+    UIHelper.applyPinkStatusBar();
+    
     _searchController.dispose();
     for (var controller in _controllers) {
       controller.dispose();
@@ -459,421 +467,432 @@ class _FAQScreenState extends State<FAQScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(0xFFF8F9FA),
-      appBar: AppBar(
-        leading: IconButton(
-          icon: Icon(LucideIcons.arrowLeft, color: Color(0xFF333333)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Column(
-          children: [
-            Text(
-          "Frequently Asked Questions",
-          style: GoogleFonts.poppins(
-            color: Color(0xFF333333),
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
+    return WillPopScope(
+      onWillPop: () async {
+        // Apply pink status bar before popping back
+        UIHelper.applyPinkStatusBar(withPostFrameCallback: true);
+        return true;
+      },
+      child: Scaffold(
+        backgroundColor: Color(0xFFF8F9FA),
+        appBar: AppBar(
+          leading: IconButton(
+            icon: Icon(LucideIcons.arrowLeft, color: Color(0xFF333333)),
+            onPressed: () {
+              // Apply pink status bar before navigating back
+              UIHelper.applyPinkStatusBar(withPostFrameCallback: true);
+              Navigator.pop(context);
+            },
           ),
-            ),
-            if (widget.userType == null)
+          title: Column(
+            children: [
               Text(
-                "(Showing all FAQs)",
+                "Frequently Asked Questions",
                 style: GoogleFonts.poppins(
-                  color: Color(0xFF777777),
-                  fontWeight: FontWeight.w400,
-                  fontSize: 12,
-                ),
-              ),
-            if (widget.userType == UserType.doctor)
-              Text(
-                "(Doctor view)",
-                style: GoogleFonts.poppins(
-                  color: Color(0xFFFF3F80), // Pink for doctor
-                  fontWeight: FontWeight.w500,
-                  fontSize: 12,
-                ),
-              ),
-            if (widget.userType == UserType.patient)
-              Text(
-                "(Patient view)",
-                style: GoogleFonts.poppins(
-                  color: Color(0xFF30A9C7), // Teal for patient
-                  fontWeight: FontWeight.w500,
-                  fontSize: 12,
-                ),
-              ),
-          ],
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: Column(
-        children: [
-          // Search bar
-          Container(
-            padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
-            color: Colors.white,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Color(0xFFF5F7FF),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: TextField(
-                controller: _searchController,
-                style: GoogleFonts.poppins(
-                  fontSize: 15,
                   color: Color(0xFF333333),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
                 ),
-                decoration: InputDecoration(
-                  hintText: "Search FAQs",
-                  hintStyle: GoogleFonts.poppins(
-                    color: Colors.grey.shade400,
-                    fontSize: 15,
-                  ),
-                  prefixIcon: Icon(
-                    LucideIcons.search,
-                    color: Color(0xFF3366FF),
-                    size: 20,
-                  ),
-                  suffixIcon: _searchQuery.isNotEmpty ? IconButton(
-                    icon: Icon(LucideIcons.x, size: 18),
-                    onPressed: () {
-                      setState(() {
-                        _searchController.clear();
-                        _searchQuery = "";
-                      });
-                    },
-                  ) : null,
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(vertical: 14),
-                ),
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                  });
-                },
               ),
-            ),
-          ),
-          
-          // Categories
-          Container(
-            height: 90,
-            padding: EdgeInsets.symmetric(vertical: 16),
-            color: Colors.white,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _categories.length,
-              itemBuilder: (context, index) {
-                final isSelected = _selectedCategoryIndex == index;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedCategoryIndex = index;
-                    });
-                  },
-                  child: Container(
-                    width: 100,
-                    margin: EdgeInsets.only(right: 12),
-                    decoration: BoxDecoration(
-                      color: isSelected 
-                          ? Color(_categories[index]["color"]).withOpacity(0.1)
-                          : Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected
-                            ? Color(_categories[index]["color"]).withOpacity(0.5)
-                            : Colors.grey.shade200,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          _categories[index]["icon"],
-                          color: Color(_categories[index]["color"]),
-                          size: 24,
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          _categories[index]["name"],
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: isSelected
-                                ? Color(_categories[index]["color"])
-                                : Color(0xFF666666),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          
-          // FAQ list header
-          Padding(
-            padding: EdgeInsets.all(16),
-            child: Row(
-              children: [
+              if (widget.userType == null)
                 Text(
-                  "FAQs",
+                  "(Showing all FAQs)",
                   style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF777777),
+                    fontWeight: FontWeight.w400,
+                    fontSize: 12,
+                  ),
+                ),
+              if (widget.userType == UserType.doctor)
+                Text(
+                  "(Doctor view)",
+                  style: GoogleFonts.poppins(
+                    color: Color(0xFFFF3F80), // Pink for doctor
+                    fontWeight: FontWeight.w500,
+                    fontSize: 12,
+                  ),
+                ),
+              if (widget.userType == UserType.patient)
+                Text(
+                  "(Patient view)",
+                  style: GoogleFonts.poppins(
+                    color: Color(0xFF30A9C7), // Teal for patient
+                    fontWeight: FontWeight.w500,
+                    fontSize: 12,
+                  ),
+                ),
+            ],
+          ),
+          centerTitle: true,
+          backgroundColor: Colors.white,
+          elevation: 0,
+        ),
+        body: Column(
+          children: [
+            // Search bar
+            Container(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+              color: Colors.white,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Color(0xFFF5F7FF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: TextField(
+                  controller: _searchController,
+                  style: GoogleFonts.poppins(
+                    fontSize: 15,
                     color: Color(0xFF333333),
                   ),
-                ),
-                SizedBox(width: 8),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Color(0xFF3366FF).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    "${filteredFAQs.length}",
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF3366FF),
+                  decoration: InputDecoration(
+                    hintText: "Search FAQs",
+                    hintStyle: GoogleFonts.poppins(
+                      color: Colors.grey.shade400,
+                      fontSize: 15,
                     ),
+                    prefixIcon: Icon(
+                      LucideIcons.search,
+                      color: Color(0xFF3366FF),
+                      size: 20,
+                    ),
+                    suffixIcon: _searchQuery.isNotEmpty ? IconButton(
+                      icon: Icon(LucideIcons.x, size: 18),
+                      onPressed: () {
+                        setState(() {
+                          _searchController.clear();
+                          _searchQuery = "";
+                        });
+                      },
+                    ) : null,
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(vertical: 14),
                   ),
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
                 ),
-                Spacer(),
-                // Debug button
-                GestureDetector(
-                  onTap: () {
-                    // Count FAQ types
-                    int doctorFAQs = 0;
-                    int patientFAQs = 0;
-                    int generalFAQs = 0;
-                    
-                    // Count by category
-                    Map<String, int> doctorFAQsByCategory = {};
-                    Map<String, int> patientFAQsByCategory = {};
-                    Map<String, int> generalFAQsByCategory = {};
-                    
-                    for (var category in _categories) {
-                      if (category["name"] != "All") {
-                        doctorFAQsByCategory[category["name"]] = 0;
-                        patientFAQsByCategory[category["name"]] = 0;
-                        generalFAQsByCategory[category["name"]] = 0;
-                      }
-                    }
-                    
-                    for (var faq in _faqData) {
-                      String category = faq["category"];
-                      if (faq.containsKey("forUserType")) {
-                        if (faq["forUserType"] == "doctor") {
-                          doctorFAQs++;
-                          doctorFAQsByCategory[category] = (doctorFAQsByCategory[category] ?? 0) + 1;
-                        } else if (faq["forUserType"] == "patient") {
-                          patientFAQs++;
-                          patientFAQsByCategory[category] = (patientFAQsByCategory[category] ?? 0) + 1;
-                        }
-                      } else {
-                        generalFAQs++;
-                        generalFAQsByCategory[category] = (generalFAQsByCategory[category] ?? 0) + 1;
-                      }
-                    }
-                    
-                    // Show dialog with counts
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: Text("FAQ Type Counts", style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-                        content: SingleChildScrollView(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Current user type: ${widget.userType == null ? 'None (showing all)' : (widget.userType == UserType.doctor ? 'Doctor' : 'Patient')}",
-                                style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-                              ),
-                              Divider(),
-                              Text("Summary:", style: GoogleFonts.poppins(fontWeight: FontWeight.w500)),
-                              Text("Doctor-specific FAQs: $doctorFAQs", 
-                                style: GoogleFonts.poppins(color: Color(0xFFFF3F80)),
-                              ),
-                              Text("Patient-specific FAQs: $patientFAQs", 
-                                style: GoogleFonts.poppins(color: Color(0xFF30A9C7)),
-                              ),
-                              Text("General FAQs: $generalFAQs", 
-                                style: GoogleFonts.poppins(color: Color(0xFF3366FF)),
-                              ),
-                              Text("Total FAQs: ${_faqData.length}", 
-                                style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
-                              ),
-                              
-                              Divider(),
-                              Text("By category:", style: GoogleFonts.poppins(fontWeight: FontWeight.w500)),
-                              SizedBox(height: 8),
-                              
-                              // Show counts by category
-                              for (var category in _categories)
-                                if (category["name"] != "All") ...[
-                                  Text(
-                                    category["name"], 
-                                    style: GoogleFonts.poppins(
-                                      fontWeight: FontWeight.w500, 
-                                      color: Color(category["color"]),
-                                    ),
-                                  ),
-                                  Row(
-                                    children: [
-                                      Container(
-                                        width: 60,
-                                        child: Text(
-                                          "Doctor:", 
-                                          style: GoogleFonts.poppins(fontSize: 12),
-                                        ),
-                                      ),
-                                      Text(
-                                        "${doctorFAQsByCategory[category["name"]] ?? 0}", 
-                                        style: GoogleFonts.poppins(color: Color(0xFFFF3F80)),
-                                      ),
-                                    ],
-                                  ),
-                                  Row(
-                                    children: [
-                                      Container(
-                                        width: 60,
-                                        child: Text(
-                                          "Patient:", 
-                                          style: GoogleFonts.poppins(fontSize: 12),
-                                        ),
-                                      ),
-                                      Text(
-                                        "${patientFAQsByCategory[category["name"]] ?? 0}", 
-                                        style: GoogleFonts.poppins(color: Color(0xFF30A9C7)),
-                                      ),
-                                    ],
-                                  ),
-                                  Row(
-                                    children: [
-                                      Container(
-                                        width: 60,
-                                        child: Text(
-                                          "General:", 
-                                          style: GoogleFonts.poppins(fontSize: 12),
-                                        ),
-                                      ),
-                                      Text(
-                                        "${generalFAQsByCategory[category["name"]] ?? 0}", 
-                                        style: GoogleFonts.poppins(color: Color(0xFF3366FF)),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 8),
-                                ],
-                              
-                              Divider(),
-                              Text("Filtering logic:", style: GoogleFonts.poppins(fontWeight: FontWeight.w500)),
-                              SizedBox(height: 4),
-                              Text(
-                                "• Doctor view: Shows doctor-specific + general FAQs = ${doctorFAQs + generalFAQs} FAQs", 
-                                style: GoogleFonts.poppins(fontSize: 12, color: Color(0xFFFF3F80)),
-                              ),
-                              Text(
-                                "• Patient view: Shows patient-specific + general FAQs = ${patientFAQs + generalFAQs} FAQs", 
-                                style: GoogleFonts.poppins(fontSize: 12, color: Color(0xFF30A9C7)),
-                              ),
-                              Text(
-                                "• All view: Shows all FAQs = ${_faqData.length} FAQs", 
-                                style: GoogleFonts.poppins(fontSize: 12, color: Color(0xFF3366FF)),
-                              ),
-                              SizedBox(height: 8),
-                              Divider(),
-                              Text("Current view summary:", style: GoogleFonts.poppins(fontWeight: FontWeight.w500)),
-                              if (widget.userType == null)
-                                Text("Currently showing all FAQs (${_faqData.length})", 
-                                  style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500)),
-                              if (widget.userType == UserType.doctor)
-                                Text("Currently showing ${doctorFAQs} doctor FAQs + ${generalFAQs} general FAQs = ${doctorFAQs + generalFAQs} total", 
-                                  style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFFFF3F80))),
-                              if (widget.userType == UserType.patient)
-                                Text("Currently showing ${patientFAQs} patient FAQs + ${generalFAQs} general FAQs = ${patientFAQs + generalFAQs} total", 
-                                  style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF30A9C7))),
-                            ],
-                          ),
+              ),
+            ),
+            
+            // Categories
+            Container(
+              height: 90,
+              padding: EdgeInsets.symmetric(vertical: 16),
+              color: Colors.white,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                itemCount: _categories.length,
+                itemBuilder: (context, index) {
+                  final isSelected = _selectedCategoryIndex == index;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedCategoryIndex = index;
+                      });
+                    },
+                    child: Container(
+                      width: 100,
+                      margin: EdgeInsets.only(right: 12),
+                      decoration: BoxDecoration(
+                        color: isSelected 
+                            ? Color(_categories[index]["color"]).withOpacity(0.1)
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected
+                              ? Color(_categories[index]["color"]).withOpacity(0.5)
+                              : Colors.grey.shade200,
                         ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: Text("Close", style: GoogleFonts.poppins()),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            _categories[index]["icon"],
+                            color: Color(_categories[index]["color"]),
+                            size: 24,
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            _categories[index]["name"],
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: isSelected
+                                  ? Color(_categories[index]["color"])
+                                  : Color(0xFF666666),
+                            ),
                           ),
                         ],
                       ),
-                    );
-                  },
-                  child: Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      LucideIcons.info,
-                      size: 20,
-                      color: Color(0xFF3366FF),
+                  );
+                },
+              ),
+            ),
+            
+            // FAQ list header
+            Padding(
+              padding: EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Text(
+                    "FAQs",
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF333333),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          
-          // FAQ list
-          Expanded(
-            child: filteredFAQs.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          LucideIcons.search,
-                          size: 64,
-                          color: Colors.grey.shade400,
-                        ),
-                        SizedBox(height: 16),
-                        Text(
-                          "No FAQs found",
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF666666),
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          "Try changing your search or category",
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: Colors.grey.shade500,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                  SizedBox(width: 8),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Color(0xFF3366FF).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  )
-                : ListView.builder(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: filteredFAQs.length,
-          itemBuilder: (context, index) {
-                      final originalIndex = _faqData.indexOf(filteredFAQs[index]);
-                      return _buildFAQItem(filteredFAQs[index], originalIndex);
-          },
+                    child: Text(
+                      "${filteredFAQs.length}",
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF3366FF),
+                      ),
+                    ),
+                  ),
+                  Spacer(),
+                  // Debug button
+                  GestureDetector(
+                    onTap: () {
+                      // Count FAQ types
+                      int doctorFAQs = 0;
+                      int patientFAQs = 0;
+                      int generalFAQs = 0;
+                      
+                      // Count by category
+                      Map<String, int> doctorFAQsByCategory = {};
+                      Map<String, int> patientFAQsByCategory = {};
+                      Map<String, int> generalFAQsByCategory = {};
+                      
+                      for (var category in _categories) {
+                        if (category["name"] != "All") {
+                          doctorFAQsByCategory[category["name"]] = 0;
+                          patientFAQsByCategory[category["name"]] = 0;
+                          generalFAQsByCategory[category["name"]] = 0;
+                        }
+                      }
+                      
+                      for (var faq in _faqData) {
+                        String category = faq["category"];
+                        if (faq.containsKey("forUserType")) {
+                          if (faq["forUserType"] == "doctor") {
+                            doctorFAQs++;
+                            doctorFAQsByCategory[category] = (doctorFAQsByCategory[category] ?? 0) + 1;
+                          } else if (faq["forUserType"] == "patient") {
+                            patientFAQs++;
+                            patientFAQsByCategory[category] = (patientFAQsByCategory[category] ?? 0) + 1;
+                          }
+                        } else {
+                          generalFAQs++;
+                          generalFAQsByCategory[category] = (generalFAQsByCategory[category] ?? 0) + 1;
+                        }
+                      }
+                      
+                      // Show dialog with counts
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: Text("FAQ Type Counts", style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                          content: SingleChildScrollView(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Current user type: ${widget.userType == null ? 'None (showing all)' : (widget.userType == UserType.doctor ? 'Doctor' : 'Patient')}",
+                                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                                ),
+                                Divider(),
+                                Text("Summary:", style: GoogleFonts.poppins(fontWeight: FontWeight.w500)),
+                                Text("Doctor-specific FAQs: $doctorFAQs", 
+                                  style: GoogleFonts.poppins(color: Color(0xFFFF3F80)),
+                                ),
+                                Text("Patient-specific FAQs: $patientFAQs", 
+                                  style: GoogleFonts.poppins(color: Color(0xFF30A9C7)),
+                                ),
+                                Text("General FAQs: $generalFAQs", 
+                                  style: GoogleFonts.poppins(color: Color(0xFF3366FF)),
+                                ),
+                                Text("Total FAQs: ${_faqData.length}", 
+                                  style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+                                ),
+                                
+                                Divider(),
+                                Text("By category:", style: GoogleFonts.poppins(fontWeight: FontWeight.w500)),
+                                SizedBox(height: 8),
+                                
+                                // Show counts by category
+                                for (var category in _categories)
+                                  if (category["name"] != "All") ...[
+                                    Text(
+                                      category["name"], 
+                                      style: GoogleFonts.poppins(
+                                        fontWeight: FontWeight.w500, 
+                                        color: Color(category["color"]),
+                                      ),
+                                    ),
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 60,
+                                          child: Text(
+                                            "Doctor:", 
+                                            style: GoogleFonts.poppins(fontSize: 12),
+                                          ),
+                                        ),
+                                        Text(
+                                          "${doctorFAQsByCategory[category["name"]] ?? 0}", 
+                                          style: GoogleFonts.poppins(color: Color(0xFFFF3F80)),
+                                        ),
+                                      ],
+                                    ),
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 60,
+                                          child: Text(
+                                            "Patient:", 
+                                            style: GoogleFonts.poppins(fontSize: 12),
+                                          ),
+                                        ),
+                                        Text(
+                                          "${patientFAQsByCategory[category["name"]] ?? 0}", 
+                                          style: GoogleFonts.poppins(color: Color(0xFF30A9C7)),
+                                        ),
+                                      ],
+                                    ),
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 60,
+                                          child: Text(
+                                            "General:", 
+                                            style: GoogleFonts.poppins(fontSize: 12),
+                                          ),
+                                        ),
+                                        Text(
+                                          "${generalFAQsByCategory[category["name"]] ?? 0}", 
+                                          style: GoogleFonts.poppins(color: Color(0xFF3366FF)),
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 8),
+                                  ],
+                                
+                                Divider(),
+                                Text("Filtering logic:", style: GoogleFonts.poppins(fontWeight: FontWeight.w500)),
+                                SizedBox(height: 4),
+                                Text(
+                                  "• Doctor view: Shows doctor-specific + general FAQs = ${doctorFAQs + generalFAQs} FAQs", 
+                                  style: GoogleFonts.poppins(fontSize: 12, color: Color(0xFFFF3F80)),
+                                ),
+                                Text(
+                                  "• Patient view: Shows patient-specific + general FAQs = ${patientFAQs + generalFAQs} FAQs", 
+                                  style: GoogleFonts.poppins(fontSize: 12, color: Color(0xFF30A9C7)),
+                                ),
+                                Text(
+                                  "• All view: Shows all FAQs = ${_faqData.length} FAQs", 
+                                  style: GoogleFonts.poppins(fontSize: 12, color: Color(0xFF3366FF)),
+                                ),
+                                SizedBox(height: 8),
+                                Divider(),
+                                Text("Current view summary:", style: GoogleFonts.poppins(fontWeight: FontWeight.w500)),
+                                if (widget.userType == null)
+                                  Text("Currently showing all FAQs (${_faqData.length})", 
+                                    style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500)),
+                                if (widget.userType == UserType.doctor)
+                                  Text("Currently showing ${doctorFAQs} doctor FAQs + ${generalFAQs} general FAQs = ${doctorFAQs + generalFAQs} total", 
+                                    style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFFFF3F80))),
+                                if (widget.userType == UserType.patient)
+                                  Text("Currently showing ${patientFAQs} patient FAQs + ${generalFAQs} general FAQs = ${patientFAQs + generalFAQs} total", 
+                                    style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF30A9C7))),
+                              ],
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: Text("Close", style: GoogleFonts.poppins()),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        LucideIcons.info,
+                        size: 20,
+                        color: Color(0xFF3366FF),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // FAQ list
+            Expanded(
+              child: filteredFAQs.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            LucideIcons.search,
+                            size: 64,
+                            color: Colors.grey.shade400,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            "No FAQs found",
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF666666),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            "Try changing your search or category",
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: Colors.grey.shade500,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: filteredFAQs.length,
+                      itemBuilder: (context, index) {
+                        final originalIndex = _faqData.indexOf(filteredFAQs[index]);
+                        return _buildFAQItem(filteredFAQs[index], originalIndex);
+                      },
+                    ),
+            ),
+          ],
         ),
-          ),
-        ],
       ),
     );
   }
@@ -925,16 +944,16 @@ class _FAQScreenState extends State<FAQScreen> with TickerProviderStateMixin {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-          onTap: () {
-            setState(() {
-              _expanded[index] = !_expanded[index];
+            onTap: () {
+              setState(() {
+                _expanded[index] = !_expanded[index];
                 if (_expanded[index]) {
                   _controllers[index].forward();
                 } else {
                   _controllers[index].reverse();
                 }
-            });
-          },
+              });
+            },
             child: Column(
               children: [
                 Padding(
@@ -970,7 +989,7 @@ class _FAQScreenState extends State<FAQScreen> with TickerProviderStateMixin {
                                     width: 1,
                                   ),
                                 ),
-                          child: Text(
+                                child: Text(
                                   userTypeBadge,
                                   style: GoogleFonts.poppins(
                                     fontSize: 10,
@@ -981,12 +1000,12 @@ class _FAQScreenState extends State<FAQScreen> with TickerProviderStateMixin {
                               ),
                             // Question text
                             Text(
-                          faq["question"],
-                            style: GoogleFonts.poppins(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF333333),
-                          ),
+                              faq["question"],
+                              style: GoogleFonts.poppins(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF333333),
+                              ),
                             ),
                           ],
                         ),
@@ -998,8 +1017,8 @@ class _FAQScreenState extends State<FAQScreen> with TickerProviderStateMixin {
                           LucideIcons.chevronDown,
                           color: Color(0xFF3366FF),
                           size: 20,
-                          ),
                         ),
+                      ),
                     ],
                   ),
                 ),
