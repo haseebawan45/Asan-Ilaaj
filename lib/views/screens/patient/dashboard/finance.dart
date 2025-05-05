@@ -596,3 +596,4 @@ class _PatientFinancesScreenState extends State<PatientFinancesScreen> with Sing
   }
 }
 
+

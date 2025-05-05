@@ -23,6 +23,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:healthcare/views/screens/dashboard/home.dart';
 import 'package:healthcare/views/screens/doctor/complete_profile/doctor_profile_page1.dart';
+import 'package:flutter/services.dart';
 
 enum UserType { doctor, patient }
 
@@ -75,6 +76,19 @@ class _MenuScreenState extends State<MenuScreen> {
   @override
   void initState() {
     super.initState();
+    
+    // Apply system UI overlay style directly with delay to ensure it happens after any other settings
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+        statusBarColor: AppTheme.primaryPink,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+        // Adding these for completeness
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarDividerColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ));
+    });
     
     // Set up global error handling
     FlutterError.onError = (FlutterErrorDetails details) {
@@ -435,6 +449,13 @@ class _MenuScreenState extends State<MenuScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Reapply UI style on every build to be absolutely sure it takes effect
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: AppTheme.primaryPink,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+    ));
+    
     return WillPopScope(
       onWillPop: () async {
         // Navigate to the bottom navigation bar with home tab selected
@@ -461,7 +482,21 @@ class _MenuScreenState extends State<MenuScreen> {
         }
         return false; // Prevent default back button behavior
       },
+      // Using a real AppBar is critical for status bar coloring on many devices
       child: Scaffold(
+        // This "invisible" AppBar is the key to reliable status bar coloring
+        appBar: PreferredSize(
+          preferredSize: Size.zero,
+          child: AppBar(
+            backgroundColor: AppTheme.primaryPink,
+            elevation: 0,
+            systemOverlayStyle: SystemUiOverlayStyle(
+              statusBarColor: AppTheme.primaryPink,
+              statusBarIconBrightness: Brightness.light,
+              statusBarBrightness: Brightness.dark,
+            ),
+          ),
+        ),
         backgroundColor: Colors.grey.shade50,
         body: Stack(
           children: [

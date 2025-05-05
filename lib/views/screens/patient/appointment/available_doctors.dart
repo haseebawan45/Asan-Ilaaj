@@ -8,6 +8,7 @@ import 'dart:async';
 import 'package:healthcare/views/screens/patient/appointment/simplified_booking_flow.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:flutter/services.dart';
 
 class DoctorsScreen extends StatefulWidget {
   final String? specialty;
@@ -797,171 +798,178 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
     // and no specialty has been selected from the filter
     final bool shouldHideCategoryTabs = viewingSpecificSpecialty;
     
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFF),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(context),
-                _buildSearchBar(context),
-                _buildFilterBar(context),
-                // Only show category tabs if not viewing a specific specialty from widget
-                if (!shouldHideCategoryTabs)
-                  _buildCategoryTabs(context),
-                // Show loading indicator, error message, or doctor list
-                _isLoading 
-                  ? Expanded(
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: width * 0.1,
-                            height: width * 0.1,
-                            child: CircularProgressIndicator(
-                              color: const Color(0xFF30A9C7),
-                              strokeWidth: width * 0.008,
-                            ),
-                          ),
-                          SizedBox(height: height * 0.02),
-                          Text(
-                            "Loading doctors...",
-                            style: GoogleFonts.poppins(
-                              fontSize: width * 0.035,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                  : _errorMessage != null
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: const Color(0xFF30A9C7), // Match app bar color
+        statusBarIconBrightness: Brightness.light, // White status bar icons
+        statusBarBrightness: Brightness.dark, // For iOS
+      ),
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8FAFF),
+        body: SafeArea(
+          child: Stack(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(context),
+                  _buildSearchBar(context),
+                  _buildFilterBar(context),
+                  // Only show category tabs if not viewing a specific specialty from widget
+                  if (!shouldHideCategoryTabs)
+                    _buildCategoryTabs(context),
+                  // Show loading indicator, error message, or doctor list
+                  _isLoading 
                     ? Expanded(
                       child: Center(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: width * 0.05),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.error_outline,
-                                color: Colors.red.shade400,
-                                size: width * 0.12,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: width * 0.1,
+                              height: width * 0.1,
+                              child: CircularProgressIndicator(
+                                color: const Color(0xFF30A9C7),
+                                strokeWidth: width * 0.008,
                               ),
-                              SizedBox(height: height * 0.02),
-                              Text(
-                                "Oops! Something went wrong",
-                                style: GoogleFonts.poppins(
-                                  fontSize: width * 0.04,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey.shade800,
-                                ),
-                                textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: height * 0.02),
+                            Text(
+                              "Loading doctors...",
+                              style: GoogleFonts.poppins(
+                                fontSize: width * 0.035,
+                                color: Colors.grey.shade600,
                               ),
-                              SizedBox(height: height * 0.01),
-                              Text(
-                                _errorMessage!,
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.poppins(
-                                  fontSize: width * 0.035,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                              SizedBox(height: height * 0.025),
-                              ElevatedButton.icon(
-                                onPressed: _fetchDoctors,
-                                icon: Icon(Icons.refresh, size: width * 0.045),
-                                label: Text(
-                                  "Try Again",
-                                  style: GoogleFonts.poppins(
-                                    fontSize: width * 0.04,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF30A9C7),
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(width * 0.05),
-                                  ),
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: width * 0.05, 
-                                    vertical: height * 0.012
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     )
-                    : filteredDoctors.isEmpty
+                    : _errorMessage != null
                       ? Expanded(
                         child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                LucideIcons.userX,
-                                color: Colors.grey.shade400,
-                                size: width * 0.12,
-                              ),
-                              SizedBox(height: height * 0.02),
-                              Text(
-                                _getEmptyStateText(),
-                                style: GoogleFonts.poppins(
-                                  fontSize: width * 0.04,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey.shade800,
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: width * 0.05),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  color: Colors.red.shade400,
+                                  size: width * 0.12,
                                 ),
-                                textAlign: TextAlign.center,
-                              ),
-                              SizedBox(height: height * 0.01),
-                              Text(
-                                "Try changing your search criteria",
-                                style: GoogleFonts.poppins(
-                                  fontSize: width * 0.035,
-                                  color: Colors.grey.shade600,
+                                SizedBox(height: height * 0.02),
+                                Text(
+                                  "Oops! Something went wrong",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: width * 0.04,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey.shade800,
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
+                                SizedBox(height: height * 0.01),
+                                Text(
+                                  _errorMessage!,
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: width * 0.035,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                                SizedBox(height: height * 0.025),
+                                ElevatedButton.icon(
+                                  onPressed: _fetchDoctors,
+                                  icon: Icon(Icons.refresh, size: width * 0.045),
+                                  label: Text(
+                                    "Try Again",
+                                    style: GoogleFonts.poppins(
+                                      fontSize: width * 0.04,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF30A9C7),
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(width * 0.05),
+                                    ),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: width * 0.05, 
+                                      vertical: height * 0.012
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       )
-                      : Expanded(
-                        child: RefreshIndicator(
-                          color: const Color(0xFF30A9C7),
-                          backgroundColor: Colors.white,
-                          strokeWidth: 2.5,
-                          onRefresh: () async {
-                            // Refresh data when user pulls down
-                            _fetchDoctorsWithRefresh();
-                          },
-                          child: _buildDoctorsList(context),
+                      : filteredDoctors.isEmpty
+                        ? Expanded(
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  LucideIcons.userX,
+                                  color: Colors.grey.shade400,
+                                  size: width * 0.12,
+                                ),
+                                SizedBox(height: height * 0.02),
+                                Text(
+                                  _getEmptyStateText(),
+                                  style: GoogleFonts.poppins(
+                                    fontSize: width * 0.04,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey.shade800,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                SizedBox(height: height * 0.01),
+                                Text(
+                                  "Try changing your search criteria",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: width * 0.035,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                        : Expanded(
+                          child: RefreshIndicator(
+                            color: const Color(0xFF30A9C7),
+                            backgroundColor: Colors.white,
+                            strokeWidth: 2.5,
+                            onRefresh: () async {
+                              // Refresh data when user pulls down
+                              _fetchDoctorsWithRefresh();
+                            },
+                            child: _buildDoctorsList(context),
+                          ),
                         ),
-                      ),
-              ],
-            ),
-            
-            // Add LinearProgressIndicator at bottom when refreshing data
-            if (_isRefreshing)
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  height: 2,
-                  child: LinearProgressIndicator(
-                    backgroundColor: Colors.transparent,
-                    valueColor: AlwaysStoppedAnimation<Color>(const Color(0xFF30A9C7)),
+                ],
+              ),
+              
+              // Add LinearProgressIndicator at bottom when refreshing data
+              if (_isRefreshing)
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: 2,
+                    child: LinearProgressIndicator(
+                      backgroundColor: Colors.transparent,
+                      valueColor: AlwaysStoppedAnimation<Color>(const Color(0xFF30A9C7)),
+                    ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1478,39 +1486,38 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
     }
     
     // Get gender-based color
-    Color genderBgColor = Colors.grey.withOpacity(0.1);
-    Color genderTextColor = Colors.grey;
+    Color genderColor = Colors.grey;
     if (gender == "Male") {
-      genderBgColor = Colors.blue.withOpacity(0.1);
-      genderTextColor = Colors.blue;
+      genderColor = Colors.blue.shade600;
     } else if (gender == "Female") {
-      genderBgColor = Colors.pink.withOpacity(0.1);
-      genderTextColor = Colors.pink;
+      genderColor = Colors.pink.shade400;
     }
+
+    // Create a gradient based on the specialty color
+    List<Color> cardGradient = [
+      specialtyColor.withOpacity(0.7),
+      specialtyColor.withOpacity(0.4),
+    ];
     
     return Container(
-      margin: EdgeInsets.only(bottom: height * 0.02),
+      margin: EdgeInsets.only(bottom: height * 0.022),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(width * 0.05),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-            spreadRadius: 1,
+            color: specialtyColor.withOpacity(0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+            spreadRadius: 0,
           ),
           BoxShadow(
-            color: isInUserCity ? Colors.blue.withOpacity(0.08) : Colors.transparent,
-            blurRadius: 8,
-            offset: const Offset(0, 1),
-            spreadRadius: 1,
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+            spreadRadius: 0,
           ),
         ],
-        border: Border.all(
-          color: isInUserCity ? Colors.blue.shade300 : Colors.grey.shade100,
-          width: isInUserCity ? 2 : 1,
-        ),
       ),
       child: Material(
         color: Colors.transparent,
@@ -1529,44 +1536,38 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
             );
           },
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top section with accent color
+              // Top section with doctor info
               Container(
-                height: width * 0.03,
                 decoration: BoxDecoration(
-                  color: specialtyColor.withOpacity(0.15),
+                  color: specialtyColor.withOpacity(0.85),
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(width * 0.05),
                     topRight: Radius.circular(width * 0.05),
                   ),
                 ),
-              ),
-              
-              // Doctor info section
-              Padding(
-                padding: EdgeInsets.fromLTRB(width * 0.04, width * 0.03, width * 0.04, width * 0.03),
+                padding: EdgeInsets.all(width * 0.04),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // Doctor image with availability indicator
                     Stack(
                       children: [
                         Container(
-                          width: width * 0.2,
-                          height: width * 0.2,
+                          width: width * 0.17,
+                          height: width * 0.17,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
+                            color: Colors.white,
                             image: DecorationImage(
                               image: AssetImage(doctor["image"]),
                               fit: BoxFit.cover,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: specialtyColor.withOpacity(0.15),
+                                color: Colors.black.withOpacity(0.1),
                                 blurRadius: 10,
-                                offset: const Offset(0, 4),
-                                spreadRadius: 1,
+                                spreadRadius: 2,
                               ),
                             ],
                             border: Border.all(
@@ -1580,8 +1581,8 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
                             bottom: 0,
                             right: 0,
                             child: Container(
-                              width: width * 0.05,
-                              height: width * 0.05,
+                              width: width * 0.045,
+                              height: width * 0.045,
                               decoration: BoxDecoration(
                                 color: Colors.green,
                                 shape: BoxShape.circle,
@@ -1591,24 +1592,22 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.green.withOpacity(0.2),
+                                    color: Colors.black.withOpacity(0.1),
                                     blurRadius: 4,
                                     offset: const Offset(0, 2),
                                   ),
                                 ],
                               ),
-                              child: Center(
-                                child: Icon(
-                                  Icons.check,
-                                  color: Colors.white,
-                                  size: width * 0.03,
-                                ),
+                              child: Icon(
+                                LucideIcons.check,
+                                color: Colors.white,
+                                size: width * 0.025,
                               ),
                             ),
                           ),
                       ],
                     ),
-                    SizedBox(width: width * 0.04),
+                    SizedBox(width: width * 0.03),
                     
                     // Doctor details
                     Expanded(
@@ -1616,17 +1615,36 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Name
+                          Text(
+                            doctor["name"],
+                            style: GoogleFonts.poppins(
+                              fontSize: width * 0.042,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              height: 1.2,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                          
+                          SizedBox(height: height * 0.004),
+                          
+                          // Specialty with icon
                           Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Expanded(
+                              Icon(
+                                getSpecialtyIcon(doctor["specialty"]),
+                                color: Colors.white.withOpacity(0.9),
+                                size: width * 0.035,
+                              ),
+                              SizedBox(width: width * 0.01),
+                              Flexible(
                                 child: Text(
-                                  doctor["name"],
+                                  doctor["specialty"],
                                   style: GoogleFonts.poppins(
-                                    fontSize: width * 0.042,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black87,
-                                    height: 1.2,
+                                    fontSize: width * 0.03,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white.withOpacity(0.9),
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -1634,175 +1652,171 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
                             ],
                           ),
                           
-                          SizedBox(height: height * 0.006),
-                          
-                          // Specialty badge
+                          // Location with icon
                           Row(
                             children: [
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: width * 0.025, 
-                                  vertical: height * 0.004
-                                ),
-                                decoration: BoxDecoration(
-                                  color: specialtyColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(width * 0.05),
-                                  border: Border.all(
-                                    color: specialtyColor.withOpacity(0.3),
-                                    width: 1,
+                              Icon(
+                                LucideIcons.mapPin,
+                                color: Colors.white.withOpacity(0.8),
+                                size: width * 0.03,
+                              ),
+                              SizedBox(width: width * 0.01),
+                              Flexible(
+                                child: Text(
+                                  location,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: width * 0.028,
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.white.withOpacity(0.8),
                                   ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      getSpecialtyIcon(doctor["specialty"]),
-                                      color: specialtyColor,
-                                      size: width * 0.035,
-                                    ),
-                                    SizedBox(width: width * 0.01),
-                                    Text(
-                                      doctor["specialty"],
-                                      style: GoogleFonts.poppins(
-                                        fontSize: width * 0.03,
-                                        fontWeight: FontWeight.w500,
-                                        color: specialtyColor,
-                                      ),
-                                    ),
-                                  ],
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
                               ),
-                              
-                              // Availability badge if available
-                              if (isAvailable)
+                              if (isInUserCity)
                                 Container(
-                                  margin: EdgeInsets.only(left: width * 0.02),
+                                  margin: EdgeInsets.only(left: width * 0.01),
                                   padding: EdgeInsets.symmetric(
-                                    horizontal: width * 0.02, 
-                                    vertical: height * 0.004
+                                    horizontal: width * 0.01,
+                                    vertical: height * 0.001,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.green.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(width * 0.05),
-                                    border: Border.all(
-                                      color: Colors.green.withOpacity(0.3),
-                                      width: 1,
-                                    ),
+                                    color: Colors.white.withOpacity(0.25),
+                                    borderRadius: BorderRadius.circular(width * 0.01),
                                   ),
                                   child: Text(
-                                    "Available",
+                                    "Local",
                                     style: GoogleFonts.poppins(
-                                      fontSize: width * 0.025,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.green,
+                                      fontSize: width * 0.02,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
                                     ),
                                   ),
                                 ),
                             ],
                           ),
-                          
-                          SizedBox(height: height * 0.01),
-                          
-                          // Rating, experience, and gender row
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        ],
+                      ),
+                    ),
+                    
+                    // Gender badge in circular container
+                    Container(
+                      width: width * 0.08,
+                      height: width * 0.08,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Icon(
+                          genderIcon,
+                          color: Colors.white,
+                          size: width * 0.045,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Middle section with rating and experience
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: width * 0.04,
+                  vertical: height * 0.014,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Rating section
+                    Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(width * 0.015),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(width * 0.015),
+                          ),
+                          child: Row(
                             children: [
-                              // Rating
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: width * 0.02,
-                                      vertical: height * 0.004,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.amber.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(width * 0.02),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.star,
-                                          color: Colors.amber,
-                                          size: width * 0.035,
-                                        ),
-                                        SizedBox(width: width * 0.01),
-                                        Text(
-                                          ratingStr,
-                                          style: GoogleFonts.poppins(
-                                            fontSize: width * 0.03,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.amber.shade800,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  
-                                  // Experience
-                                  Container(
-                                    margin: EdgeInsets.only(left: width * 0.02),
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: width * 0.02,
-                                      vertical: height * 0.004,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF30A9C7).withOpacity(0.08),
-                                      borderRadius: BorderRadius.circular(width * 0.02),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          LucideIcons.briefcase,
-                                          color: const Color(0xFF30A9C7),
-                                          size: width * 0.035,
-                                        ),
-                                        SizedBox(width: width * 0.01),
-                                        Text(
-                                          experienceStr,
-                                          style: GoogleFonts.poppins(
-                                            fontSize: width * 0.03,
-                                            fontWeight: FontWeight.w500,
-                                            color: const Color(0xFF30A9C7),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
+                              Icon(
+                                LucideIcons.star,
+                                color: Colors.amber,
+                                size: width * 0.04,
                               ),
-                              
-                              // Gender badge
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: width * 0.02,
-                                  vertical: height * 0.004,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: genderBgColor,
-                                  borderRadius: BorderRadius.circular(width * 0.02),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      genderIcon,
-                                      color: genderTextColor,
-                                      size: width * 0.035,
-                                    ),
-                                    SizedBox(width: width * 0.01),
-                                    Text(
-                                      gender,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: width * 0.025,
-                                        fontWeight: FontWeight.w500,
-                                        color: genderTextColor,
-                                      ),
-                                    ),
-                                  ],
+                              SizedBox(width: width * 0.01),
+                              Text(
+                                ratingStr,
+                                style: GoogleFonts.poppins(
+                                  fontSize: width * 0.032,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.amber.shade800,
                                 ),
                               ),
                             ],
+                          ),
+                        ),
+                        SizedBox(width: width * 0.02),
+                        
+                        // Experience badge
+                        Container(
+                          padding: EdgeInsets.all(width * 0.015),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade50,
+                            borderRadius: BorderRadius.circular(width * 0.015),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                LucideIcons.briefcase,
+                                color: Colors.blue.shade600,
+                                size: width * 0.04,
+                              ),
+                              SizedBox(width: width * 0.01),
+                              Text(
+                                experienceStr,
+                                style: GoogleFonts.poppins(
+                                  fontSize: width * 0.032,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.blue.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    // Fee badge
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: width * 0.03,
+                        vertical: height * 0.008,
+                      ),
+                      decoration: BoxDecoration(
+                        color: specialtyColor.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(width * 0.04),
+                        border: Border.all(
+                          color: specialtyColor.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            LucideIcons.wallet,
+                            color: specialtyColor,
+                            size: width * 0.04,
+                          ),
+                          SizedBox(width: width * 0.01),
+                          Text(
+                            fee,
+                            style: GoogleFonts.poppins(
+                              fontSize: width * 0.034,
+                              fontWeight: FontWeight.w600,
+                              color: specialtyColor,
+                            ),
                           ),
                         ],
                       ),
@@ -1811,8 +1825,12 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
                 ),
               ),
               
-              // Bottom section with fee and location
+              // Bottom section
               Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: width * 0.04,
+                  vertical: height * 0.013,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade50,
                   borderRadius: BorderRadius.only(
@@ -1826,128 +1844,67 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
                     ),
                   ),
                 ),
-                padding: EdgeInsets.symmetric(
-                  horizontal: width * 0.04,
-                  vertical: height * 0.015,
-                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Fee
+                    // Availability status
+                    Row(
+                      children: [
+                        Container(
+                          width: width * 0.02,
+                          height: width * 0.02,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isAvailable ? Colors.green : Colors.red.shade400,
+                          ),
+                        ),
+                        SizedBox(width: width * 0.01),
+                        Text(
+                          isAvailable ? "Available Today" : "Not Available Today",
+                          style: GoogleFonts.poppins(
+                            fontSize: width * 0.03,
+                            fontWeight: FontWeight.w500,
+                            color: isAvailable ? Colors.green : Colors.red.shade400,
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    // Book Now button
                     Container(
                       padding: EdgeInsets.symmetric(
-                        horizontal: width * 0.025, 
-                        vertical: height * 0.007
+                        horizontal: width * 0.03,
+                        vertical: height * 0.005,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.green.shade50,
-                        borderRadius: BorderRadius.circular(width * 0.03),
+                        color: specialtyColor,
+                        borderRadius: BorderRadius.circular(width * 0.04),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.green.withOpacity(0.1),
-                            blurRadius: 3,
-                            offset: const Offset(0, 1),
+                            color: specialtyColor.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
                           ),
                         ],
-                        border: Border.all(
-                          color: Colors.green.withOpacity(0.2),
-                          width: 1,
-                        ),
                       ),
                       child: Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            LucideIcons.banknote,
-                            color: Colors.green.shade600,
+                            LucideIcons.calendar,
+                            color: Colors.white,
                             size: width * 0.035,
                           ),
                           SizedBox(width: width * 0.01),
                           Text(
-                            fee,
+                            "Book Now",
                             style: GoogleFonts.poppins(
-                              fontSize: width * 0.032,
+                              fontSize: width * 0.03,
                               fontWeight: FontWeight.w600,
-                              color: Colors.green.shade700,
+                              color: Colors.white,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    
-                    // Location
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: width * 0.025, 
-                            vertical: height * 0.007
-                          ),
-                          decoration: BoxDecoration(
-                            color: isInUserCity ? Colors.blue.shade50 : Colors.orange.shade50,
-                            borderRadius: BorderRadius.circular(width * 0.03),
-                            boxShadow: [
-                              BoxShadow(
-                                color: isInUserCity 
-                                  ? Colors.blue.withOpacity(0.1) 
-                                  : Colors.orange.withOpacity(0.1),
-                                blurRadius: 3,
-                                offset: const Offset(0, 1),
-                              ),
-                            ],
-                            border: Border.all(
-                              color: isInUserCity 
-                                ? Colors.blue.withOpacity(0.2) 
-                                : Colors.orange.withOpacity(0.2),
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                LucideIcons.mapPin,
-                                color: isInUserCity ? Colors.blue.shade600 : Colors.orange.shade600,
-                                size: width * 0.035,
-                              ),
-                              SizedBox(width: width * 0.01),
-                              Container(
-                                constraints: BoxConstraints(maxWidth: width * 0.35),
-                                child: Text(
-                                  location,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: width * 0.028,
-                                    fontWeight: FontWeight.w500,
-                                    color: isInUserCity ? Colors.blue.shade700 : Colors.orange.shade700,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              if (isInUserCity)
-                                Container(
-                                  margin: EdgeInsets.only(left: width * 0.01),
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: width * 0.01, 
-                                    vertical: height * 0.002
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue.shade200,
-                                    borderRadius: BorderRadius.circular(width * 0.01),
-                                  ),
-                                  child: Text(
-                                    "Local",
-                                    style: GoogleFonts.poppins(
-                                      fontSize: width * 0.02,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.blue.shade800,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ],
                     ),
                   ],
                 ),

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:healthcare/utils/app_theme.dart';
 import 'package:healthcare/views/components/onboarding.dart';
@@ -18,6 +19,7 @@ import 'package:intl/intl.dart';
 import 'package:healthcare/services/doctor_profile_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:healthcare/views/screens/bottom_navigation_bar.dart';
+import 'package:flutter/rendering.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -44,7 +46,26 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   @override
   void initState() {
     super.initState();
+    // Set system UI overlay style for consistent status bar appearance
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: AppTheme.primaryPink,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark, // For iOS
+      systemNavigationBarColor: Colors.white,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ));
+    
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    // Reset system UI when leaving
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: AppTheme.primaryPink,
+      statusBarIconBrightness: Brightness.light,
+    ));
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -244,6 +265,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Ensure consistent status bar appearance
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: AppTheme.primaryPink,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+    ));
+    
     return WillPopScope(
       onWillPop: () async {
         // Navigate to the bottom navigation bar with home tab selected
@@ -270,12 +298,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppTheme.primaryPink,
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(20),
+                        bottomRight: Radius.circular(20),
+                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.grey.shade100,
-                          spreadRadius: 1,
-                          blurRadius: 1,
+                          color: AppTheme.primaryPink.withOpacity(0.3),
+                          spreadRadius: 0,
+                          blurRadius: 10,
+                          offset: Offset(0, 4),
                         ),
                       ],
                     ),
@@ -286,19 +319,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           style: GoogleFonts.poppins(
                             fontSize: 20,
                             fontWeight: FontWeight.w600,
-                            color: AppTheme.darkText,
+                            color: Colors.white,
                           ),
                         ),
                         Spacer(),
                         Container(
                           padding: EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: AppTheme.lightPink,
+                            color: Colors.white.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(
                             LucideIcons.activity,
-                            color: AppTheme.primaryPink,
+                            color: Colors.white,
                           ),
                         ),
                       ],

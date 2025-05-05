@@ -88,8 +88,8 @@ class _HomeScreenState extends State<HomeScreen> {
     
     // Set system UI overlay style for immersive experience
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
+      statusBarColor: AppTheme.primaryPink,
+      statusBarIconBrightness: Brightness.light,
       systemNavigationBarColor: Colors.white,
       systemNavigationBarIconBrightness: Brightness.dark,
     ));
@@ -101,8 +101,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     // Reset system UI when leaving
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
+      statusBarColor: AppTheme.primaryPink,
+      statusBarIconBrightness: Brightness.light,
     ));
     super.dispose();
   }
@@ -594,6 +594,11 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: AppTheme.primaryPink,
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: AppTheme.primaryPink,
+          statusBarIconBrightness: Brightness.light,
+          statusBarBrightness: Brightness.dark, // For iOS
+        ),
         title: Text(
           "Specialist Doctors",
           style: GoogleFonts.poppins(

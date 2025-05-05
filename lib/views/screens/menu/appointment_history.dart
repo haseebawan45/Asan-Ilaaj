@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:healthcare/views/screens/patient/dashboard/patient_profile_details.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -51,12 +52,27 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> wit
     _scrollController = ScrollController();
     _scrollController.addListener(_scrollListener);
     _loadAppointmentsWithCache();
+    
+    // Set system UI overlay style for consistent status bar appearance
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: AppTheme.primaryPink,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark, // For iOS
+      systemNavigationBarColor: Colors.white,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ));
   }
   
   @override
   void dispose() {
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
+    
+    // Reset system UI when leaving
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: AppTheme.primaryPink,
+      statusBarIconBrightness: Brightness.light,
+    ));
     super.dispose();
   }
   
@@ -741,89 +757,136 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> wit
 
   @override
   Widget build(BuildContext context) {
+    // Ensure consistent status bar appearance
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: AppTheme.primaryPink,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+    ));
+
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppTheme.darkText, size: 24),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          "Appointments History",
-          style: GoogleFonts.poppins(
-            color: AppTheme.darkText,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh, color: AppTheme.primaryPink, size: 22),
-            onPressed: _loadAppointmentsWithCache,
-          ),
-        ],
-      ),
       body: _isLoading 
         ? Center(
             child: CircularProgressIndicator(
-                color: AppTheme.primaryPink,
+              color: AppTheme.primaryPink,
             ),
           )
         : _errorMessage.isNotEmpty
           ? _buildErrorView()
           : Stack(
               children: [
-                Column(
-              children: [
-                // Search and filter section
-                _buildSearchAndFilterSection(),
-                
-                // Results count
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  child: Row(
+                SafeArea(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        "${filteredAppointments.length} ${filteredAppointments.length == 1 ? 'result' : 'results'}",
-                      style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: AppTheme.mediumText,
-                        fontWeight: FontWeight.w500,
+                      // Custom app bar with matching style
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryPink,
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(20),
+                            bottomRight: Radius.circular(20),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.primaryPink.withOpacity(0.3),
+                              spreadRadius: 0,
+                              blurRadius: 10,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            // Back button
+                            GestureDetector(
+                              onTap: () => Navigator.pop(context),
+                              child: Icon(
+                                Icons.arrow_back,
+                                color: Colors.white,
+                              ),
+                            ),
+                            
+                            // Title
+                            Text(
+                              "Appointments History",
+                              style: GoogleFonts.poppins(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                            
+                            // Refresh icon
+                            GestureDetector(
+                              onTap: _loadAppointmentsWithCache,
+                              child: Container(
+                                padding: EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.refresh,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      Spacer(),
-                      Text(
-                            _selectedFilter != 'All' ? _selectedFilter : "Appointments history",
-                        style: GoogleFonts.poppins(
-                        fontSize: 14,
-                              color: _selectedFilter == 'Upcoming' 
-                                  ? AppTheme.primaryPink 
-                                  : _selectedFilter == 'Completed'
-                                    ? AppTheme.success
-                                    : AppTheme.primaryPink,
-                          fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                      
+                      // Search and filter section
+                      _buildSearchAndFilterSection(),
+                      
+                      // Results count
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        child: Row(
+                          children: [
+                            Text(
+                              "${filteredAppointments.length} ${filteredAppointments.length == 1 ? 'result' : 'results'}",
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: AppTheme.mediumText,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Spacer(),
+                            Text(
+                              _selectedFilter != 'All' ? _selectedFilter : "Appointments history",
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: _selectedFilter == 'Upcoming' 
+                                    ? AppTheme.primaryPink 
+                                    : _selectedFilter == 'Completed'
+                                      ? AppTheme.success
+                                      : AppTheme.primaryPink,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      // Appointment list
+                      Expanded(
+                        child: filteredAppointments.isEmpty
+                          ? _buildEmptyView()
+                          : _buildAppointmentsList(),
+                      ),
                     ],
-                ),
-                ),
-                
-                // Appointment list
-                Expanded(
-                  child: filteredAppointments.isEmpty
-                    ? _buildEmptyView()
-                    : _buildAppointmentsList(),
-                    ),
-                  ],
+                  ),
                 ),
                 
                 // Loading indicator when refreshing
                 if (_isRefreshing)
                   Positioned(
-                    top: 16,
+                    top: 110, // Place below the custom app bar
                     left: 0,
                     right: 0,
                     child: Center(
@@ -865,7 +928,7 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> wit
                         ),
                       ),
                     ),
-                ),
+                  ),
               ],
             ),
     );

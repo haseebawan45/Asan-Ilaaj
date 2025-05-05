@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -60,12 +61,28 @@ class _FinancialAnalyticsScreenState extends State<FinancialAnalyticsScreen> wit
       currentUserId: _auth.currentUser?.uid ?? '', // Pass the doctor's ID
     );
     
+    // Set system UI overlay style for consistent status bar appearance
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: AppTheme.primaryPink,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark, // For iOS
+      systemNavigationBarColor: Colors.white,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ));
+    
     _loadFinancialData();
   }
   
   @override
   void dispose() {
     _controller.dispose();
+    
+    // Reset system UI when leaving
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: AppTheme.primaryPink,
+      statusBarIconBrightness: Brightness.light,
+    ));
+    
     super.dispose();
   }
   
@@ -219,31 +236,19 @@ class _FinancialAnalyticsScreenState extends State<FinancialAnalyticsScreen> wit
 
   @override
   Widget build(BuildContext context) {
+    // Ensure consistent status bar appearance
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: AppTheme.primaryPink,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+    ));
+
     return WillPopScope(
       onWillPop: () async {
         Navigator.of(context).popUntil((route) => route.isFirst);
         return false;
       },
       child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          centerTitle: true,
-          title: Text(
-            "Financial Analytics",
-            style: GoogleFonts.poppins(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.darkText,
-            ),
-          ),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.black),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-          ),
-        ),
         backgroundColor: Colors.white,
         body: _isLoading
             ? Center(
@@ -254,25 +259,87 @@ class _FinancialAnalyticsScreenState extends State<FinancialAnalyticsScreen> wit
             : RefreshIndicator(
                 onRefresh: _loadFinancialData,
                 color: AppTheme.primaryPink,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
-                  child: !_hasFinancialData 
-                    ? _buildNoDataView()
-                    : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSectionHeader("Financial Summary"),
-                        const SizedBox(height: 20),
-                        _buildFinanceCards(),
-                        const SizedBox(height: 25),
-                        _buildInsightsCard(),
-                        const SizedBox(height: 25),
-                        _buildSectionHeader("Earnings Breakdown"),
-                        const SizedBox(height: 20),
-                        _buildEarningsChart(),
-                      ],
+                child: Stack(
+                  children: [
+                    SafeArea(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Custom app bar with matching style
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryPink,
+                              borderRadius: BorderRadius.only(
+                                bottomLeft: Radius.circular(20),
+                                bottomRight: Radius.circular(20),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppTheme.primaryPink.withOpacity(0.3),
+                                  spreadRadius: 0,
+                                  blurRadius: 10,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                // Back button
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                  child: Icon(
+                                    Icons.arrow_back,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                
+                                // Title
+                                Text(
+                                  "Financial Analytics",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                
+                                // Empty container to balance the layout
+                                SizedBox(width: 24),
+                              ],
+                            ),
+                          ),
+                          
+                          // Content
+                          Expanded(
+                            child: SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
+                              child: !_hasFinancialData 
+                                ? _buildNoDataView()
+                                : Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildSectionHeader("Financial Summary"),
+                                    const SizedBox(height: 20),
+                                    _buildFinanceCards(),
+                                    const SizedBox(height: 25),
+                                    _buildInsightsCard(),
+                                    const SizedBox(height: 25),
+                                    _buildSectionHeader("Earnings Breakdown"),
+                                    const SizedBox(height: 20),
+                                    _buildEarningsChart(),
+                                  ],
+                                ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                  ],
                 ),
               ),
       ),
@@ -280,50 +347,49 @@ class _FinancialAnalyticsScreenState extends State<FinancialAnalyticsScreen> wit
   }
   
   Widget _buildNoDataView() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(height: 60),
-            Icon(
-              Icons.analytics_outlined,
-              size: 80,
-              color: Colors.grey.shade400,
+    return Container(
+      width: double.infinity,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const SizedBox(height: 40),
+          Icon(
+            Icons.analytics_outlined,
+            size: 80,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 20),
+          Text(
+            "No Financial Data Available",
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.darkText,
             ),
-            const SizedBox(height: 20),
-            Text(
-              "No Financial Data Available",
-              style: GoogleFonts.poppins(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.darkText,
-              ),
-              textAlign: TextAlign.center,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            "Your financial analytics will appear here once you start receiving payments.",
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              color: AppTheme.mediumText,
             ),
-            const SizedBox(height: 12),
-            Text(
-              "Your financial analytics will appear here once you start receiving payments.",
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                color: AppTheme.mediumText,
-              ),
-              textAlign: TextAlign.center,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 30),
+          ElevatedButton.icon(
+            onPressed: _loadFinancialData,
+            icon: Icon(Icons.refresh),
+            label: Text("Refresh"),
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              backgroundColor: AppTheme.primaryPink,
+              foregroundColor: Colors.white,
             ),
-            const SizedBox(height: 30),
-            ElevatedButton.icon(
-              onPressed: _loadFinancialData,
-              icon: Icon(Icons.refresh),
-              label: Text("Refresh"),
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                backgroundColor: AppTheme.primaryPink,
-                foregroundColor: Colors.white,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

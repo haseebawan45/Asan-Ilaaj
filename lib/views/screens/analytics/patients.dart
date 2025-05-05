@@ -1511,7 +1511,7 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
               icon,
                   size: iconSize,
                   color: isSelected ? Colors.white : AppTheme.primaryPink,
-                ),
+            ),
                 SizedBox(width: screenWidth * 0.01),
             Text(
               label,

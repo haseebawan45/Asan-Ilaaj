@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -58,6 +59,15 @@ class _DoctorAvailabilityScreenState extends State<DoctorAvailabilityScreen> wit
     // Initialize with current day of week selected
     _selectedDayIndices.add(DateTime.now().weekday - 1);
     
+    // Set system UI overlay style for consistent status bar appearance
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: AppTheme.primaryPink,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark, // For iOS
+      systemNavigationBarColor: Colors.white,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ));
+    
     // Delay loading to allow UI to render first
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadHospitals();
@@ -67,6 +77,13 @@ class _DoctorAvailabilityScreenState extends State<DoctorAvailabilityScreen> wit
   @override
   void dispose() {
     _animationController.dispose();
+    
+    // Reset system UI when leaving
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: AppTheme.primaryPink,
+      statusBarIconBrightness: Brightness.light,
+    ));
+    
     super.dispose();
   }
 
@@ -233,6 +250,13 @@ class _DoctorAvailabilityScreenState extends State<DoctorAvailabilityScreen> wit
 
   @override
   Widget build(BuildContext context) {
+    // Ensure consistent status bar appearance
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: AppTheme.primaryPink,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+    ));
+    
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -381,12 +405,17 @@ class _DoctorAvailabilityScreenState extends State<DoctorAvailabilityScreen> wit
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.primaryPink,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(20),
+          bottomRight: Radius.circular(20),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 5,
-            offset: Offset(0, 3),
+            color: AppTheme.primaryPink.withOpacity(0.3),
+            spreadRadius: 0,
+            blurRadius: 10,
+            offset: Offset(0, 4),
           ),
         ],
       ),
@@ -394,7 +423,7 @@ class _DoctorAvailabilityScreenState extends State<DoctorAvailabilityScreen> wit
       child: Row(
         children: [
           IconButton(
-            icon: Icon(Icons.arrow_back, color: Colors.black),
+            icon: Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () => Navigator.pop(context),
             padding: EdgeInsets.zero,
             constraints: BoxConstraints(),
@@ -405,19 +434,19 @@ class _DoctorAvailabilityScreenState extends State<DoctorAvailabilityScreen> wit
             style: GoogleFonts.poppins(
               fontSize: 20,
               fontWeight: FontWeight.w600,
-              color: Colors.black,
+              color: Colors.white,
             ),
           ),
           Spacer(),
           Container(
             padding: EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppTheme.primaryPink.withOpacity(0.1),
+              color: Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               Icons.calendar_month,
-              color: AppTheme.primaryPink,
+              color: Colors.white,
             ),
           ),
         ],

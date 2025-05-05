@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:intl/intl.dart';
@@ -61,12 +62,27 @@ class _FinancesScreenState extends State<FinancesScreen> {
     _financialRepository = FinancialRepository();
     _scrollController.addListener(_scrollListener);
     _loadFinancialData();
+    
+    // Set system UI overlay style for consistent status bar appearance
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: AppTheme.primaryPink,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark, // For iOS
+      systemNavigationBarColor: Colors.white,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ));
   }
 
   @override
   void dispose() {
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
+    
+    // Reset system UI when leaving
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: AppTheme.primaryPink,
+      statusBarIconBrightness: Brightness.light,
+    ));
     super.dispose();
   }
 
@@ -588,6 +604,13 @@ class _FinancesScreenState extends State<FinancesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Ensure consistent status bar appearance on every build
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: AppTheme.primaryPink,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+    ));
+    
     final Size screenSize = MediaQuery.of(context).size;
     final double screenWidth = screenSize.width;
     
@@ -599,384 +622,434 @@ class _FinancesScreenState extends State<FinancesScreen> {
       },
       child: Scaffold(
         backgroundColor: Colors.grey.shade50,
-        appBar: AppBar(
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-          title: Text(
-            "Finances",
-            style: GoogleFonts.poppins(
-              fontSize: 22,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.darkText,
-              letterSpacing: 0.2,
-            ),
-          ),
-          centerTitle: true,
-          leading: IconButton(
-            icon: Icon(LucideIcons.arrowLeft, color: AppTheme.darkText),
-            onPressed: () {
-              NavigationHelper.navigateToTab(context, 0);
-            },
-          ),
-          actions: [
-            IconButton(
-              icon: Icon(LucideIcons.calendarDays, color: AppTheme.darkText),
-              onPressed: () {
-                // Future implementation for date filters
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Date filtering coming soon")),
-                );
-              },
-            ),
-          ],
-        ),
         body: _isLoading
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: 50,
-                      height: 50,
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          AppTheme.primaryPink,
-                        ),
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 50,
+                    height: 50,
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppTheme.primaryPink,
                       ),
                     ),
-                    SizedBox(height: 20),
-                    Text(
-                      "Loading financial data...",
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        color: AppTheme.mediumText,
-                        fontWeight: FontWeight.w500,
-                      ),
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    "Loading financial data...",
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      color: AppTheme.mediumText,
+                      fontWeight: FontWeight.w500,
                     ),
-                  ],
-                ),
-              )
-            : RefreshIndicator(
-                onRefresh: _refreshData,
-                color: AppTheme.primaryTeal,
-                child: Stack(
-                  children: [
-                    Column(
+                  ),
+                ],
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _refreshData,
+              color: AppTheme.primaryTeal,
+              child: Stack(
+                children: [
+                  SafeArea(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Main financial summary card
+                        // Custom app bar with matching style to analytics.dart
                         Container(
-                          margin: EdgeInsets.fromLTRB(16, 8, 16, 24),
-                          padding: EdgeInsets.all(20),
+                          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                           decoration: BoxDecoration(
                             color: AppTheme.primaryPink,
-                            borderRadius: BorderRadius.circular(24),
+                            borderRadius: BorderRadius.only(
+                              bottomLeft: Radius.circular(20),
+                              bottomRight: Radius.circular(20),
+                            ),
                             boxShadow: [
                               BoxShadow(
                                 color: AppTheme.primaryPink.withOpacity(0.3),
-                                blurRadius: 20,
-                                offset: Offset(0, 10),
                                 spreadRadius: 0,
+                                blurRadius: 10,
+                                offset: Offset(0, 4),
                               ),
                             ],
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              // Top row with title and settings
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  // Card title with icon
-                                  Row(
-                                    children: [
-                                      Container(
-                                        padding: EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.15),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Icon(
-                                          LucideIcons.wallet,
-                                          color: Colors.white,
-                                          size: 20,
-                                        ),
-                                      ),
-                                      SizedBox(width: 12),
-                                      Text(
-                                        "Total Earnings",
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  
-                                  // Refresh button
-                                  InkWell(
-                                    onTap: _refreshData,
-                                    borderRadius: BorderRadius.circular(30),
-                                    child: Container(
-                                      padding: EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.15),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(
-                                        _isRefreshing 
-                                          ? LucideIcons.loader 
-                                          : LucideIcons.refreshCw,
-                                        color: Colors.white,
-                                        size: 18,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              
-                              SizedBox(height: 24),
-                              
-                              // Total balance amount
-                              Text(
-                                "Rs ${_totalIncome.toStringAsFixed(0)}",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.bold,
+                              // Back button
+                              GestureDetector(
+                                onTap: () {
+                                  NavigationHelper.navigateToTab(context, 0);
+                                },
+                                child: Icon(
+                                  LucideIcons.arrowLeft,
                                   color: Colors.white,
-                                  height: 1.1,
                                 ),
                               ),
                               
-                              SizedBox(height: 6),
-                              
-                              // Subtitle
-                              Row(
-                                children: [
-                                  Icon(
-                                    LucideIcons.trendingUp,
-                                    color: Colors.greenAccent,
-                                    size: 16,
-                                  ),
-                                  SizedBox(width: 6),
-                                  Text(
-                                    "All time earnings",
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 14,
-                                      color: Colors.white.withOpacity(0.8),
-                                    ),
-                                  ),
-                                ],
+                              // Title
+                              Text(
+                                "Finances",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
                               ),
                               
-                              SizedBox(height: 24),
-                  
-                              // Financial metrics row
-                              Row(
-                                children: [
-                                  // Monthly earnings metric
-                                  Expanded(
-                                    child: _buildFinanceMetric(
-                                      "This Month",
-                                      "Rs ${_currentMonthIncome.toStringAsFixed(0)}",
-                                      LucideIcons.calendar,
-                                    ),
-                                  ),
-                                  
-                                  Container(
-                                    height: 40,
-                                    width: 1,
+                              // Filter icon
+                              GestureDetector(
+                                onTap: () {
+                                  // Future implementation for date filters
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text("Date filtering coming soon")),
+                                  );
+                                },
+                                child: Container(
+                                  padding: EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
                                     color: Colors.white.withOpacity(0.2),
-                                    margin: EdgeInsets.symmetric(horizontal: 12),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
-                  
-                                  // Transactions metric
-                                  Expanded(
-                                    child: _buildFinanceMetric(
-                                      "Transactions",
-                                      "${_transactions.length}",
-                                      LucideIcons.fileText,
-                                    ),
+                                  child: Icon(
+                                    LucideIcons.calendarDays,
+                                    color: Colors.white,
+                                    size: 20,
                                   ),
-                                ],
+                                ),
                               ),
                             ],
                           ),
                         ),
                         
-                        // Transactions section header
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                "Recent Transactions",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppTheme.darkText,
-                                ),
-                              ),
-                              
-                              // Filter chip - currently just decorative
-                              Container(
-                                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.lightTeal,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: AppTheme.primaryTeal.withOpacity(0.2),
-                                    width: 1,
+                        // Scrollable content
+                        Expanded(
+                          child: SingleChildScrollView(
+                            controller: _scrollController,
+                            physics: AlwaysScrollableScrollPhysics(),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Main financial summary card
+                                Container(
+                                  margin: EdgeInsets.fromLTRB(16, 8, 16, 24),
+                                  padding: EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryPink,
+                                    borderRadius: BorderRadius.circular(24),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppTheme.primaryPink.withOpacity(0.3),
+                                        blurRadius: 20,
+                                        offset: Offset(0, 10),
+                                        spreadRadius: 0,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // Top row with title and settings
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          // Card title with icon
+                                          Row(
+                                            children: [
+                                              Container(
+                                                padding: EdgeInsets.all(8),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white.withOpacity(0.15),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                                child: Icon(
+                                                  LucideIcons.wallet,
+                                                  color: Colors.white,
+                                                  size: 20,
+                                                ),
+                                              ),
+                                              SizedBox(width: 12),
+                                              Text(
+                                                "Total Earnings",
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          
+                                          // Refresh button
+                                          InkWell(
+                                            onTap: _refreshData,
+                                            borderRadius: BorderRadius.circular(30),
+                                            child: Container(
+                                              padding: EdgeInsets.all(8),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withOpacity(0.15),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: Icon(
+                                                _isRefreshing 
+                                                  ? LucideIcons.loader 
+                                                  : LucideIcons.refreshCw,
+                                                color: Colors.white,
+                                                size: 18,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      
+                                      SizedBox(height: 24),
+                                      
+                                      // Total balance amount
+                                      Text(
+                                        "Rs ${_totalIncome.toStringAsFixed(0)}",
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 32,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                          height: 1.1,
+                                        ),
+                                      ),
+                                      
+                                      SizedBox(height: 6),
+                                      
+                                      // Subtitle
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            LucideIcons.trendingUp,
+                                            color: Colors.greenAccent,
+                                            size: 16,
+                                          ),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            "All time earnings",
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 14,
+                                              color: Colors.white.withOpacity(0.8),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      
+                                      SizedBox(height: 24),
+                  
+                                      // Financial metrics row
+                                      Row(
+                                        children: [
+                                          // Monthly earnings metric
+                                          Expanded(
+                                            child: _buildFinanceMetric(
+                                              "This Month",
+                                              "Rs ${_currentMonthIncome.toStringAsFixed(0)}",
+                                              LucideIcons.calendar,
+                                            ),
+                                          ),
+                                          
+                                          Container(
+                                            height: 40,
+                                            width: 1,
+                                            color: Colors.white.withOpacity(0.2),
+                                            margin: EdgeInsets.symmetric(horizontal: 12),
+                                          ),
+                  
+                                          // Transactions metric
+                                          Expanded(
+                                            child: _buildFinanceMetric(
+                                              "Transactions",
+                                              "${_transactions.length}",
+                                              LucideIcons.fileText,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      LucideIcons.arrowDownUp,
-                                      size: 14,
-                                      color: AppTheme.primaryTeal,
-                                    ),
-                                    SizedBox(width: 6),
-                                    Text(
-                                      "All",
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: AppTheme.primaryTeal,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                  
-                        // Transactions list
-                        Expanded(
-                          child: _transactions.isEmpty && !_isLoading
-                              ? Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
+                                
+                                // Transactions section header
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Container(
-                                        padding: EdgeInsets.all(20),
-                                        decoration: BoxDecoration(
-                                          color: AppTheme.lightTeal,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                          LucideIcons.receipt,
-                                          size: 40,
-                                          color: AppTheme.primaryTeal,
-                                        ),
-                                      ),
-                                      SizedBox(height: 16),
                                       Text(
-                                        "No transactions yet",
+                                        "Recent Transactions",
                                         style: GoogleFonts.poppins(
                                           fontSize: 18,
                                           fontWeight: FontWeight.w600,
                                           color: AppTheme.darkText,
                                         ),
                                       ),
-                                      SizedBox(height: 8),
-                                      Text(
-                                        "Your earnings will appear here",
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 14,
-                                          color: AppTheme.mediumText,
+                                      
+                                      // Filter chip - currently just decorative
+                                      Container(
+                                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.lightTeal,
+                                          borderRadius: BorderRadius.circular(20),
+                                          border: Border.all(
+                                            color: AppTheme.primaryTeal.withOpacity(0.2),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              LucideIcons.arrowDownUp,
+                                              size: 14,
+                                              color: AppTheme.primaryTeal,
+                                            ),
+                                            SizedBox(width: 6),
+                                            Text(
+                                              "All",
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w500,
+                                                color: AppTheme.primaryTeal,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ],
                                   ),
-                                )
-                              : ListView.builder(
-                                  controller: _scrollController,
-                                  padding: EdgeInsets.symmetric(horizontal: 16),
-                                  itemCount: _transactions.length + (_hasMoreTransactions ? 1 : 0),
-                                  itemBuilder: (context, index) {
-                                    if (index == _transactions.length) {
-                                      return Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 20.0),
-                                        child: Center(
-                                          child: Container(
-                                            padding: EdgeInsets.all(12),
+                                ),
+                  
+                                // Transactions list
+                                _transactions.isEmpty
+                                  ? Center(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Container(
+                                            padding: EdgeInsets.all(20),
                                             decoration: BoxDecoration(
-                                              color: AppTheme.lightPink,
+                                              color: AppTheme.lightTeal,
                                               shape: BoxShape.circle,
                                             ),
-                                            child: SizedBox(
-                                              height: 20,
-                                              width: 20,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                color: AppTheme.primaryPink,
-                                              ),
+                                            child: Icon(
+                                              LucideIcons.receipt,
+                                              size: 40,
+                                              color: AppTheme.primaryTeal,
                                             ),
                                           ),
-                                        ),
-                                      );
-                                    }
-                                    return _buildTransactionCard(_transactions[index]);
-                                  },
-                                ),
-                        ),
-                      ],
-                    ),
-            
-                    // Bottom loading indicator
-                    if (_isRefreshing && !_isLoading)
-                      Positioned(
-                        bottom: 16,
-                        left: 0,
-                        right: 0,
-                        child: Center(
-                          child: Container(
-                            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(30),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 10,
-                                  offset: Offset(0, 5),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      AppTheme.primaryTeal,
+                                          SizedBox(height: 16),
+                                          Text(
+                                            "No transactions yet",
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppTheme.darkText,
+                                            ),
+                                          ),
+                                          SizedBox(height: 8),
+                                          Text(
+                                            "Your earnings will appear here",
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 14,
+                                              color: AppTheme.mediumText,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  : ListView.builder(
+                                      shrinkWrap: true,
+                                      physics: NeverScrollableScrollPhysics(),
+                                      padding: EdgeInsets.symmetric(horizontal: 16),
+                                      itemCount: _transactions.length + (_hasMoreTransactions ? 1 : 0),
+                                      itemBuilder: (context, index) {
+                                        if (index == _transactions.length) {
+                                          return Padding(
+                                            padding: const EdgeInsets.symmetric(vertical: 20.0),
+                                            child: Center(
+                                              child: Container(
+                                                padding: EdgeInsets.all(12),
+                                                decoration: BoxDecoration(
+                                                  color: AppTheme.lightPink,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: SizedBox(
+                                                  height: 20,
+                                                  width: 20,
+                                                  child: CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    color: AppTheme.primaryPink,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                        return _buildTransactionCard(_transactions[index]);
+                                      },
                                     ),
-                                  ),
-                                ),
-                                SizedBox(width: 10),
-                                Text(
-                                  "Updating your finances...",
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: AppTheme.darkText,
-                                  ),
-                                ),
                               ],
                             ),
                           ),
                         ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Bottom loading indicator
+                  if (_isRefreshing)
+                    Positioned(
+                      bottom: 16,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: Container(
+                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppTheme.primaryTeal,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 10),
+                              Text(
+                                "Updating your finances...",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppTheme.darkText,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                  ],
-                ),
+                    ),
+                ],
               ),
+            ),
       ),
     );
   }
