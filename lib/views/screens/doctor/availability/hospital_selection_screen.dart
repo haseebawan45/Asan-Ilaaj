@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:healthcare/utils/navigation_helper.dart';
@@ -67,6 +68,15 @@ class _HospitalSelectionScreenState extends State<HospitalSelectionScreen> with 
       duration: Duration(milliseconds: 800),
     )..forward();
     
+    // Set system UI overlay style for consistent status bar appearance
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: AppTheme.primaryPink,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark, // For iOS
+      systemNavigationBarColor: Colors.white,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ));
+    
     // Add listener for hospital name changes
     _hospitalNameController.addListener(() {
       setState(() {
@@ -133,6 +143,13 @@ class _HospitalSelectionScreenState extends State<HospitalSelectionScreen> with 
   void dispose() {
     _animationController.dispose();
     _hospitalNameController.dispose();
+    
+    // Reset system UI when leaving
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: AppTheme.primaryPink,
+      statusBarIconBrightness: Brightness.light,
+    ));
+    
     super.dispose();
   }
 
@@ -196,6 +213,13 @@ class _HospitalSelectionScreenState extends State<HospitalSelectionScreen> with 
 
   @override
   Widget build(BuildContext context) {
+    // Ensure consistent status bar appearance
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: AppTheme.primaryPink,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+    ));
+    
     return Scaffold(
       backgroundColor: Color(0xFFF8FAFF),
       extendBodyBehindAppBar: true,
@@ -252,7 +276,11 @@ class _HospitalSelectionScreenState extends State<HospitalSelectionScreen> with 
                   AppTheme.primaryPink.withOpacity(0.8),
                 ],
               ),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(20),
               ),
+            ),
             child: Stack(
               children: [
                 Positioned(
