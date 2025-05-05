@@ -18,6 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../../../../services/cache_service.dart';
 import 'package:healthcare/utils/app_theme.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // Document type enum for upload functionality
 enum DocumentType { identification, medical }
@@ -852,25 +853,10 @@ class _PatientDetailProfileScreenState extends State<PatientDetailProfileScreen>
 
   void _viewDocument(String url) {
     if (url.toLowerCase().endsWith('.pdf')) {
-      // View PDF
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => Scaffold(
-            appBar: AppBar(
-              title: Text(
-                'Medical Report',
-                style: GoogleFonts.poppins(),
-              ),
-            ),
-            body: PDFView(
-              filePath: url,
-            ),
-          ),
-        ),
-      );
+      // Open PDF in external app instead of built-in viewer
+      _openDocumentInExternalApp(url);
     } else {
-      // View Image
+      // View Image - keep using internal viewer
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -898,6 +884,40 @@ class _PatientDetailProfileScreenState extends State<PatientDetailProfileScreen>
           ),
         ),
       );
+    }
+  }
+
+  Future<void> _openDocumentInExternalApp(String url) async {
+    try {
+      final Uri documentUri = Uri.parse(url);
+      
+      // Use LaunchMode.externalApplication to open in external app
+      final bool launched = await launchUrl(
+        documentUri,
+        mode: LaunchMode.externalApplication,
+      );
+      
+      if (!launched) {
+        // Show error if couldn't launch
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Could not open document. Please install a PDF reader app.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Show error on exception
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening document: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 

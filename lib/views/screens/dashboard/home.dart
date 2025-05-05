@@ -27,6 +27,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../notifications/notification_screen.dart';
 import 'package:healthcare/views/screens/menu/help_center.dart';
 import 'package:healthcare/views/screens/common/chat/chat_list_screen.dart';
+import 'package:healthcare/views/screens/onboarding/onboarding_3.dart';
 
 class HomeScreen extends StatefulWidget {
   final String profileStatus;
@@ -1842,273 +1843,365 @@ class _HomeScreenState extends State<HomeScreen> {
   // Build drawer for sidebar navigation - provides quick access to key features
   // This drawer complements the bottom navigation tabs with direct shortcuts
   Widget _buildDrawer(BuildContext context, double screenWidth) {
-    return Drawer(
-      elevation: 5,
-      child: Container(
-        color: Colors.white,
-        child: Column(
-          children: [
-            // Drawer header with user info
-            Container(
-              padding: EdgeInsets.fromLTRB(20, 50, 20, 20),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryPink,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Profile image
-                  Row(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 8,
-                              offset: Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: CircleAvatar(
-                          radius: 36,
-                          backgroundColor: Colors.white,
-                          backgroundImage: _profileImageUrl != null && _profileImageUrl!.isNotEmpty
-                              ? NetworkImage(_profileImageUrl!)
-                              : AssetImage("assets/images/User.png") as ImageProvider,
-                        ),
-                      ),
-                      SizedBox(width: 15),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _userName,
-                              style: GoogleFonts.poppins(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            if (_specialty.isNotEmpty)
-                              Text(
-                                _specialty,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                  color: Colors.white.withOpacity(0.9),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            SizedBox(height: 5),
-                            Container(
-                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                "Doctor",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+    return Container(
+      width: MediaQuery.of(context).size.width * 0.85,
+      child: Drawer(
+        backgroundColor: Colors.white,
+        elevation: 30,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topRight: Radius.circular(30),
+            bottomRight: Radius.circular(30),
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // User Profile Card
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppTheme.primaryTeal,
+                      AppTheme.primaryTeal.withOpacity(0.8),
                     ],
                   ),
-                  SizedBox(height: 15),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(30),
+                    bottomRight: Radius.circular(30),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryTeal.withOpacity(0.3),
+                      blurRadius: 15,
+                      offset: Offset(0, 8),
                     ),
-                    child: Row(
+                  ],
+                ),
+                padding: EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Icon(
-                          LucideIcons.wallet,
-                          color: Colors.white,
-                          size: 16,
+                        CircleAvatar(
+                          radius: 36,
+                          backgroundColor: Colors.white,
+                          child: CircleAvatar(
+                            radius: 33,
+                            backgroundColor: Colors.white,
+                            backgroundImage: _profileImageUrl != null && _profileImageUrl!.isNotEmpty
+                                ? NetworkImage(_profileImageUrl!)
+                                : AssetImage("assets/images/User.png") as ImageProvider,
+                          ),
                         ),
-                        SizedBox(width: 8),
-                        Text(
-                          "Rs ${_totalEarnings.toStringAsFixed(0)}",
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: Container(
+                            padding: EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 16,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-            ),
-            
-            // Menu items
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.symmetric(vertical: 10),
-                children: [
-                  _buildDrawerItem(
-                    icon: Icons.home,
-                    title: "Home",
-                    isSelected: true,
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: LucideIcons.stethoscope,
-                    title: "My Appointments",
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => AppointmentHistoryScreen()),
-                      );
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: LucideIcons.calendarClock,
-                    title: "Set Availability",
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => DoctorAvailabilityScreen()),
-                      );
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: LucideIcons.building2,
-                    title: "Add Hospital",
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => HospitalSelectionScreen(selectedHospitals: []),
+                    SizedBox(height: 15),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _userName,
+                          style: GoogleFonts.poppins(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      );
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.bar_chart,
-                    title: "Analytics",
-                    onTap: () {
-                      Navigator.pop(context);
-                      NavigationHelper.navigateToTab(context, 1);
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: LucideIcons.wallet,
-                    title: "Finances",
-                    onTap: () {
-                      Navigator.pop(context);
-                      NavigationHelper.navigateToTab(context, 2);
-                    },
-                  ),
-                  Divider(height: 30, thickness: 1, indent: 20, endIndent: 20),
-                  _buildDrawerItem(
-                    icon: Icons.help_outline,
-                    title: "Help Center",
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context, 
-                        MaterialPageRoute(builder: (context) => const HelpCenterScreen())
-                      );
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: LucideIcons.logOut,
-                    title: "Sign Out",
-                    textColor: Color(0xFFE53935),
-                    iconColor: Color(0xFFE53935),
-                    onTap: () async {
-                      final shouldLogout = await _showLogoutConfirmationDialog(context);
-                      if (shouldLogout) {
-                        await _authService.signOut();
-                        // Navigate to login screen after logout
-                        Navigator.of(context).pushNamedAndRemoveUntil(
-                          '/login', 
-                          (Route<dynamic> route) => false,
-                        );
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ),
-            
-            // App version at bottom
-            Padding(
-              padding: EdgeInsets.symmetric(vertical: 15),
-              child: Text(
-                "Version 1.0.0",
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
+                        if (_specialty.isNotEmpty)
+                          Text(
+                            _specialty,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: Colors.white.withOpacity(0.9),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        SizedBox(height: 5),
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            "Doctor",
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 15),
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                LucideIcons.wallet,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                "Rs ${_totalEarnings.toStringAsFixed(0)}",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
+              
+              // Menu Items
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.only(top: 10),
+                  children: [
+                    _buildMenuSection("Main Menu"),
+                    _buildMenuItem(
+                      icon: Icons.home,
+                      title: "Home",
+                      isActive: true,
+                      onTap: () {
+                        Navigator.pop(context);
+                      },
+                    ),
+                    _buildMenuItem(
+                      icon: LucideIcons.stethoscope,
+                      title: "My Appointments",
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => AppointmentHistoryScreen()),
+                        );
+                      },
+                    ),
+                    _buildMenuItem(
+                      icon: LucideIcons.calendarClock,
+                      title: "Set Availability",
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => DoctorAvailabilityScreen()),
+                        );
+                      },
+                    ),
+                    _buildMenuItem(
+                      icon: LucideIcons.building2,
+                      title: "Add Hospital",
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => HospitalSelectionScreen(selectedHospitals: []),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildMenuItem(
+                      icon: Icons.bar_chart,
+                      title: "Analytics",
+                      onTap: () {
+                        Navigator.pop(context);
+                        NavigationHelper.navigateToTab(context, 1);
+                      },
+                    ),
+                    _buildMenuItem(
+                      icon: LucideIcons.wallet,
+                      title: "Finances",
+                      onTap: () {
+                        Navigator.pop(context);
+                        NavigationHelper.navigateToTab(context, 2);
+                      },
+                    ),
+                    
+                    _buildMenuSection("Settings & Support"),
+                    _buildMenuItem(
+                      icon: Icons.help_outline,
+                      title: "Help Center",
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context, 
+                          MaterialPageRoute(builder: (context) => const HelpCenterScreen())
+                        );
+                      },
+                    ),
+                    
+                    SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Container(
+                        padding: EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xFFFFEBEE),
+                              Color(0xFFFFCDD2),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: InkWell(
+                          onTap: () async {
+                            Navigator.pop(context);
+                            final shouldLogout = await _showLogoutConfirmationDialog(context);
+                            if (shouldLogout) {
+                              await _authService.signOut();
+                              // Navigate to onboarding_3 screen after logout
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(builder: (context) => Onboarding3()),
+                                (Route<dynamic> route) => false,
+                              );
+                            }
+                          },
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.logout_rounded,
+                                  color: Color(0xFFE53935),
+                                  size: 20,
+                                ),
+                              ),
+                              SizedBox(width: 16),
+                              Text(
+                                'Logout',
+                                style: GoogleFonts.poppins(
+                                  color: Color(0xFFE53935),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // App Version
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'Specialist Doctors • Version 1.0.0',
+                  style: GoogleFonts.poppins(
+                    color: Colors.grey.shade600,
+                    fontSize: 12,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
-  
+
+  // Helper method to build menu section headers
+  Widget _buildMenuSection(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 20, top: 20, bottom: 8),
+      child: Text(
+        title,
+        style: GoogleFonts.poppins(
+          color: Colors.grey.shade600,
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
   // Build drawer item
-  Widget _buildDrawerItem({
+  Widget _buildMenuItem({
     required IconData icon,
     required String title,
     Color iconColor = const Color(0xFF555555),
     Color textColor = const Color(0xFF333333),
-    bool isSelected = false,
+    bool isActive = false,
     required VoidCallback onTap,
   }) {
-    return Material(
-      color: isSelected ? AppTheme.lightTeal : Colors.transparent,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
       child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            border: isSelected
-                ? Border(
-                    left: BorderSide(
-                      color: AppTheme.primaryTeal,
-                      width: 4,
-                    ),
-                  )
-                : null,
+            color: isActive ? AppTheme.primaryTeal.withOpacity(0.1) : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
             children: [
-              Icon(
-                icon,
-                size: 20,
-                color: isSelected ? AppTheme.primaryTeal : iconColor,
+              Container(
+                padding: EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryTeal.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  color: isActive ? AppTheme.primaryTeal : iconColor,
+                  size: 20,
+                ),
               ),
-              SizedBox(width: 15),
+              SizedBox(width: 16),
               Text(
                 title,
                 style: GoogleFonts.poppins(
-                  fontSize: 15,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected ? AppTheme.primaryTeal : textColor,
+                  fontSize: 16,
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                  color: isActive ? AppTheme.primaryTeal : textColor,
                 ),
               ),
             ],
@@ -2128,14 +2221,14 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(20),
           ),
           title: Text(
-            "Sign Out",
+            "Logout",
             style: GoogleFonts.poppins(
               fontWeight: FontWeight.w600,
               color: AppTheme.darkText,
             ),
           ),
           content: Text(
-            "Are you sure you want to sign out?",
+            "Are you sure you want to logout?",
             style: GoogleFonts.poppins(
               fontSize: 14,
               color: AppTheme.mediumText,
@@ -2164,7 +2257,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: EdgeInsets.symmetric(horizontal: 15, vertical: 8),
               ),
               child: Text(
-                "Sign Out",
+                "Logout",
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w500,
                 ),

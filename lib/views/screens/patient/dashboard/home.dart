@@ -1069,29 +1069,33 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> with SingleTicker
                             child: InkWell(
                 onTap: () async {
                   Navigator.pop(context);
-                  try {
-                    await FirebaseAuth.instance.signOut();
-                    // Clear any cached data
-                    final prefs = await SharedPreferences.getInstance();
-                    await prefs.clear();
-                    
-                    if (context.mounted) {
-                      // Navigate to login screen and clear all routes
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
-                          builder: (context) => const SignIN(),
-                        ),
-                        (Route<dynamic> route) => false,
-                      );
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Error logging out. Please try again.'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
+                  // Show logout confirmation dialog first
+                  final shouldLogout = await _showLogoutConfirmationDialog(context);
+                  if (shouldLogout) {
+                    try {
+                      await FirebaseAuth.instance.signOut();
+                      // Clear any cached data
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.clear();
+                      
+                      if (context.mounted) {
+                        // Navigate to login screen and clear all routes
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(
+                            builder: (context) => const SignIN(),
+                          ),
+                          (Route<dynamic> route) => false,
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error logging out. Please try again.'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
                     }
                   }
                 },
@@ -4105,6 +4109,112 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> with SingleTicker
       debugPrint('Error fetching user city: $e');
       return null;
     }
+  }
+
+  // Add this method to the class
+  Future<bool> _showLogoutConfirmationDialog(BuildContext context) async {
+    final Size screenSize = MediaQuery.of(context).size;
+    final double horizontalPadding = screenSize.width * 0.05;
+    final double verticalPadding = screenSize.height * 0.02;
+    
+    return await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(screenSize.width * 0.05),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(horizontalPadding),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(horizontalPadding * 0.75),
+                  decoration: BoxDecoration(
+                    color: AppTheme.error.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.logout_rounded,
+                    color: AppTheme.error,
+                    size: screenSize.width * 0.075,
+                  ),
+                ),
+                SizedBox(height: verticalPadding),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                  "Logout",
+                  style: GoogleFonts.poppins(
+                      fontSize: screenSize.width * 0.05,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                ),
+                SizedBox(height: verticalPadding * 0.5),
+                Text(
+                  "Are you sure you want to logout?",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: screenSize.width * 0.035,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                SizedBox(height: verticalPadding * 1.25),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.grey.shade800,
+                          backgroundColor: Colors.grey.shade100,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(screenSize.width * 0.03),
+                          ),
+                          padding: EdgeInsets.symmetric(vertical: verticalPadding * 0.6),
+                        ),
+                        child: Text(
+                          "Cancel",
+                          style: GoogleFonts.poppins(
+                            fontSize: screenSize.width * 0.035,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: horizontalPadding * 0.75),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(context).pop(true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.error,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(screenSize.width * 0.03),
+                          ),
+                          padding: EdgeInsets.symmetric(vertical: verticalPadding * 0.6),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          "Logout",
+                          style: GoogleFonts.poppins(
+                            fontSize: screenSize.width * 0.035,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ) ?? false;
   }
 }
 
