@@ -60,8 +60,8 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
     super.initState();
     debugPrint('PatientsScreen initState called');
     
-    // Set system UI overlay style for patients screen - white/transparent status bar
-    UIHelper.applyTransparentStatusBar(withPostFrameCallback: true);
+    // Use pink status bar for consistency with other screens
+    UIHelper.applyPinkStatusBar(withPostFrameCallback: true);
     
     _controller = AnimationController(
       duration: const Duration(milliseconds: 800),
@@ -91,9 +91,8 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
     _controller.dispose();
     _searchController.dispose();
     
-    // Important: don't try to reset status bar style here
-    // Let the parent screen (analytics) handle its own UI styling
-    // This previously caused the issue with the pink status bar disappearing
+    // Ensure pink status bar is maintained when leaving
+    UIHelper.applyPinkStatusBar();
     
     super.dispose();
   }
@@ -215,6 +214,9 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
     debugPrint('🔄 Starting data refresh in background');
     _debugPrintState('before-refresh');
     
+    // Ensure pink status bar is maintained during refresh
+    UIHelper.applyPinkStatusBar();
+    
     setState(() {
       _isRefreshing = true;
       // Reset pagination for a fresh load
@@ -245,6 +247,10 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
           _isRefreshing = false;
           _isLoading = false;
         });
+        
+        // Reapply pink status bar after refresh completes
+        UIHelper.applyPinkStatusBar();
+        
         _debugPrintState('after-refresh');
       }
     }
@@ -616,7 +622,7 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
     _debugPrintState('build');
     
     return UIHelper.ensureStatusBarStyle(
-      style: UIHelper.transparentStatusBarStyle,
+      style: UIHelper.pinkStatusBarStyle,
       child: WillPopScope(
         onWillPop: () async {
           // Apply pink status bar before popping to analytics screen
@@ -628,10 +634,18 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
         child: Scaffold(
           backgroundColor: Colors.grey.shade50,
           appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
+            backgroundColor: AppTheme.primaryPink,
+            elevation: 4,
+            shadowColor: AppTheme.primaryPink.withOpacity(0.4),
+            systemOverlayStyle: UIHelper.pinkStatusBarStyle,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(25),
+                bottomRight: Radius.circular(25),
+              ),
+            ),
             leading: IconButton(
-              icon: Icon(Icons.arrow_back, color: AppTheme.darkText),
+              icon: Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () {
                 // Apply pink status bar before popping
                 UIHelper.applyPinkStatusBar(withPostFrameCallback: true);
@@ -641,7 +655,7 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
             title: Text(
               "Patients",
               style: GoogleFonts.poppins(
-                color: AppTheme.darkText,
+                color: Colors.white,
                 fontWeight: FontWeight.w600
               ),
             ),
