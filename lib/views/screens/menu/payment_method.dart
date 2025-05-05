@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/services.dart'; // For TextInputFormatters
 import 'package:healthcare/utils/app_theme.dart'; // Add AppTheme import
+import 'package:healthcare/utils/ui_helper.dart'; // Import for status bar handling
 
 class PaymentMethodsScreen extends StatefulWidget {
   final UserType userType;
@@ -39,11 +40,16 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
   @override
   void initState() {
     super.initState();
+    // Apply transparent status bar for this screen
+    UIHelper.applyTransparentStatusBar(withPostFrameCallback: true);
     _loadPaymentMethods();
   }
 
   @override
   void dispose() {
+    // Restore pink status bar when leaving
+    UIHelper.applyPinkStatusBar();
+    
     _cardNameController.dispose();
     _cardHolderController.dispose();
     _cardNumberController.dispose();
@@ -277,168 +283,188 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        elevation: 0,
+    return WillPopScope(
+      onWillPop: () async {
+        // Apply pink status bar before popping back
+        UIHelper.applyPinkStatusBar(withPostFrameCallback: true);
+        return true;
+      },
+      child: Scaffold(
         backgroundColor: Colors.white,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppTheme.darkText, size: 24),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          widget.userType == UserType.doctor ? "Payment Account" : "Payment Methods",
-          style: GoogleFonts.poppins(
-            color: AppTheme.darkText,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.info_outline, color: _primaryColor, size: 22),
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: Colors.white,
+          systemOverlayStyle: UIHelper.transparentStatusBarStyle,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: AppTheme.darkText, size: 24),
             onPressed: () {
-              // Show payment help dialog based on user type
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: Text(
-                    widget.userType == UserType.doctor ? "Payment Account Help" : "Payment Help",
-                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-                  ),
-                  content: Text(
-                    widget.userType == UserType.doctor 
-                        ? "Please provide your bank account details to receive payments from patients."
-                        : "You can add multiple payment methods and set a default one for quicker checkout.",
-                    style: GoogleFonts.poppins(),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(
-                        "Got it",
-                        style: GoogleFonts.poppins(color: _primaryColor),
-                      ),
-                    ),
-                  ],
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-              );
+              // Apply pink status bar before popping
+              UIHelper.applyPinkStatusBar(withPostFrameCallback: true);
+              Navigator.pop(context);
             },
           ),
-        ],
-      ),
-      body: _isLoading
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: _primaryColor),
-                  SizedBox(height: 20),
-                  Text(
-                    "Loading payment information...",
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: AppTheme.mediumText,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          : widget.userType == UserType.doctor ? _buildDoctorPaymentView() : _buildPatientPaymentView(),
-      floatingActionButton: _isLoading
-          ? null
-          : FloatingActionButton(
+          title: Text(
+            widget.userType == UserType.doctor ? "Payment Account" : "Payment Methods",
+            style: GoogleFonts.poppins(
+              color: AppTheme.darkText,
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+            ),
+          ),
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: Icon(Icons.info_outline, color: _primaryColor, size: 22),
               onPressed: () {
-                // Show payment method options
-                showModalBottomSheet(
+                // Show payment help dialog based on user type
+                showDialog(
                   context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (context) => Container(
-                    height: MediaQuery.of(context).size.height * 0.75,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(24),
-                        topRight: Radius.circular(24),
-                      ),
+                  builder: (context) => AlertDialog(
+                    title: Text(
+                      widget.userType == UserType.doctor ? "Payment Account Help" : "Payment Help",
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                     ),
-                    child: Padding(
-                      padding: EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                "Add Payment Method",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              IconButton(
-                                icon: Icon(Icons.close),
-                                onPressed: () => Navigator.pop(context),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 20),
-                          Text(
-                            "Select Method",
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          SizedBox(height: 16),
-                          _buildMethodOption(
-                            "Credit Card",
-                            Icons.credit_card,
-                            _primaryColor,
-                            () {
-                              Navigator.pop(context);
-                              _showAddPaymentBottomSheet("Card", "Credit Card", _primaryColor.value.toRadixString(16).padLeft(10, '0'));
-                            },
-                          ),
-                          SizedBox(height: 12),
-                          _buildMethodOption(
-                            "Debit Card",
-                            Icons.account_balance,
-                            AppTheme.success,
-                            () {
-                              Navigator.pop(context);
-                              _showAddPaymentBottomSheet("Card", "Debit Card", AppTheme.success.value.toRadixString(16).padLeft(10, '0'));
-                            },
-                          ),
-                          SizedBox(height: 12),
-                          _buildMethodOption(
-                            "Mobile Wallet",
-                            Icons.smartphone,
-                            widget.userType == UserType.doctor ? AppTheme.primaryPink : AppTheme.warning,
-                            () {
-                              Navigator.pop(context);
-                              String colorHex = widget.userType == UserType.doctor 
-                                ? AppTheme.primaryPink.value.toRadixString(16).padLeft(10, '0')
-                                : AppTheme.warning.value.toRadixString(16).padLeft(10, '0');
-                              _showAddPaymentBottomSheet("Wallet", "Mobile Wallet", colorHex);
-                            },
-                          ),
-                        ],
+                    content: Text(
+                      widget.userType == UserType.doctor 
+                          ? "Please provide your bank account details to receive payments from patients."
+                          : "You can add multiple payment methods and set a default one for quicker checkout.",
+                      style: GoogleFonts.poppins(),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          // Maintain transparent status bar when closing dialog
+                          UIHelper.applyTransparentStatusBar();
+                          Navigator.pop(context);
+                        },
+                        child: Text(
+                          "Got it",
+                          style: GoogleFonts.poppins(color: _primaryColor),
+                        ),
                       ),
+                    ],
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
                     ),
                   ),
                 );
               },
-              backgroundColor: _primaryColor,
-              elevation: 2,
-              child: Icon(Icons.add, color: Colors.white),
             ),
+          ],
+        ),
+        body: _isLoading
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(color: _primaryColor),
+                    SizedBox(height: 20),
+                    Text(
+                      "Loading payment information...",
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: AppTheme.mediumText,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : widget.userType == UserType.doctor ? _buildDoctorPaymentView() : _buildPatientPaymentView(),
+        floatingActionButton: _isLoading
+            ? null
+            : FloatingActionButton(
+                onPressed: () {
+                  // Show payment method options
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => Container(
+                      height: MediaQuery.of(context).size.height * 0.75,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(24),
+                          topRight: Radius.circular(24),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  "Add Payment Method",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.close),
+                                  onPressed: () {
+                                    // Maintain transparent status bar when closing
+                                    UIHelper.applyTransparentStatusBar();
+                                    Navigator.pop(context);
+                                  },
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 20),
+                            Text(
+                              "Select Method",
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            SizedBox(height: 16),
+                            _buildMethodOption(
+                              "Credit Card",
+                              Icons.credit_card,
+                              _primaryColor,
+                              () {
+                                Navigator.pop(context);
+                                _showAddPaymentBottomSheet("Card", "Credit Card", _primaryColor.value.toRadixString(16).padLeft(10, '0'));
+                              },
+                            ),
+                            SizedBox(height: 12),
+                            _buildMethodOption(
+                              "Debit Card",
+                              Icons.account_balance,
+                              AppTheme.success,
+                              () {
+                                Navigator.pop(context);
+                                _showAddPaymentBottomSheet("Card", "Debit Card", AppTheme.success.value.toRadixString(16).padLeft(10, '0'));
+                              },
+                            ),
+                            SizedBox(height: 12),
+                            _buildMethodOption(
+                              "Mobile Wallet",
+                              Icons.smartphone,
+                              widget.userType == UserType.doctor ? AppTheme.primaryPink : AppTheme.warning,
+                              () {
+                                Navigator.pop(context);
+                                String colorHex = widget.userType == UserType.doctor 
+                                  ? AppTheme.primaryPink.value.toRadixString(16).padLeft(10, '0')
+                                  : AppTheme.warning.value.toRadixString(16).padLeft(10, '0');
+                                _showAddPaymentBottomSheet("Wallet", "Mobile Wallet", colorHex);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                backgroundColor: _primaryColor,
+                elevation: 2,
+                child: Icon(Icons.add, color: Colors.white),
+              ),
+      ),
     );
   }
 
@@ -978,7 +1004,11 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                               ),
                               IconButton(
                                 icon: Icon(Icons.close),
-                                onPressed: () => Navigator.pop(context),
+                                onPressed: () {
+                                  // Maintain transparent status bar when closing
+                                  UIHelper.applyTransparentStatusBar();
+                                  Navigator.pop(context);
+                                },
                               ),
                             ],
                           ),
@@ -1587,7 +1617,11 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                         ),
                         IconButton(
                           icon: Icon(Icons.close),
-                          onPressed: () => Navigator.pop(context),
+                          onPressed: () {
+                            // Maintain transparent status bar when closing
+                            UIHelper.applyTransparentStatusBar();
+                            Navigator.pop(context);
+                          },
                         ),
                       ],
                     ),
@@ -2162,7 +2196,11 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
                       ),
                       child: IconButton(
                         icon: Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () {
+                          // Maintain transparent status bar when closing
+                          UIHelper.applyTransparentStatusBar();
+                          Navigator.pop(context);
+                        },
                         color: Colors.grey.shade700,
                       ),
                     ),
