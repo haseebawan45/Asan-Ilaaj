@@ -1,8 +1,12 @@
 package com.healthcare.healthcare
 
 import android.content.Intent
+import android.os.Build
+import android.os.Bundle
 import android.speech.RecognizerIntent
+import android.view.WindowManager
 import androidx.annotation.NonNull
+import androidx.core.view.WindowCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -12,6 +16,23 @@ import java.util.ArrayList
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "speech_to_text_channel"
     private val SPEECH_REQUEST_CODE = 100
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        // Enable edge-to-edge display
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        
+        // Make status bar transparent or translucent to allow Flutter to draw under it
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Android 11+ approach
+            window.setDecorFitsSystemWindows(false)
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            // For Android 5.0+
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+            window.statusBarColor = android.graphics.Color.TRANSPARENT
+        }
+    }
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -56,6 +77,14 @@ class MainActivity : FlutterActivity() {
         } else if (requestCode == SPEECH_REQUEST_CODE) {
             speechRecognitionResult?.error("SPEECH_RECOGNITION_CANCELLED", "Speech recognition cancelled or failed", null)
             speechRecognitionResult = null
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Reset status bar settings when returning to the app
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            window.statusBarColor = android.graphics.Color.TRANSPARENT
         }
     }
 } 

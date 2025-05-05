@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:healthcare/utils/app_theme.dart';
+import 'package:healthcare/utils/ui_helper.dart';
 import 'package:healthcare/views/screens/appointment/all_appoinments.dart';
 import 'package:healthcare/views/screens/appointment/appointment_detail.dart';
 import 'package:healthcare/views/screens/complete_profile/profile1.dart';
@@ -86,24 +87,16 @@ class _HomeScreenState extends State<HomeScreen> {
     profileStatus = widget.profileStatus;
     userType = widget.userType;
     
-    // Set system UI overlay style for immersive experience
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-      statusBarColor: AppTheme.primaryPink,
-      statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: Colors.white,
-      systemNavigationBarIconBrightness: Brightness.dark,
-    ));
+    // Use UIHelper instead of direct SystemChrome call
+    UIHelper.applyPinkStatusBar(withPostFrameCallback: true);
     
     _initializeData();
   }
 
   @override
   void dispose() {
-    // Reset system UI when leaving
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-      statusBarColor: AppTheme.primaryPink,
-      statusBarIconBrightness: Brightness.light,
-    ));
+    // Use UIHelper for consistent status bar management
+    UIHelper.applyPinkStatusBar();
     super.dispose();
   }
 
@@ -113,8 +106,12 @@ class _HomeScreenState extends State<HomeScreen> {
     // Load data (first from cache, then from Firebase)
     await _loadData();
     
-    // Check profile completion status
+    // Add an additional post-frame callback to ensure the status bar is properly set
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Ensure status bar is pink after the screen is fully built
+      UIHelper.applyPinkStatusBar();
+      
+      // Check profile completion status
       if (profileStatus != "complete") {
         if (userType == "Doctor") {
           Navigator.of(context).pushReplacement(
@@ -142,6 +139,9 @@ class _HomeScreenState extends State<HomeScreen> {
       // First immediately load data from cache before anything else
       await _loadCachedData();
       await _loadAppointmentsFromCache();
+      
+      // Ensure status bar is maintained after loading cached data
+      UIHelper.applyPinkStatusBar();
       
       // Now we can set isLoading to false since we have cache data
       setState(() {
@@ -185,6 +185,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadUserData() async {
     if (!mounted) return;
     
+    // Ensure status bar is maintained before loading data
+    UIHelper.applyPinkStatusBar();
+    
     setState(() {
       _isRefreshing = true;
     });
@@ -212,6 +215,9 @@ class _HomeScreenState extends State<HomeScreen> {
           _isRefreshing = false;
           _isLoading = false;
         });
+        
+        // Ensure status bar is maintained after loading data
+        UIHelper.applyPinkStatusBar();
       }
     }
   }
@@ -390,6 +396,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _fetchAppointments() async {
     if (!mounted) return;
     
+    // Ensure status bar is maintained before fetching appointments
+    UIHelper.applyPinkStatusBar();
+    
     try {
       final String? doctorId = _auth.currentUser?.uid;
       if (doctorId == null) {
@@ -565,10 +574,18 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } catch (e) {
       print('Error fetching appointments: $e');
+    } finally {
+      // Ensure status bar is maintained after fetching appointments
+      if (mounted) {
+        UIHelper.applyPinkStatusBar();
+      }
     }
   }
 
   Future<void> _refreshData() async {
+    // Ensure status bar is maintained while refreshing
+    UIHelper.applyPinkStatusBar();
+    
     await _loadUserData();
     await _fetchAppointments();
   }
@@ -589,503 +606,505 @@ class _HomeScreenState extends State<HomeScreen> {
     final double horizontalPadding = screenWidth * 0.06;
     final double verticalSpacing = screenHeight * 0.025;
     
-    return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: AppTheme.primaryPink,
-        systemOverlayStyle: SystemUiOverlayStyle(
-          statusBarColor: AppTheme.primaryPink,
-          statusBarIconBrightness: Brightness.light,
-          statusBarBrightness: Brightness.dark, // For iOS
-        ),
-        title: Text(
-          "Specialist Doctors",
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        centerTitle: true,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: Icon(
-              LucideIcons.menu,
-              color: Colors.white,
+    return WillPopScope(
+      onWillPop: () async {
+        // Ensure pink status bar is applied when returning to this screen
+        UIHelper.applyPinkStatusBar();
+        return true;
+      },
+      child: UIHelper.ensureStatusBarStyle(
+        style: UIHelper.pinkStatusBarStyle,
+        child: Scaffold(
+          backgroundColor: Colors.grey.shade50,
+          appBar: AppBar(
+            elevation: 0,
+            backgroundColor: AppTheme.primaryPink,
+            systemOverlayStyle: UIHelper.pinkStatusBarStyle,
+            title: Text(
+              "Specialist Doctors",
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-            onPressed: () {
-              Scaffold.of(context).openDrawer();
-            },
-          ),
-        ),
-        actions: [
-          // Add Chat icon
-          IconButton(
-            icon: Icon(Icons.chat_outlined, color: Colors.white),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ChatListScreen(isDoctor: true),
+            centerTitle: true,
+            leading: Builder(
+              builder: (context) => IconButton(
+                icon: Icon(
+                  LucideIcons.menu,
+                  color: Colors.white,
                 ),
-              );
-            },
-            tooltip: 'Chat with patients',
-          ),
-          // Notification icon
-          IconButton(
-            icon: Icon(
-              LucideIcons.bell,
-              color: Colors.white,
+                onPressed: () {
+                  Scaffold.of(context).openDrawer();
+                },
+              ),
             ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const NotificationScreen(),
+            actions: [
+              // Add Chat icon
+              IconButton(
+                icon: Icon(Icons.chat_outlined, color: Colors.white),
+                onPressed: () {
+                  _navigateWithStatusBar(
+                    context,
+                    ChatListScreen(isDoctor: true),
+                  );
+                },
+                tooltip: 'Chat with patients',
+              ),
+              // Notification icon
+              IconButton(
+                icon: Icon(
+                  LucideIcons.bell,
+                  color: Colors.white,
                 ),
-              );
-            },
+                onPressed: () {
+                  _navigateWithStatusBar(
+                    context,
+                    const NotificationScreen(),
+                  );
+                },
+              ),
+            ],
           ),
-        ],
-      ),
-      drawer: _buildDrawer(context, screenWidth),
-      body: SafeArea(
-        child: _isLoading
-            ? Center(
-                child: CircularProgressIndicator(
-                  color: AppTheme.primaryPink,
-                ),
-              )
-            : LayoutBuilder(
-                builder: (context, constraints) {
-                return Stack(
-                  children: [
-                      // Main scrollable content
-                    SingleChildScrollView(
-                        physics: BouncingScrollPhysics(),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Header with background
-                            Container(
-                              height: headerHeight,
-                              decoration: BoxDecoration(
-                                color: AppTheme.primaryPink,
-                                borderRadius: BorderRadius.only(
-                                  bottomLeft: Radius.circular(30),
-                                  bottomRight: Radius.circular(30),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppTheme.primaryPink.withOpacity(0.3),
-                                    blurRadius: 20,
-                                    offset: Offset(0, 10),
-                                  ),
-                                ],
-                              ),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: horizontalPadding,
-                                vertical: verticalSpacing * 0.6,
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  // Top row with user info
-                                  Row(
-                                    children: [
-                                      // Profile image
-                                      GestureDetector(
-                                        onTap: () {
-                                          NavigationHelper.navigateToTab(context, 3); // Navigate to Menu tab
-                                        },
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            border: Border.all(color: Colors.white, width: 2),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black12,
-                                                blurRadius: 8,
-                                                offset: Offset(0, 3),
-                                              ),
-                                            ],
-                                          ),
-                                          child: Hero(
-                                            tag: 'profileImage',
-                                            child: _profileImageUrl != null && _profileImageUrl!.isNotEmpty
-                                                ? CircleAvatar(
-                                                    radius: screenWidth * 0.065,
-                                                    backgroundImage: NetworkImage(_profileImageUrl!),
-                                                  )
-                                                : CircleAvatar(
-                                                    radius: screenWidth * 0.065,
-                                                    backgroundImage: AssetImage("assets/images/User.png"),
-                                                  ),
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(width: horizontalPadding * 0.8),
-                                      // User name and specialty with flexible width
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              "Welcome",
-                                              style: GoogleFonts.poppins(
-                                                fontSize: screenWidth * 0.04,
-                                                fontWeight: FontWeight.w500,
-                                                color: Colors.white.withOpacity(0.9),
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            Text(
-                                              _userName,
-                                              style: GoogleFonts.poppins(
-                                                fontSize: screenWidth * 0.055,
-                                                fontWeight: FontWeight.w600,
-                                                color: Colors.white,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            if (_specialty.isNotEmpty)
-                                              Text(
-                                                _specialty,
-                                                style: GoogleFonts.poppins(
-                                                  fontSize: screenWidth * 0.035,
-                                                  color: Colors.white.withOpacity(0.9),
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                          ],
-                                        ),
+          drawer: _buildDrawer(context, screenWidth),
+          body: SafeArea(
+            child: _isLoading
+                ? Center(
+                    child: CircularProgressIndicator(
+                      color: AppTheme.primaryPink,
+                    ),
+                  )
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                    return Stack(
+                      children: [
+                          // Main scrollable content
+                        SingleChildScrollView(
+                            physics: BouncingScrollPhysics(),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Header with background
+                                Container(
+                                  height: headerHeight,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryPink,
+                                    borderRadius: BorderRadius.only(
+                                      bottomLeft: Radius.circular(30),
+                                      bottomRight: Radius.circular(30),
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppTheme.primaryPink.withOpacity(0.3),
+                                        blurRadius: 20,
+                                        offset: Offset(0, 10),
                                       ),
                                     ],
                                   ),
-                                  
-                                  // Earnings info in header
-                                  Container(
-                                    margin: EdgeInsets.only(top: verticalSpacing * 0.8),
-                                    padding: EdgeInsets.all(screenWidth * 0.035),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(15),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        // Icon and labels
-                                        Expanded(
-                                          child: Row(
-                                            children: [
-                                              Container(
-                                                padding: EdgeInsets.all(screenWidth * 0.02),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white,
-                                                  borderRadius: BorderRadius.circular(10),
-                                                ),
-                                                child: Icon(
-                                                  Icons.paid_outlined,
-                                                  color: AppTheme.primaryTeal,
-                                                  size: screenWidth * 0.055,
-                                                ),
-                                              ),
-                                              SizedBox(width: screenWidth * 0.03),
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    Text(
-                                                      "Total Earning",
-                                                      style: GoogleFonts.poppins(
-                                                        color: Colors.white,
-                                                        fontSize: screenWidth * 0.032,
-                                                      ),
-                                                    ),
-                                                    Text(
-                                                      "Rs ${_totalEarnings.toStringAsFixed(2)}",
-                                                      style: GoogleFonts.poppins(
-                                                        color: Colors.white,
-                                                        fontSize: screenWidth * 0.045,
-                                                        fontWeight: FontWeight.bold,
-                                                      ),
-                                                      maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        // Arrow button
-                                        Container(
-                                          width: screenWidth * 0.08,
-                                          height: screenWidth * 0.08,
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withOpacity(0.2),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: IconButton(
-                                            onPressed: () {
-                                              NavigationHelper.navigateToTab(context, 2); // Navigate to Finances tab
-                                            },
-                                            icon: Icon(
-                                              LucideIcons.arrowRight,
-                                              color: Colors.white,
-                                              size: screenWidth * 0.04,
-                                            ),
-                                            padding: EdgeInsets.zero,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: horizontalPadding,
+                                    vertical: verticalSpacing * 0.6,
                                   ),
-                                ],
-                              ),
-                            ),
-                            
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  SizedBox(height: verticalSpacing),
-                                  
-                                  // Redesigned ratings Card with modern design
-                                  Container(
-                                    width: double.infinity,
-                                    padding: EdgeInsets.all(screenWidth * 0.05),
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.primaryTeal,
-                                      borderRadius: BorderRadius.circular(20),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: AppTheme.primaryTeal.withOpacity(0.3),
-                                          blurRadius: 15,
-                                          offset: Offset(0, 5),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            // Title section
-                                            Row(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      // Top row with user info
+                                      Row(
+                                        children: [
+                                          // Profile image
+                                          GestureDetector(
+                                            onTap: () {
+                                              NavigationHelper.navigateToTab(context, 3); // Navigate to Menu tab
+                                            },
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                border: Border.all(color: Colors.white, width: 2),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black12,
+                                                    blurRadius: 8,
+                                                    offset: Offset(0, 3),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Hero(
+                                                tag: 'profileImage',
+                                                child: _profileImageUrl != null && _profileImageUrl!.isNotEmpty
+                                                    ? CircleAvatar(
+                                                        radius: screenWidth * 0.065,
+                                                        backgroundImage: NetworkImage(_profileImageUrl!),
+                                                      )
+                                                    : CircleAvatar(
+                                                        radius: screenWidth * 0.065,
+                                                        backgroundImage: AssetImage("assets/images/User.png"),
+                                                      ),
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(width: horizontalPadding * 0.8),
+                                          // User name and specialty with flexible width
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
-                                                Container(
-                                                  padding: EdgeInsets.all(screenWidth * 0.02),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.white.withOpacity(0.2),
-                                                    borderRadius: BorderRadius.circular(10),
-                                                  ),
-                                                  child: Icon(
-                                                    LucideIcons.star,
-                                                    color: Colors.white,
-                                                    size: screenWidth * 0.05,
-                                                  ),
-                                                ),
-                                                SizedBox(width: screenWidth * 0.03),
                                                 Text(
-                                                  "Doctor Rating",
+                                                  "Welcome",
                                                   style: GoogleFonts.poppins(
                                                     fontSize: screenWidth * 0.04,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Colors.white.withOpacity(0.9),
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                Text(
+                                                  _userName,
+                                                  style: GoogleFonts.poppins(
+                                                    fontSize: screenWidth * 0.055,
                                                     fontWeight: FontWeight.w600,
                                                     color: Colors.white,
                                                   ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
                                                 ),
+                                                if (_specialty.isNotEmpty)
+                                                  Text(
+                                                    _specialty,
+                                                    style: GoogleFonts.poppins(
+                                                      fontSize: screenWidth * 0.035,
+                                                      color: Colors.white.withOpacity(0.9),
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
                                               ],
                                             ),
-                                            // Review count pill
-                                            Container(
-                                              padding: EdgeInsets.symmetric(
-                                                horizontal: screenWidth * 0.03,
-                                                vertical: screenWidth * 0.015,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.white.withOpacity(0.2),
-                                                borderRadius: BorderRadius.circular(screenWidth * 0.05),
-                                              ),
-                                              child: Text(
-                                                "$_reviewCount ${_reviewCount == 1 ? 'Review' : 'Reviews'}",
-                                                style: GoogleFonts.poppins(
-                                                  fontSize: screenWidth * 0.03,
-                                                  fontWeight: FontWeight.w500,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
+                                          ),
+                                        ],
+                                      ),
+                                      
+                                      // Earnings info in header
+                                      Container(
+                                        margin: EdgeInsets.only(top: verticalSpacing * 0.8),
+                                        padding: EdgeInsets.all(screenWidth * 0.035),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.15),
+                                          borderRadius: BorderRadius.circular(15),
                                         ),
-                                        SizedBox(height: verticalSpacing * 0.7),
-                                        // Rating display
-                                        Row(
-                                          crossAxisAlignment: CrossAxisAlignment.center,
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
-                                            // Rating number
-                                            Text(
-                                              _overallRating.toStringAsFixed(1),
-                                              style: GoogleFonts.poppins(
-                                                fontSize: screenWidth * 0.09,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                            SizedBox(width: screenWidth * 0.03),
-                                            // Rating stars
+                                            // Icon and labels
                                             Expanded(
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                              child: Row(
                                                 children: [
-                                                  Row(
-                                                    children: [
-                                                      for (int i = 1; i <= 5; i++)
-                                                        Icon(
-                                                          i <= _overallRating
-                                                              ? Icons.star
-                                                              : i <= _overallRating + 0.5
-                                                                  ? Icons.star_half
-                                                                  : Icons.star_border,
-                                                          color: Colors.amber,
-                                                          size: screenWidth * 0.05,
-                                                        ),
-                                                    ],
+                                                  Container(
+                                                    padding: EdgeInsets.all(screenWidth * 0.02),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.white,
+                                                      borderRadius: BorderRadius.circular(10),
+                                                    ),
+                                                    child: Icon(
+                                                      Icons.paid_outlined,
+                                                      color: AppTheme.primaryTeal,
+                                                      size: screenWidth * 0.055,
+                                                    ),
                                                   ),
-                                                  SizedBox(height: screenWidth * 0.02),
-                                                  // Progress indicator
-                                                  ClipRRect(
-                                                    borderRadius: BorderRadius.circular(10),
-                                                    child: LinearProgressIndicator(
-                                                      value: _overallRating / 5,
-                                                      backgroundColor: Colors.white.withOpacity(0.2),
-                                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.amber),
-                                                      minHeight: 5,
+                                                  SizedBox(width: screenWidth * 0.03),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        Text(
+                                                          "Total Earning",
+                                                          style: GoogleFonts.poppins(
+                                                            color: Colors.white,
+                                                            fontSize: screenWidth * 0.032,
+                                                          ),
+                                                        ),
+                                                        Text(
+                                                          "Rs ${_totalEarnings.toStringAsFixed(2)}",
+                                                          style: GoogleFonts.poppins(
+                                                            color: Colors.white,
+                                                            fontSize: screenWidth * 0.045,
+                                                            fontWeight: FontWeight.bold,
+                                                          ),
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow.ellipsis,
+                                                        ),
+                                                      ],
                                                     ),
                                                   ),
                                                 ],
                                               ),
                                             ),
+                                            // Arrow button
+                                            Container(
+                                              width: screenWidth * 0.08,
+                                              height: screenWidth * 0.08,
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withOpacity(0.2),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: IconButton(
+                                                onPressed: () {
+                                                  NavigationHelper.navigateToTab(context, 2); // Navigate to Finances tab
+                                                },
+                                                icon: Icon(
+                                                  LucideIcons.arrowRight,
+                                                  color: Colors.white,
+                                                  size: screenWidth * 0.04,
+                                                ),
+                                                padding: EdgeInsets.zero,
+                                              ),
+                                            ),
                                           ],
                                         ),
-                                        SizedBox(height: verticalSpacing * 0.7),
-                                        // View all reviews button
-                                        Center(
-                                          child: ElevatedButton.icon(
-                                            onPressed: () {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) => DoctorReviewsScreen(
-                                                    doctorId: _auth.currentUser?.uid,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                
+                                Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      SizedBox(height: verticalSpacing),
+                                      
+                                      // Redesigned ratings Card with modern design
+                                      Container(
+                                        width: double.infinity,
+                                        padding: EdgeInsets.all(screenWidth * 0.05),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.primaryTeal,
+                                          borderRadius: BorderRadius.circular(20),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: AppTheme.primaryTeal.withOpacity(0.3),
+                                              blurRadius: 15,
+                                              offset: Offset(0, 5),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                // Title section
+                                                Row(
+                                                  children: [
+                                                    Container(
+                                                      padding: EdgeInsets.all(screenWidth * 0.02),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.white.withOpacity(0.2),
+                                                        borderRadius: BorderRadius.circular(10),
+                                                      ),
+                                                      child: Icon(
+                                                        LucideIcons.star,
+                                                        color: Colors.white,
+                                                        size: screenWidth * 0.05,
+                                                      ),
+                                                    ),
+                                                    SizedBox(width: screenWidth * 0.03),
+                                                    Text(
+                                                      "Doctor Rating",
+                                                      style: GoogleFonts.poppins(
+                                                        fontSize: screenWidth * 0.04,
+                                                        fontWeight: FontWeight.w600,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                // Review count pill
+                                                Container(
+                                                  padding: EdgeInsets.symmetric(
+                                                    horizontal: screenWidth * 0.03,
+                                                    vertical: screenWidth * 0.015,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white.withOpacity(0.2),
+                                                    borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                                                  ),
+                                                  child: Text(
+                                                    "$_reviewCount ${_reviewCount == 1 ? 'Review' : 'Reviews'}",
+                                                    style: GoogleFonts.poppins(
+                                                      fontSize: screenWidth * 0.03,
+                                                      fontWeight: FontWeight.w500,
+                                                      color: Colors.white,
+                                                    ),
                                                   ),
                                                 ),
-                                              );
-                                            },
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.white,
-                                              foregroundColor: AppTheme.primaryTeal,
-                                              elevation: 0,
-                                              padding: EdgeInsets.symmetric(
-                                                horizontal: screenWidth * 0.05,
-                                                vertical: screenWidth * 0.025,
-                                              ),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(screenWidth * 0.04),
+                                              ],
+                                            ),
+                                            SizedBox(height: verticalSpacing * 0.7),
+                                            // Rating display
+                                            Row(
+                                              crossAxisAlignment: CrossAxisAlignment.center,
+                                              children: [
+                                                // Rating number
+                                                Text(
+                                                  _overallRating.toStringAsFixed(1),
+                                                  style: GoogleFonts.poppins(
+                                                    fontSize: screenWidth * 0.09,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                                SizedBox(width: screenWidth * 0.03),
+                                                // Rating stars
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Row(
+                                                        children: [
+                                                          for (int i = 1; i <= 5; i++)
+                                                            Icon(
+                                                              i <= _overallRating
+                                                                  ? Icons.star
+                                                                  : i <= _overallRating + 0.5
+                                                                      ? Icons.star_half
+                                                                      : Icons.star_border,
+                                                              color: Colors.amber,
+                                                              size: screenWidth * 0.05,
+                                                            ),
+                                                        ],
+                                                      ),
+                                                      SizedBox(height: screenWidth * 0.02),
+                                                      // Progress indicator
+                                                      ClipRRect(
+                                                        borderRadius: BorderRadius.circular(10),
+                                                        child: LinearProgressIndicator(
+                                                          value: _overallRating / 5,
+                                                          backgroundColor: Colors.white.withOpacity(0.2),
+                                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.amber),
+                                                          minHeight: 5,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            SizedBox(height: verticalSpacing * 0.7),
+                                            // View all reviews button
+                                            Center(
+                                              child: ElevatedButton.icon(
+                                                onPressed: () {
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) => DoctorReviewsScreen(
+                                                        doctorId: _auth.currentUser?.uid,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Colors.white,
+                                                  foregroundColor: AppTheme.primaryTeal,
+                                                  elevation: 0,
+                                                  padding: EdgeInsets.symmetric(
+                                                    horizontal: screenWidth * 0.05,
+                                                    vertical: screenWidth * 0.025,
+                                                  ),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(screenWidth * 0.04),
+                                                  ),
+                                                ),
+                                                icon: Icon(
+                                                  LucideIcons.clipboardList,
+                                                  size: screenWidth * 0.04,
+                                                ),
+                                                label: Text(
+                                                  "View All Reviews",
+                                                  style: GoogleFonts.poppins(
+                                                    fontSize: screenWidth * 0.035,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
                                               ),
                                             ),
-                                            icon: Icon(
-                                              LucideIcons.clipboardList,
-                                              size: screenWidth * 0.04,
-                                            ),
-                                            label: Text(
-                                              "View All Reviews",
-                                              style: GoogleFonts.poppins(
-                                                fontSize: screenWidth * 0.035,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ),
+                                          ],
                                         ),
-                                      ],
-                                    ),
-                                  ),
-                                  
-                                  SizedBox(height: verticalSpacing),
-                                  
-                                  // My Appointments Section
-                                  _buildAppointmentsSection(screenWidth, screenHeight, horizontalPadding, verticalSpacing),
+                                      ),
+                                      
+                                      SizedBox(height: verticalSpacing),
+                                      
+                                      // My Appointments Section
+                                      _buildAppointmentsSection(screenWidth, screenHeight, horizontalPadding, verticalSpacing),
 
-                                  // Add extra space at the bottom
-                                  SizedBox(height: verticalSpacing),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    
-                    // Bottom refresh indicator
-                    if (_isRefreshing)
-                      Positioned(
-                        bottom: 16,
-                        left: 0,
-                        right: 0,
-                        child: Center(
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: screenWidth * 0.04, 
-                              vertical: screenHeight * 0.01
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 8,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                SizedBox(
-                                  width: screenWidth * 0.04,
-                                  height: screenWidth * 0.04,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      AppTheme.primaryTeal,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(width: screenWidth * 0.02),
-                                Text(
-                                  "Refreshing...",
-                                  style: GoogleFonts.poppins(
-                                    fontSize: screenWidth * 0.03,
-                                    color: Colors.grey.shade700,
+                                      // Add extra space at the bottom
+                                      SizedBox(height: verticalSpacing),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        ),
-                      ),
-                  ],
-                );
-              }
-            ),
+                        
+                        // Bottom refresh indicator
+                        if (_isRefreshing)
+                          Positioned(
+                            bottom: 16,
+                            left: 0,
+                            right: 0,
+                            child: Center(
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: screenWidth * 0.04, 
+                                  vertical: screenHeight * 0.01
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 8,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    SizedBox(
+                                      width: screenWidth * 0.04,
+                                      height: screenWidth * 0.04,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                          AppTheme.primaryTeal,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(width: screenWidth * 0.02),
+                                    Text(
+                                      "Refreshing...",
+                                      style: GoogleFonts.poppins(
+                                        fontSize: screenWidth * 0.03,
+                                        color: Colors.grey.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  }
+                ),
+          ),
+        ),
       ),
     );
   }
@@ -2010,10 +2029,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       title: "My Appointments",
                       onTap: () {
                         Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => AppointmentHistoryScreen()),
-                        );
+                        _navigateWithStatusBar(context, AppointmentHistoryScreen());
                       },
                     ),
                     _buildMenuItem(
@@ -2021,10 +2037,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       title: "Set Availability",
                       onTap: () {
                         Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => DoctorAvailabilityScreen()),
-                        );
+                        _navigateWithStatusBar(context, DoctorAvailabilityScreen());
                       },
                     ),
                     _buildMenuItem(
@@ -2032,11 +2045,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       title: "Add Hospital",
                       onTap: () {
                         Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => HospitalSelectionScreen(selectedHospitals: []),
-                          ),
+                        _navigateWithStatusBar(
+                          context, 
+                          HospitalSelectionScreen(selectedHospitals: []),
                         );
                       },
                     ),
@@ -2063,10 +2074,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       title: "Help Center",
                       onTap: () {
                         Navigator.pop(context);
-                        Navigator.push(
-                          context, 
-                          MaterialPageRoute(builder: (context) => const HelpCenterScreen())
-                        );
+                        _navigateWithStatusBar(context, const HelpCenterScreen());
                       },
                     ),
                     
@@ -2178,7 +2186,11 @@ class _HomeScreenState extends State<HomeScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          // Ensure pink status bar is maintained for drawer navigation
+          UIHelper.applyPinkStatusBar();
+          onTap();
+        },
         borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -2275,6 +2287,20 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     ) ?? false;
+  }
+
+  // Add this helper method for navigation with status bar handling
+  void _navigateWithStatusBar(BuildContext context, Widget screen) {
+    // Apply status bar style before navigation
+    UIHelper.applyPinkStatusBar();
+    
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => screen),
+    ).then((_) {
+      // Restore pink status bar when returning to this screen
+      UIHelper.applyPinkStatusBar(withPostFrameCallback: true);
+    });
   }
 }
 
