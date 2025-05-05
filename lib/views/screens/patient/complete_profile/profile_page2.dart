@@ -886,7 +886,7 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
                   padding: const EdgeInsets.only(right: 16),
                   child: Icon(
                     LucideIcons.chevronDown,
-                    color: const Color(0xFF3366CC),
+                    color: AppTheme.primaryTeal,
                   ),
                 ),
                 dropdownColor: Colors.white,
@@ -1045,12 +1045,13 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
                           setState(() {
                             selectedDiseases.clear();
                           });
+                          _calculateCompletionPercentage();
                         },
                         child: Text(
                           "Clear All",
                           style: GoogleFonts.poppins(
                             fontWeight: FontWeight.w500,
-                            color: const Color(0xFF3366CC),
+                            color: AppTheme.primaryTeal,
                             fontSize: 12,
                           ),
                         ),
@@ -1066,7 +1067,7 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
                       decoration: BoxDecoration(
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF3366CC).withOpacity(0.15),
+                            color: AppTheme.primaryTeal.withOpacity(0.15),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),
@@ -1081,7 +1082,7 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
                             color: Colors.white,
                           ),
                         ),
-                        backgroundColor: const Color(0xFF3366CC),
+                        backgroundColor: AppTheme.primaryTeal,
                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
                         deleteIconColor: Colors.white.withOpacity(0.9),
                         deleteIcon: const Icon(LucideIcons.x, size: 14),
@@ -1101,21 +1102,20 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
           ),
         
         // Enhanced disease groups list
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
+        Container(
+          height: 250, // Fixed height
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF3366CC).withOpacity(0.1),
+                color: AppTheme.primaryTeal.withOpacity(0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
             ],
           ),
-          constraints: const BoxConstraints(maxHeight: 320),
           child: filteredGroupedDiseases.isEmpty
               ? Center(
                   child: Padding(
@@ -1150,133 +1150,129 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
                     ),
                   ),
                 )
-              : ListView.builder(
-                  shrinkWrap: true,
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: filteredGroupedDiseases.length,
-                  itemBuilder: (context, groupIndex) {
-                    final group = filteredGroupedDiseases[groupIndex];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(
-                          color: Colors.grey.shade200,
-                          width: 1,
+              : SingleChildScrollView(
+                  physics: const ClampingScrollPhysics(),
+                  child: Column(
+                    children: filteredGroupedDiseases.map((group) {
+                      return Card(
+                        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                            color: Colors.grey.shade200,
+                            width: 1,
+                          ),
                         ),
-                      ),
-                      child: Theme(
-                        data: Theme.of(context).copyWith(
-                          dividerColor: Colors.transparent,
-                        ),
-                        child: ExpansionTile(
-                          leading: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryTeal.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
+                        child: Theme(
+                          data: Theme.of(context).copyWith(
+                            dividerColor: Colors.transparent,
+                          ),
+                          child: ExpansionTile(
+                            leading: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryTeal.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                _getCategoryIcon(group.key),
+                                color: AppTheme.primaryTeal,
+                                size: 18,
+                              ),
                             ),
-                            child: Icon(
-                              _getCategoryIcon(group.key),
+                            title: Text(
+                              group.key,
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                                fontSize: 14,
+                              ),
+                            ),
+                            subtitle: Text(
+                              "${group.value.length} ${group.value.length == 1 ? 'disease' : 'diseases'}",
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            trailing: Icon(
+                              LucideIcons.chevronDown,
                               color: AppTheme.primaryTeal,
-                              size: 18,
+                              size: 20,
                             ),
-                          ),
-                          title: Text(
-                            group.key,
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                              fontSize: 14,
-                            ),
-                          ),
-                          subtitle: Text(
-                            "${group.value.length} ${group.value.length == 1 ? 'disease' : 'diseases'}",
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                          trailing: Icon(
-                            LucideIcons.chevronDown,
-                            color: const Color(0xFF3366CC),
-                            size: 20,
-                          ),
-                          childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-                          expandedCrossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: group.value.length,
-                              itemBuilder: (context, index) {
-                                final disease = group.value[index];
-                                final isSelected = selectedDiseases.contains(disease);
-                                return InkWell(
-                                  onTap: () {
-                                    toggleDisease(disease);
-                                  },
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                                    child: Row(
-                                      children: [
-                                        AnimatedContainer(
-                                          duration: const Duration(milliseconds: 200),
-                                          width: 24,
-                                          height: 24,
-                                          decoration: BoxDecoration(
-                                            color: isSelected
-                                                ? AppTheme.primaryTeal
-                                                : Colors.white,
-                                            borderRadius: BorderRadius.circular(6),
-                                            border: Border.all(
+                            childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+                            expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: group.value.map((disease) {
+                                  final isSelected = selectedDiseases.contains(disease);
+                                  return InkWell(
+                                    onTap: () {
+                                      toggleDisease(disease);
+                                    },
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                                      child: Row(
+                                        children: [
+                                          AnimatedContainer(
+                                            duration: const Duration(milliseconds: 200),
+                                            width: 24,
+                                            height: 24,
+                                            decoration: BoxDecoration(
                                               color: isSelected
                                                   ? AppTheme.primaryTeal
-                                                  : Colors.grey.shade400,
-                                              width: 1.5,
+                                                  : Colors.white,
+                                              borderRadius: BorderRadius.circular(6),
+                                              border: Border.all(
+                                                color: isSelected
+                                                    ? AppTheme.primaryTeal
+                                                    : Colors.grey.shade400,
+                                                width: 1.5,
+                                              ),
+                                              boxShadow: isSelected
+                                                  ? [
+                                                      BoxShadow(
+                                                        color: AppTheme.primaryTeal.withOpacity(0.2),
+                                                        blurRadius: 4,
+                                                        offset: const Offset(0, 2),
+                                                      )
+                                                    ]
+                                                  : null,
                                             ),
-                                            boxShadow: isSelected
-                                                ? [
-                                                    BoxShadow(
-                                                      color: AppTheme.primaryTeal.withOpacity(0.2),
-                                                      blurRadius: 4,
-                                                      offset: const Offset(0, 2),
-                                                    )
-                                                  ]
+                                            child: isSelected
+                                                ? const Icon(
+                                                    LucideIcons.check,
+                                                    color: Colors.white,
+                                                    size: 16,
+                                                  )
                                                 : null,
                                           ),
-                                          child: isSelected
-                                              ? const Icon(
-                                                  LucideIcons.check,
-                                                  color: Colors.white,
-                                                  size: 16,
-                                                )
-                                              : null,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Text(
-                                            disease,
-                                            style: GoogleFonts.poppins(
-                                              fontSize: 14,
-                                              fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
-                                              color: isSelected ? AppTheme.primaryTeal : AppTheme.darkText,
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Text(
+                                              disease,
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 14,
+                                                fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
+                                                color: isSelected ? AppTheme.primaryTeal : AppTheme.darkText,
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
+                                  );
+                                }).toList(),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    }).toList(),
+                  ),
                 ),
         ),
       ],
@@ -1332,13 +1328,13 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF3366CC).withOpacity(0.1),
+                color: AppTheme.primaryTeal.withOpacity(0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
             ],
             border: Border.all(
-              color: const Color(0xFF3366CC).withOpacity(0.3),
+              color: AppTheme.primaryTeal.withOpacity(0.3),
               width: 1.5,
             ),
           ),
@@ -1349,8 +1345,8 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      const Color(0xFF3366CC).withOpacity(0.1),
-                      const Color(0xFF3366CC).withOpacity(0.2),
+                      AppTheme.primaryTeal.withOpacity(0.1),
+                      AppTheme.primaryTeal.withOpacity(0.2),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -1359,7 +1355,7 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
                 ),
                 child: Icon(
                   LucideIcons.search,
-                  color: const Color(0xFF3366CC),
+                  color: AppTheme.primaryTeal,
                   size: 20,
                 ),
               ),
@@ -1415,19 +1411,19 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
               gradient: LinearGradient(
                 colors: [
                   Colors.white,
-                  const Color(0xFF3366CC).withOpacity(0.05),
+                  AppTheme.primaryTeal.withOpacity(0.05),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: const Color(0xFF3366CC).withOpacity(0.3),
+                color: AppTheme.primaryTeal.withOpacity(0.3),
                 width: 1.5,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF3366CC).withOpacity(0.05),
+                  color: AppTheme.primaryTeal.withOpacity(0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -1440,7 +1436,7 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
                   children: [
                     Icon(
                       LucideIcons.check,
-                      color: const Color(0xFF3366CC),
+                      color: AppTheme.primaryTeal,
                       size: 18,
                     ),
                     const SizedBox(width: 8),
@@ -1464,7 +1460,7 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
                           "Clear All",
                           style: GoogleFonts.poppins(
                             fontWeight: FontWeight.w500,
-                            color: const Color(0xFF3366CC),
+                            color: AppTheme.primaryTeal,
                             fontSize: 12,
                           ),
                         ),
@@ -1480,7 +1476,7 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
                       decoration: BoxDecoration(
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF3366CC).withOpacity(0.15),
+                            color: AppTheme.primaryTeal.withOpacity(0.15),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),
@@ -1495,7 +1491,7 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
                             color: Colors.white,
                           ),
                         ),
-                        backgroundColor: const Color(0xFF3366CC),
+                        backgroundColor: AppTheme.primaryTeal,
                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
                         deleteIconColor: Colors.white.withOpacity(0.9),
                         deleteIcon: const Icon(LucideIcons.x, size: 14),
@@ -1515,21 +1511,20 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
           ),
         
         // Enhanced allergy groups list
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
+        Container(
+          height: 250, // Fixed height
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF3366CC).withOpacity(0.1),
+                color: AppTheme.primaryTeal.withOpacity(0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
             ],
           ),
-          constraints: const BoxConstraints(maxHeight: 320),
           child: filteredGroupedAllergies.isEmpty
               ? Center(
                   child: Padding(
@@ -1564,133 +1559,129 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
                     ),
                   ),
                 )
-              : ListView.builder(
-                  shrinkWrap: true,
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: filteredGroupedAllergies.length,
-                  itemBuilder: (context, groupIndex) {
-                    final group = filteredGroupedAllergies[groupIndex];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(
-                          color: Colors.grey.shade200,
-                          width: 1,
+              : SingleChildScrollView(
+                  physics: const ClampingScrollPhysics(),
+                  child: Column(
+                    children: filteredGroupedAllergies.map((group) {
+                      return Card(
+                        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                            color: Colors.grey.shade200,
+                            width: 1,
+                          ),
                         ),
-                      ),
-                      child: Theme(
-                        data: Theme.of(context).copyWith(
-                          dividerColor: Colors.transparent,
-                        ),
-                        child: ExpansionTile(
-                          leading: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF3366CC).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              _getAllergyCategoryIcon(group.key),
-                              color: const Color(0xFF3366CC),
-                              size: 18,
-                            ),
+                        child: Theme(
+                          data: Theme.of(context).copyWith(
+                            dividerColor: Colors.transparent,
                           ),
-                          title: Text(
-                            group.key,
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                              fontSize: 14,
+                          child: ExpansionTile(
+                            leading: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryTeal.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                _getAllergyCategoryIcon(group.key),
+                                color: AppTheme.primaryTeal,
+                                size: 18,
+                              ),
                             ),
-                          ),
-                          subtitle: Text(
-                            "${group.value.length} ${group.value.length == 1 ? 'allergy' : 'allergies'}",
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
+                            title: Text(
+                              group.key,
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                                fontSize: 14,
+                              ),
                             ),
-                          ),
-                          trailing: Icon(
-                            LucideIcons.chevronDown,
-                            color: const Color(0xFF3366CC),
-                            size: 20,
-                          ),
-                          childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-                          expandedCrossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: group.value.length,
-                              itemBuilder: (context, index) {
-                                final allergy = group.value[index];
-                                final isSelected = selectedAllergies.contains(allergy);
-                                return InkWell(
-                                  onTap: () {
-                                    toggleAllergy(allergy);
-                                  },
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                                    child: Row(
-                                      children: [
-                                        AnimatedContainer(
-                                          duration: const Duration(milliseconds: 200),
-                                          width: 24,
-                                          height: 24,
-                                          decoration: BoxDecoration(
-                                            color: isSelected
-                                                ? const Color(0xFF3366CC)
-                                                : Colors.white,
-                                            borderRadius: BorderRadius.circular(6),
-                                            border: Border.all(
+                            subtitle: Text(
+                              "${group.value.length} ${group.value.length == 1 ? 'allergy' : 'allergies'}",
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            trailing: Icon(
+                              LucideIcons.chevronDown,
+                              color: AppTheme.primaryTeal,
+                              size: 20,
+                            ),
+                            childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+                            expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: group.value.map((allergy) {
+                                  final isSelected = selectedAllergies.contains(allergy);
+                                  return InkWell(
+                                    onTap: () {
+                                      toggleAllergy(allergy);
+                                    },
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                                      child: Row(
+                                        children: [
+                                          AnimatedContainer(
+                                            duration: const Duration(milliseconds: 200),
+                                            width: 24,
+                                            height: 24,
+                                            decoration: BoxDecoration(
                                               color: isSelected
-                                                  ? const Color(0xFF3366CC)
-                                                  : Colors.grey.shade400,
-                                              width: 1.5,
+                                                  ? AppTheme.primaryTeal
+                                                  : Colors.white,
+                                              borderRadius: BorderRadius.circular(6),
+                                              border: Border.all(
+                                                color: isSelected
+                                                    ? AppTheme.primaryTeal
+                                                    : Colors.grey.shade400,
+                                                width: 1.5,
+                                              ),
+                                              boxShadow: isSelected
+                                                  ? [
+                                                      BoxShadow(
+                                                        color: AppTheme.primaryTeal.withOpacity(0.2),
+                                                        blurRadius: 4,
+                                                        offset: const Offset(0, 2),
+                                                      )
+                                                    ]
+                                                  : null,
                                             ),
-                                            boxShadow: isSelected
-                                                ? [
-                                                    BoxShadow(
-                                                      color: const Color(0xFF3366CC).withOpacity(0.2),
-                                                      blurRadius: 4,
-                                                      offset: const Offset(0, 2),
-                                                    )
-                                                  ]
+                                            child: isSelected
+                                                ? const Icon(
+                                                    LucideIcons.check,
+                                                    color: Colors.white,
+                                                    size: 16,
+                                                  )
                                                 : null,
                                           ),
-                                          child: isSelected
-                                              ? const Icon(
-                                                  LucideIcons.check,
-                                                  color: Colors.white,
-                                                  size: 16,
-                                                )
-                                              : null,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Text(
-                                            allergy,
-                                            style: GoogleFonts.poppins(
-                                              fontSize: 14,
-                                              fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
-                                              color: isSelected ? const Color(0xFF3366CC) : Colors.black87,
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Text(
+                                              allergy,
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 14,
+                                                fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
+                                                color: isSelected ? AppTheme.primaryTeal : Colors.black87,
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
+                                  );
+                                }).toList(),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    }).toList(),
+                  ),
                 ),
         ),
       ],
@@ -1748,7 +1739,7 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
             padding: const EdgeInsets.all(12),
             child: Icon(
               icon,
-              color: const Color(0xFF3366CC),
+              color: AppTheme.primaryTeal,
               size: 20,
             ),
           ),
@@ -1771,18 +1762,18 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
         padding: const EdgeInsets.all(16),
         margin: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: isFileSelected ? const Color(0xFF3366CC).withOpacity(0.05) : Colors.white,
+          color: isFileSelected ? AppTheme.primaryTeal.withOpacity(0.05) : Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF3366CC).withOpacity(0.1),
+              color: AppTheme.primaryTeal.withOpacity(0.1),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
           ],
           border: Border.all(
             color: isFileSelected
-                ? const Color(0xFF3366CC)
+                ? AppTheme.primaryTeal
                 : Colors.grey.shade300,
             width: 1.5,
           ),
@@ -1796,8 +1787,8 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        const Color(0xFF3366CC).withOpacity(0.1),
-                        const Color(0xFF3366CC).withOpacity(0.2),
+                        AppTheme.primaryTeal.withOpacity(0.1),
+                        AppTheme.primaryTeal.withOpacity(0.2),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -1806,7 +1797,7 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
                   ),
                   child: Icon(
                     isFileSelected ? LucideIcons.fileCheck : LucideIcons.fileText,
-                    color: const Color(0xFF3366CC),
+                    color: AppTheme.primaryTeal,
                     size: 24,
                   ),
                 ),
@@ -1831,7 +1822,7 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           color: isFileSelected 
-                              ? const Color(0xFF3366CC)
+                              ? AppTheme.primaryTeal
                               : Colors.grey.shade600,
                           fontWeight: isFileSelected 
                               ? FontWeight.w500
@@ -1846,8 +1837,8 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        const Color(0xFF3366CC).withOpacity(0.1),
-                        const Color(0xFF3366CC).withOpacity(0.2),
+                        AppTheme.primaryTeal.withOpacity(0.1),
+                        AppTheme.primaryTeal.withOpacity(0.2),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -1858,7 +1849,7 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
                     isFileSelected
                         ? LucideIcons.check
                         : LucideIcons.upload,
-                    color: const Color(0xFF3366CC),
+                    color: AppTheme.primaryTeal,
                     size: 20,
                   ),
                 ),
@@ -2079,7 +2070,7 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF3366CC).withOpacity(0.1),
+            color: AppTheme.primaryTeal.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -2272,7 +2263,7 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
                   children: [
                     Icon(
                       LucideIcons.upload,
-                      color: const Color(0xFF3366CC),
+                      color: AppTheme.primaryTeal,
                       size: 32,
                     ),
                     const SizedBox(height: 8),
@@ -2280,7 +2271,7 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
                       "Upload Report",
                       style: GoogleFonts.poppins(
                         fontSize: 14,
-                        color: const Color(0xFF3366CC),
+                        color: AppTheme.primaryTeal,
                       ),
                     ),
                     Text(
@@ -2640,7 +2631,7 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF3366CC).withOpacity(0.1),
+                      color: AppTheme.primaryTeal.withOpacity(0.1),
                       blurRadius: 15,
                       offset: const Offset(0, 5),
                     ),
@@ -2654,12 +2645,12 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF3366CC).withOpacity(0.1),
+                            color: AppTheme.primaryTeal.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(
                             LucideIcons.stethoscope,
-                            color: const Color(0xFF3366CC),
+                            color: AppTheme.primaryTeal,
                             size: 20,
                           ),
                         ),
@@ -2731,7 +2722,7 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF3366CC).withOpacity(0.1),
+                      color: AppTheme.primaryTeal.withOpacity(0.1),
                       blurRadius: 15,
                       offset: const Offset(0, 5),
                     ),
@@ -2745,12 +2736,12 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF3366CC).withOpacity(0.1),
+                            color: AppTheme.primaryTeal.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(
                             LucideIcons.fileText,
-                            color: const Color(0xFF3366CC),
+                            color: AppTheme.primaryTeal,
                             size: 20,
                           ),
                         ),

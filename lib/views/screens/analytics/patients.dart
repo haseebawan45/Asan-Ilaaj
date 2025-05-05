@@ -603,116 +603,20 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
-    // Get filtered patients
-    final displayedPatients = filteredPatients;
-    
-    // Force refresh indicator visibility for testing
-    // Comment this line out for production
-    // _isRefreshing = true;
-    
-    // Debug print current state
     _debugPrintState('build');
     
-    return WillPopScope(
-      onWillPop: () async {
-        // Navigate to the bottom navigation bar with home tab selected
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => BottomNavigationBarScreen(
-              profileStatus: "complete",
-              initialIndex: 0, // Home tab index
-            ),
-          ),
-        );
-        return false; // Prevent default back button behavior
-      },
-      child: Scaffold(
-        body: RefreshIndicator(
-          onRefresh: _refreshDataInBackground,
-          child: Stack(
+    return Scaffold(
+      backgroundColor: Colors.grey.shade50,
+      body: SafeArea(
+        child: Column(
             children: [
-              // Background gradient
+            // Earnings Summary
               Container(
-                height: 220,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryPink,
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(30),
-                    bottomRight: Radius.circular(30),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.primaryPink.withOpacity(0.4),
-                      blurRadius: 15,
-                      offset: Offset(0, 8),
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
+              margin: EdgeInsets.symmetric(
+                horizontal: MediaQuery.of(context).size.width * 0.04,
+                vertical: MediaQuery.of(context).size.width * 0.025
               ),
-              
-              // Main content
-              SafeArea(
-                child: Column(
-                  children: [
-                    // Custom app bar with gradient background
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
-                      child: Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () => Navigator.pop(context),
-                            child: Container(
-                              padding: EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.25),
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 5,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.5),
-                                  width: 1.5,
-                                ),
-                              ),
-                              child: Icon(
-                                Icons.arrow_back_ios_new_rounded,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 15),
-                          Text(
-                            "Patient Appointments",
-                            style: GoogleFonts.poppins(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black.withOpacity(0.3),
-                                  blurRadius: 2,
-                                  offset: Offset(0, 1),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Spacer(),
-                        ],
-                      ),
-                    ),
-                    
-                    // Earnings summary
-                    Container(
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      padding: EdgeInsets.all(15),
+              padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.037),
                       decoration: BoxDecoration(
                         color: AppTheme.primaryPink.withOpacity(0.9),
                         borderRadius: BorderRadius.circular(18),
@@ -734,12 +638,12 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
                           Text(
                             "Doctor Performance",
                             style: GoogleFonts.poppins(
-                              fontSize: 16,
+                      fontSize: MediaQuery.of(context).size.width * 0.04,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,
                             ),
                           ),
-                          SizedBox(height: 12),
+                  SizedBox(height: MediaQuery.of(context).size.width * 0.03),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
@@ -749,7 +653,7 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
                                 LucideIcons.wallet,
                               ),
                               Container(
-                                height: 40,
+                                height: MediaQuery.of(context).size.width * 0.1,
                                 width: 1.5,
                                 color: Colors.white.withOpacity(0.5),
                               ),
@@ -759,17 +663,6 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
                                 LucideIcons.calendar,
                               ),
                             ],
-                          ),
-                          // Add debug text to show actual values
-                          Padding(
-                            padding: EdgeInsets.only(top: 8),
-                            child: Text(
-                              "Earnings: $_totalEarnings, Appointments: $_totalAppointments",
-                              style: GoogleFonts.poppins(
-                                fontSize: 10,
-                                color: Colors.white.withOpacity(0.8),
-                              ),
-                            ),
                           ),
                         ],
                       ),
@@ -793,9 +686,9 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
                           curve: Interval(0.2, 0.7, curve: Curves.easeOut),
                         )),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  padding: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width * 0.04),
                           child: Container(
-                            height: 60,
+                    height: MediaQuery.of(context).size.width * 0.15,
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(20),
@@ -819,11 +712,11 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
                                 prefixIcon: Icon(
                                   LucideIcons.search,
                                   color: AppTheme.primaryPink,
-                                  size: 22,
+                          size: MediaQuery.of(context).size.width * 0.055,
                                 ),
                                 hintText: "Search patients or hospitals",
                                 hintStyle: GoogleFonts.poppins(
-                                  fontSize: 14,
+                          fontSize: MediaQuery.of(context).size.width * 0.035,
                                   color: Colors.grey.shade500,
                                 ),
                                 suffixIcon: _searchQuery.isNotEmpty
@@ -831,6 +724,7 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
                                         icon: Icon(
                                           Icons.clear,
                                           color: AppTheme.primaryPink,
+                                  size: MediaQuery.of(context).size.width * 0.05,
                                         ),
                                         onPressed: () {
                                           _searchController.clear();
@@ -927,17 +821,17 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
                                         ),
                                         SliverPadding(
                                           padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                                          sliver: displayedPatients.isEmpty
+                                  sliver: filteredPatients.isEmpty
                                               ? SliverToBoxAdapter(
                                                   child: _buildNoResultsFound(),
                                                 )
                                               : SliverList(
                                                   delegate: SliverChildBuilderDelegate(
                                                     (context, index) {
-                                                      final patient = displayedPatients[index];
+                                              final patient = filteredPatients[index];
                                                       return _buildPatientCard(patient);
                                                     },
-                                                    childCount: displayedPatients.length,
+                                            childCount: filteredPatients.length,
                                                   ),
                                                 ),
                                         ),
@@ -987,13 +881,6 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
                                     ),
                   ),
                 ],
-              ),
-              ),
-              
-              // Bottom refresh indicator - always visible for testing
-              if (_isRefreshing || _isLoading) _buildBottomRefreshIndicator(),
-            ],
-          ),
         ),
       ),
     );
@@ -1061,9 +948,13 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
   }
 
   Widget _buildSortOptions() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final height = screenWidth * 0.11;
+    final fontSize = screenWidth * 0.03;
+    
     return Container(
-      height: 44,
-      padding: EdgeInsets.all(3),
+      height: height,
+      padding: EdgeInsets.all(screenWidth * 0.008),
       decoration: BoxDecoration(
         color: Colors.grey.shade100,
         borderRadius: BorderRadius.circular(10),
@@ -1085,7 +976,7 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
                 });
               },
               child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 2),
+                  margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.005),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                     color: isSelected
@@ -1101,19 +992,22 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
                     ] : null,
                   ),
                   child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 4),
+                    padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.01),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
                 child: Text(
                   _sortOptions[index],
                   style: GoogleFonts.poppins(
                         color: isSelected
                         ? Colors.white
                         : Colors.grey.shade600,
-                        fontSize: 12,
+                          fontSize: fontSize,
                         fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
+                      ),
                 ),
               ),
             ),
@@ -1161,9 +1055,12 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
     final bool isUpcoming = patient["appointment"]["status"] == "Upcoming" ||
                           patient["appointment"]["status"] == "Confirmed" ||
                           patient["appointment"]["status"] == "Pending";
+    final screenWidth = MediaQuery.of(context).size.width;
+    final fontSize = screenWidth * 0.035;
+    final padding = screenWidth * 0.04;
     
     return Container(
-      margin: const EdgeInsets.only(bottom: 15),
+      margin: EdgeInsets.only(bottom: screenWidth * 0.035),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -1196,7 +1093,7 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
             );
           },
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: EdgeInsets.all(padding),
             child: Column(
               children: [
                 Row(
@@ -1291,27 +1188,6 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
                                 style: GoogleFonts.poppins(
                                   fontSize: 13,
                                   color: Colors.grey.shade700,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.location_on_rounded,
-                                size: 14,
-                                color: AppTheme.primaryPink,
-                              ),
-                              const SizedBox(width: 4),
-                              Flexible(
-                                child: Text(
-                                  patient["location"],
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 13,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
@@ -1425,7 +1301,10 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
+                      Flexible(
+                        flex: 2,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
                             padding: EdgeInsets.all(6),
@@ -1450,7 +1329,10 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
                           ),
                         ],
                       ),
-                      Container(
+                      ),
+                      Flexible(
+                        flex: 3,
+                        child: Container(
                         padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: AppTheme.primaryPink.withOpacity(0.1),
@@ -1468,6 +1350,8 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
                             fontWeight: FontWeight.w600,
                           ),
                           overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
                         ),
                       ),
                     ],
@@ -1482,10 +1366,16 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
   }
   
   Widget _buildAppointmentDetailRow(IconData icon, String label, String value, Color iconColor) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final iconSize = screenWidth * 0.04;
+        final fontSize = screenWidth * 0.032;
+        
     return Row(
       children: [
         Container(
-          padding: EdgeInsets.all(7),
+              padding: EdgeInsets.all(screenWidth * 0.017),
           decoration: BoxDecoration(
             color: AppTheme.primaryPink.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
@@ -1496,25 +1386,25 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
           ),
           child: Icon(
             icon,
-            size: 16,
+                size: iconSize,
             color: AppTheme.primaryPink,
           ),
         ),
-        SizedBox(width: 10),
+            SizedBox(width: screenWidth * 0.02),
         Text(
           label,
           style: GoogleFonts.poppins(
-            fontSize: 13,
+                fontSize: fontSize,
             color: Colors.grey.shade700,
             fontWeight: FontWeight.w500,
           ),
         ),
-        SizedBox(width: 8),
+            SizedBox(width: screenWidth * 0.02),
         Expanded(
           child: Text(
             value,
             style: GoogleFonts.poppins(
-              fontSize: 13,
+                  fontSize: fontSize,
               color: AppTheme.primaryPink,
               fontWeight: FontWeight.w500,
             ),
@@ -1523,6 +1413,8 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
           ),
         ),
       ],
+        );
+      }
     );
   }
 
@@ -1572,11 +1464,20 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
     bool isSelected,
     VoidCallback onTap,
   ) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final fontSize = screenWidth * 0.033;
+        final iconSize = screenWidth * 0.042;
+        
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(right: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            margin: EdgeInsets.only(right: screenWidth * 0.025),
+            padding: EdgeInsets.symmetric(
+              horizontal: screenWidth * 0.03, 
+              vertical: screenWidth * 0.02
+            ),
         decoration: BoxDecoration(
           color: isSelected
               ? AppTheme.primaryPink
@@ -1604,29 +1505,28 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
                 ],
         ),
         child: Row(
+              mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
-              color: isSelected
-                  ? Colors.white
-                  : (label == "Filters" ? AppTheme.primaryPink : Colors.grey.shade500),
-              size: 18,
-            ),
-            const SizedBox(width: 6),
+                  size: iconSize,
+                  color: isSelected ? Colors.white : AppTheme.primaryPink,
+                ),
+                SizedBox(width: screenWidth * 0.01),
             Text(
               label,
               style: GoogleFonts.poppins(
-                color: isSelected
-                    ? Colors.white
-                    : (label == "Filters" ? AppTheme.primaryPink : Colors.grey.shade500),
-                fontSize: 14,
+                    fontSize: fontSize,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    color: isSelected ? Colors.white : AppTheme.primaryPink,
               ),
               overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
       ),
+        );
+      }
     );
   }
 
@@ -1683,11 +1583,13 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
   }
 
   Widget _buildEarningsStat(String label, String value, IconData icon) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Container(
-          padding: EdgeInsets.all(10),
+          padding: EdgeInsets.all(screenWidth * 0.025),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.25),
             shape: BoxShape.circle,
@@ -1705,15 +1607,15 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
           ),
           child: Icon(
             icon,
-            size: 24,
+            size: screenWidth * 0.06,
             color: Colors.white,
           ),
         ),
-        SizedBox(height: 10),
+        SizedBox(height: screenWidth * 0.025),
         Text(
           label,
           style: GoogleFonts.poppins(
-            fontSize: 14,
+            fontSize: screenWidth * 0.035,
             fontWeight: FontWeight.w600,
             color: Colors.white,
             shadows: [
@@ -1725,9 +1627,12 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
             ],
           ),
         ),
-        SizedBox(height: 4),
+        SizedBox(height: screenWidth * 0.01),
         Container(
-          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          padding: EdgeInsets.symmetric(
+            horizontal: screenWidth * 0.025,
+            vertical: screenWidth * 0.012
+          ),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.15),
             borderRadius: BorderRadius.circular(12),
@@ -1739,7 +1644,7 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
           child: Text(
             value,
             style: GoogleFonts.poppins(
-              fontSize: 16,
+              fontSize: screenWidth * 0.04,
               fontWeight: FontWeight.bold,
               color: Colors.white,
               shadows: [
@@ -1753,70 +1658,6 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
           ),
         ),
       ],
-    );
-  }
-
-  // Fix the refresh indicator at the bottom of the screen
-  Widget _buildBottomRefreshIndicator() {
-    return Positioned(
-      bottom: 20,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          decoration: BoxDecoration(
-            color: AppTheme.primaryPink,
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primaryPink.withOpacity(0.3),
-                blurRadius: 15,
-                offset: Offset(0, 5),
-                spreadRadius: 1,
-              ),
-            ],
-            border: Border.all(
-              color: Colors.white.withOpacity(0.5),
-              width: 2,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                padding: EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
-              SizedBox(width: 14),
-              Text(
-                "Refreshing patient data...",
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 2,
-                      offset: Offset(0, 1),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

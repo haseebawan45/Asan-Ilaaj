@@ -182,6 +182,8 @@ class _PrescriptionViewScreenState extends State<PrescriptionViewScreen> {
         ),
         backgroundColor: AppTheme.primaryTeal,
         foregroundColor: Colors.white,
+        iconTheme: IconThemeData(color: Colors.white),
+        actionsIconTheme: IconThemeData(color: Colors.white),
         elevation: 0,
       ),
       body: SingleChildScrollView(

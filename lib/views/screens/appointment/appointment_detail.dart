@@ -334,8 +334,10 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
       }
       
       // Get doctor information if doctorId is available but name/specialty is missing
+      // For patients (non-doctors), we want to always ensure doctorId is properly set
       if (data.containsKey('doctorId') && 
-          (!data.containsKey('doctorName') || data['doctorName'] == null || 
+          (!_isDoctor || // Always try to ensure doctorId is valid for patients  
+           !data.containsKey('doctorName') || data['doctorName'] == null || 
            !data.containsKey('specialty') || data['specialty'] == null)) {
         
         try {
@@ -346,6 +348,9 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
           
           if (doctorDoc.exists && doctorDoc.data() != null) {
             final doctorData = doctorDoc.data() as Map<String, dynamic>;
+            
+            // Ensure doctorId is correctly set in appointment details
+            appointmentDetails['doctorId'] = doctorDoc.id;
             
             if (!data.containsKey('doctorName') || data['doctorName'] == null) {
               appointmentDetails['doctorName'] = doctorData['fullName'] ?? doctorData['name'] ?? "Unknown Doctor";
@@ -359,6 +364,31 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
           }
         } catch (e) {
           print('Error fetching doctor information: $e');
+        }
+      }
+      // If we don't have doctorId but have doctorName, try to look up the doctor
+      else if (!_isDoctor && (!data.containsKey('doctorId') || data['doctorId'] == null) && 
+               data.containsKey('doctorName') && data['doctorName'] != null) {
+        try {
+          // Try to find doctor by name
+          final doctorQuery = await firestore
+              .collection('doctors')
+              .where('fullName', isEqualTo: data['doctorName'])
+              .limit(1)
+              .get();
+              
+          if (doctorQuery.docs.isNotEmpty) {
+            final doctorData = doctorQuery.docs.first.data();
+            appointmentDetails['doctorId'] = doctorQuery.docs.first.id;
+            
+            if (!data.containsKey('specialty') && !data.containsKey('doctorSpecialty')) {
+              appointmentDetails['specialty'] = doctorData['specialty'] ?? "General";
+            }
+            
+            appointmentDetails['doctorImage'] = doctorData['profileImageUrl'] ?? 'assets/images/User.png';
+          }
+        } catch (e) {
+          print('Error looking up doctor by name: $e');
         }
       }
       
@@ -433,6 +463,8 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
         elevation: 0,
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
+        iconTheme: IconThemeData(color: Colors.white),
+        actionsIconTheme: IconThemeData(color: Colors.white),
         actions: [
           if (_isDoctor && !_isCancelled && _appointmentStatus.toLowerCase() == 'completed')
             IconButton(
@@ -773,7 +805,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Color(0xFF3366CC).withOpacity(0.1),
+                        color: AppTheme.primaryTeal.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -781,7 +813,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                   style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: Color(0xFF3366CC),
+                          color: AppTheme.primaryTeal,
                         ),
                       ),
                     ),
@@ -930,13 +962,13 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                               child: Container(
                                 padding: EdgeInsets.all(4),
                                 decoration: BoxDecoration(
-                                  color: Color(0xFF3366CC).withOpacity(0.1),
+                                  color: AppTheme.primaryTeal.withOpacity(0.1),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
                                   LucideIcons.refreshCw,
                                   size: 14,
-                                  color: Color(0xFF3366CC),
+                                  color: AppTheme.primaryTeal,
                                 ),
                               ),
                             ),
@@ -958,7 +990,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                     Icon(
                       LucideIcons.phone,
                       size: 16,
-                      color: Color(0xFF3366CC),
+                      color: AppTheme.primaryTeal,
                     ),
                     SizedBox(width: 6),
                     Text(
@@ -976,13 +1008,13 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
           if (_appointmentData['patientId'] != null)
             Container(
               decoration: BoxDecoration(
-                color: Color(0xFF3366CC).withOpacity(0.1),
+                color: AppTheme.primaryTeal.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: IconButton(
               icon: Icon(
                 LucideIcons.userSearch,
-                color: Color(0xFF3366CC),
+                color: AppTheme.primaryTeal,
                   size: 20,
               ),
               tooltip: "View Patient Profile",
@@ -991,7 +1023,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text("Patient profile view will be added soon"),
-                    backgroundColor: Color(0xFF3366CC),
+                    backgroundColor: AppTheme.primaryTeal,
                   ),
                 );
               },
@@ -1016,7 +1048,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                       height: 24,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3366CC)),
+                        valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryTeal),
                       ),
                     ),
                     SizedBox(height: 8),
@@ -1024,7 +1056,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                       "Loading patient data...",
                       style: GoogleFonts.poppins(
                         fontSize: 12,
-                        color: Color(0xFF3366CC),
+                        color: AppTheme.primaryTeal,
                       ),
                     ),
                   ],
@@ -1071,13 +1103,13 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
               Container(
                 padding: EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Color(0xFF3366CC).withOpacity(0.1),
+                  color: AppTheme.primaryTeal.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   LucideIcons.clipboardList,
                   size: 18,
-                  color: Color(0xFF3366CC),
+                  color: AppTheme.primaryTeal,
                 ),
               ),
               SizedBox(width: 10),
@@ -1411,14 +1443,14 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
               _handlePrescription();
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF3366CC),
+              backgroundColor: AppTheme.primaryTeal,
               foregroundColor: Colors.white,
               padding: EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               elevation: 2,
-              shadowColor: Color(0xFF3366CC).withOpacity(0.3),
+              shadowColor: AppTheme.primaryTeal.withOpacity(0.3),
             ),
             icon: Icon(LucideIcons.stethoscope, size: 18),
             label: Text(
@@ -1460,14 +1492,14 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF3366CC),
+              backgroundColor: AppTheme.primaryTeal,
               foregroundColor: Colors.white,
               padding: EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               elevation: 2,
-              shadowColor: Color(0xFF3366CC).withOpacity(0.3),
+              shadowColor: AppTheme.primaryTeal.withOpacity(0.3),
             ),
             icon: Icon(LucideIcons.fileText, size: 18),
             label: Text(
@@ -1490,14 +1522,14 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
         child: ElevatedButton.icon(
           onPressed: _handleChat,
           style: ElevatedButton.styleFrom(
-            backgroundColor: Color(0xFF3366CC),
+            backgroundColor: AppTheme.primaryTeal,
             foregroundColor: Colors.white,
             padding: EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
             elevation: 2,
-            shadowColor: Color(0xFF3366CC).withOpacity(0.3),
+            shadowColor: AppTheme.primaryTeal.withOpacity(0.3),
           ),
           icon: Icon(LucideIcons.messageSquare, size: 18),
           label: Text(
@@ -1700,12 +1732,12 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                   Container(
                     padding: EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Color(0xFF3366CC).withOpacity(0.1),
+                      color: AppTheme.primaryTeal.withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                     LucideIcons.stethoscope,
-                    color: Color(0xFF3366CC),
+                    color: AppTheme.primaryTeal,
                       size: 18,
                     ),
                   ),
@@ -2376,10 +2408,45 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
 
   // Method to handle chat
   Future<void> _handleChat() async {
+    // For patients, always use the current user ID as the patientId
+    if (!_isDoctor && _currentUserId.isNotEmpty) {
+      _appointmentData['patientId'] = _currentUserId;
+      print('Setting patient ID to current user: $_currentUserId');
+    }
+    
+    // First attempt to retrieve missing IDs based on available data
+    if (_appointmentData['doctorId'] == null && _doctorName != "Unknown Doctor" && !_isDoctor) {
+      try {
+        // Try to find the doctor by name
+        final querySnapshot = await FirebaseFirestore.instance
+            .collection('doctors')
+            .where('fullName', isEqualTo: _doctorName)
+            .limit(1)
+            .get();
+            
+        if (querySnapshot.docs.isNotEmpty) {
+          _appointmentData['doctorId'] = querySnapshot.docs.first.id;
+        }
+      } catch (e) {
+        print('Error finding doctorId by name: $e');
+      }
+    }
+    
+    if (_appointmentData['patientId'] == null && _isDoctor) {
+      // For doctors, this shouldn't normally happen but as a fallback
+      // we can try to fetch appointment again to get patientId
+      await _fetchAppointmentData();
+    }
+    
+    // Check again after attempt to retrieve IDs
     if (_appointmentData['doctorId'] == null || _appointmentData['patientId'] == null) {
+      // Log more details for debugging
+      print('Missing chat information: doctorId=${_appointmentData['doctorId']}, patientId=${_appointmentData['patientId']}');
+      print('Current user is doctor: $_isDoctor, Current user ID: $_currentUserId');
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Missing doctor or patient information'),
+          content: Text('Missing doctor or patient information for chat'),
           backgroundColor: Colors.red,
         ),
       );
@@ -2432,6 +2499,8 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
       final String patientId = _isDoctor ? _appointmentData['patientId'] : _currentUserId;
       final String doctorProfilePic = _doctorImage.startsWith('assets') ? '' : _doctorImage;
       final String patientProfilePic = _appointmentData['patientImageUrl'] ?? '';
+      
+      print('Creating chat with doctorId: $doctorId, patientId: $patientId');
       
       // Check if a chat room already exists
       final chatService = ChatService();

@@ -172,6 +172,34 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     }
   }
   
+  Future<void> _takeAndSendPhoto() async {
+    if (_receiverId == null) return;
+    
+    try {
+      // Request camera permission
+      var status = await Permission.camera.request();
+      if (status != PermissionStatus.granted) {
+        _showErrorSnackBar('Camera permission is required to take photos');
+        return;
+      }
+      
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 70,
+      );
+      
+      if (image != null) {
+        final File imageFile = File(image.path);
+        
+        // Use the same preview dialog as for gallery images
+        _showImagePreviewDialog(imageFile);
+      }
+    } catch (e) {
+      _showErrorSnackBar('Failed to take photo: ${e.toString()}');
+    }
+  }
+  
   void _showImagePreviewDialog(File imageFile) {
     final TextEditingController captionController = TextEditingController();
     bool isDialogOpen = true;
@@ -1640,12 +1668,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     Color(0xFF8E44AD), // Purple as accent color
                                         () {
                                           Navigator.pop(context);
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text('Camera not implemented yet'),
-                          backgroundColor: widget.isDoctor ? AppColors.primaryPink : AppColors.primaryTeal,
-                                            ),
-                                          );
+                                          _takeAndSendPhoto();
                                         },
                                       ),
                                     ],

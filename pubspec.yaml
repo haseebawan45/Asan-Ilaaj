@@ -105,7 +105,6 @@ flutter:
   assets:
     - assets/
     - assets/images/
-    - assets/icons/
   # Remove specific image entries and comments that might cause issues
 
   # An image asset can refer to one or more resolution-specific "variants", see
