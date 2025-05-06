@@ -769,7 +769,7 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> wit
       body: _isLoading 
         ? Center(
             child: CircularProgressIndicator(
-              color: AppTheme.primaryPink,
+                color: AppTheme.primaryPink,
             ),
           )
         : _errorMessage.isNotEmpty
@@ -779,7 +779,7 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> wit
                 SafeArea(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+              children: [
                       // Custom app bar with matching style
                       Container(
                         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
@@ -840,46 +840,46 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> wit
                         ),
                       ),
                       
-                      // Search and filter section
-                      _buildSearchAndFilterSection(),
-                      
-                      // Results count
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                        child: Row(
-                          children: [
-                            Text(
-                              "${filteredAppointments.length} ${filteredAppointments.length == 1 ? 'result' : 'results'}",
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                color: AppTheme.mediumText,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            Spacer(),
-                            Text(
-                              _selectedFilter != 'All' ? _selectedFilter : "Appointments history",
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                color: _selectedFilter == 'Upcoming' 
-                                    ? AppTheme.primaryPink 
-                                    : _selectedFilter == 'Completed'
-                                      ? AppTheme.success
-                                      : AppTheme.primaryPink,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                // Search and filter section
+                _buildSearchAndFilterSection(),
+                
+                // Results count
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  child: Row(
+                    children: [
+                      Text(
+                        "${filteredAppointments.length} ${filteredAppointments.length == 1 ? 'result' : 'results'}",
+                      style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: AppTheme.mediumText,
+                        fontWeight: FontWeight.w500,
                         ),
                       ),
-                      
-                      // Appointment list
-                      Expanded(
-                        child: filteredAppointments.isEmpty
-                          ? _buildEmptyView()
-                          : _buildAppointmentsList(),
-                      ),
+                      Spacer(),
+                      Text(
+                            _selectedFilter != 'All' ? _selectedFilter : "Appointments history",
+                        style: GoogleFonts.poppins(
+                        fontSize: 14,
+                              color: _selectedFilter == 'Upcoming' 
+                                  ? AppTheme.primaryPink 
+                                  : _selectedFilter == 'Completed'
+                                    ? AppTheme.success
+                                    : AppTheme.primaryPink,
+                          fontWeight: FontWeight.w500,
+                    ),
+                  ),
                     ],
+                ),
+                ),
+                
+                // Appointment list
+                Expanded(
+                  child: filteredAppointments.isEmpty
+                    ? _buildEmptyView()
+                    : _buildAppointmentsList(),
+                    ),
+                  ],
                   ),
                 ),
                 
@@ -928,7 +928,7 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> wit
                         ),
                       ),
                     ),
-                  ),
+                ),
               ],
             ),
     );

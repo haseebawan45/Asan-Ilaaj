@@ -5,6 +5,20 @@ import 'package:intl/intl.dart';
 import 'package:healthcare/services/admin_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+// Admin theme colors - copied from admin_dashboard.dart for consistency
+class AdminTheme {
+  static const Color primaryPurple = Color(0xFF6200EA);
+  static const Color lightPurple = Color(0xFFB388FF);
+  static const Color accentPurple = Color(0xFF9D46FF);
+  static const Color darkPurple = Color(0xFF4A148C);
+  
+  static LinearGradient primaryGradient = LinearGradient(
+    colors: [darkPurple, primaryPurple, accentPurple],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+}
+
 class AppointmentManagement extends StatefulWidget {
   const AppointmentManagement({Key? key}) : super(key: key);
 
@@ -246,6 +260,9 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
   
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 600;
+    
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -253,10 +270,11 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
             fontSize: 20,
+            color: AdminTheme.darkPurple,
           ),
         ),
         backgroundColor: Colors.white,
-        elevation: 0,
+        elevation: 1,
         actions: [
           if (_isRefreshing)
             Padding(
@@ -266,12 +284,12 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3366CC)),
+                  valueColor: AlwaysStoppedAnimation<Color>(AdminTheme.primaryPurple),
                 ),
               ),
             ),
           IconButton(
-            icon: Icon(Icons.refresh),
+            icon: Icon(Icons.refresh, color: AdminTheme.primaryPurple),
             onPressed: _refreshAppointments,
             tooltip: 'Refresh',
           ),
@@ -279,7 +297,7 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
       ),
       body: Column(
         children: [
-          // Redesigned Search and filters section
+          // Search and filters section
           Container(
             padding: EdgeInsets.fromLTRB(12, 8, 12, 8),
             color: Colors.white,
@@ -314,7 +332,7 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Color(0xFF3366CC)),
+                      borderSide: BorderSide(color: AdminTheme.primaryPurple),
                     ),
                     contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                     isDense: true,
@@ -331,95 +349,10 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
                 
                 SizedBox(height: 8),
                 
-                // Compact filter controls row
-                Row(
-                  children: [
-                    // Compact title & reset
-                    Expanded(
-                      flex: 2,
-                      child: Row(
-                        children: [
-                          Icon(Icons.filter_list, size: 16, color: Color(0xFF3366CC)),
-                          SizedBox(width: 4),
-                          Text(
-                            'Filters:',
-                            style: GoogleFonts.poppins(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          SizedBox(width: 4),
-                          InkWell(
-                            onTap: () {
-                              setState(() {
-                                _searchController.clear();
-                                _searchQuery = '';
-                                _selectedStatusFilter = 'All';
-                                _selectedDoctorFilter = 'All Doctors';
-                                _selectedDateRange = null;
-                              });
-                            },
-                            child: Text(
-                              'Reset',
-                              style: GoogleFonts.poppins(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF3366CC),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    
-                    // Compact filters in a row
-                    Expanded(
-                      flex: 5,
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            // Status filter - compact
-                            _buildCompactFilterDropdown(
-                              label: 'Status',
-                              value: _selectedStatusFilter,
-                              items: ['All', 'Pending', 'Confirmed', 'Completed', 'Cancelled'],
-                              onChanged: (value) {
-                                if (value != null) {
-                                  setState(() {
-                                    _selectedStatusFilter = value;
-                                  });
-                                }
-                              },
-                            ),
-                            
-                            SizedBox(width: 8),
-                            
-                            // Doctor filter - compact
-                            _buildCompactFilterDropdown(
-                              label: 'Doctor',
-                              value: _selectedDoctorFilter,
-                              items: _doctorsList,
-                              onChanged: (value) {
-                                if (value != null) {
-                                  setState(() {
-                                    _selectedDoctorFilter = value;
-                                  });
-                                }
-                              },
-                            ),
-                            
-                            SizedBox(width: 8),
-                            
-                            // Date range filter - compact
-                            _buildCompactDateRangeFilter(),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                // Filter controls section
+                isSmallScreen 
+                    ? _buildCompactFiltersMobile() 
+                    : _buildCompactFiltersDesktop(),
               ],
             ),
           ),
@@ -430,7 +363,11 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
           // Appointments list
           Expanded(
             child: _isLoading
-                ? Center(child: CircularProgressIndicator())
+                ? Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(AdminTheme.primaryPurple),
+                    )
+                  )
                 : _errorMessage != null
                     ? _buildErrorState()
                     : filteredAppointments.isEmpty
@@ -449,6 +386,307 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
     );
   }
   
+  // New helper methods for responsive filters
+  Widget _buildCompactFiltersMobile() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Title & reset row
+        Row(
+          children: [
+            Icon(Icons.filter_list, size: 16, color: AdminTheme.primaryPurple),
+            SizedBox(width: 4),
+            Text(
+              'Filters:',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
+            ),
+            SizedBox(width: 4),
+            InkWell(
+              onTap: () {
+                setState(() {
+                  _searchController.clear();
+                  _searchQuery = '';
+                  _selectedStatusFilter = 'All';
+                  _selectedDoctorFilter = 'All Doctors';
+                  _selectedDateRange = null;
+                });
+              },
+              child: Text(
+                'Reset',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: AdminTheme.primaryPurple,
+                ),
+              ),
+            ),
+          ],
+        ),
+        
+        SizedBox(height: 8),
+        
+        // Stacked filters in mobile view
+        _buildCompactFilterDropdown(
+          label: 'Status',
+          value: _selectedStatusFilter,
+          items: ['All', 'Pending', 'Confirmed', 'Completed', 'Cancelled'],
+          onChanged: (value) {
+            if (value != null) {
+              setState(() {
+                _selectedStatusFilter = value;
+              });
+            }
+          },
+        ),
+        
+        SizedBox(height: 8),
+        
+        _buildCompactFilterDropdown(
+          label: 'Doctor',
+          value: _selectedDoctorFilter,
+          items: _doctorsList,
+          onChanged: (value) {
+            if (value != null) {
+              setState(() {
+                _selectedDoctorFilter = value;
+              });
+            }
+          },
+        ),
+        
+        SizedBox(height: 8),
+        
+        _buildCompactDateRangeFilter(),
+      ],
+    );
+  }
+  
+  Widget _buildCompactFiltersDesktop() {
+    return Row(
+      children: [
+        // Compact title & reset
+        Container(
+          margin: EdgeInsets.only(right: 8),
+          child: Row(
+            children: [
+              Icon(Icons.filter_list, size: 16, color: AdminTheme.primaryPurple),
+              SizedBox(width: 4),
+              Text(
+                'Filters:',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+              ),
+              SizedBox(width: 4),
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _searchController.clear();
+                    _searchQuery = '';
+                    _selectedStatusFilter = 'All';
+                    _selectedDoctorFilter = 'All Doctors';
+                    _selectedDateRange = null;
+                  });
+                },
+                child: Text(
+                  'Reset',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AdminTheme.primaryPurple,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Horizontal scrollable filters for desktop
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildCompactFilterDropdown(
+                  label: 'Status',
+                  value: _selectedStatusFilter,
+                  items: ['All', 'Pending', 'Confirmed', 'Completed', 'Cancelled'],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        _selectedStatusFilter = value;
+                      });
+                    }
+                  },
+                ),
+                
+                SizedBox(width: 8),
+                
+                _buildCompactFilterDropdown(
+                  label: 'Doctor',
+                  value: _selectedDoctorFilter,
+                  items: _doctorsList,
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        _selectedDoctorFilter = value;
+                      });
+                    }
+                  },
+                ),
+                
+                SizedBox(width: 8),
+                
+                _buildCompactDateRangeFilter(),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildCompactFilterDropdown({
+    required String label,
+    required String value,
+    required List<String> items,
+    required void Function(String?) onChanged,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
+      ),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '$label:',
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          SizedBox(width: 2),
+          DropdownButton<String>(
+            value: value,
+            icon: Icon(Icons.arrow_drop_down, size: 16, color: AdminTheme.primaryPurple),
+            iconSize: 16,
+            underline: SizedBox(),
+            isDense: true,
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
+            ),
+            onChanged: onChanged,
+            items: items.map<DropdownMenuItem<String>>((String value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: Container(
+                  constraints: BoxConstraints(maxWidth: 150),
+                  child: Text(
+                    value,
+                    style: GoogleFonts.poppins(fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildCompactDateRangeFilter() {
+    final String displayText = _selectedDateRange != null
+        ? '${DateFormat('MM/dd').format(_selectedDateRange!.start)} - ${DateFormat('MM/dd').format(_selectedDateRange!.end)}'
+        : 'Date Range';
+    
+    return InkWell(
+      onTap: () async {
+        final DateTimeRange? picked = await showDateRangePicker(
+          context: context,
+          firstDate: DateTime(2022),
+          lastDate: DateTime.now().add(Duration(days: 365)),
+          initialDateRange: _selectedDateRange ?? DateTimeRange(
+            start: DateTime.now().subtract(Duration(days: 30)),
+            end: DateTime.now(),
+          ),
+          builder: (context, child) {
+            return Theme(
+              data: Theme.of(context).copyWith(
+                colorScheme: ColorScheme.light(
+                  primary: AdminTheme.primaryPurple,
+                ),
+              ),
+              child: child!,
+            );
+          },
+        );
+        
+        if (picked != null) {
+          setState(() {
+            _selectedDateRange = picked;
+          });
+        }
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: Colors.grey.shade300, width: 1),
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.date_range,
+              size: 14,
+              color: AdminTheme.primaryPurple,
+            ),
+            SizedBox(width: 4),
+            Text(
+              displayText,
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
+            ),
+            if (_selectedDateRange != null) ...[
+              SizedBox(width: 4),
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _selectedDateRange = null;
+                  });
+                },
+                child: Icon(
+                  Icons.close,
+                  size: 14,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+  
+  // Re-added error state widget
   Widget _buildErrorState() {
     return Center(
       child: Column(
@@ -486,7 +724,7 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
             label: Text('Try Again'),
             onPressed: _loadAppointments,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF3366CC),
+              backgroundColor: AdminTheme.primaryPurple,
               foregroundColor: Colors.white,
               padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
@@ -499,6 +737,7 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
     );
   }
   
+  // Re-added empty state widget
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -540,7 +779,7 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
               });
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF3366CC),
+              backgroundColor: AdminTheme.primaryPurple,
               foregroundColor: Colors.white,
               padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
@@ -553,136 +792,11 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
     );
   }
   
-  Widget _buildCompactFilterDropdown({
-    required String label,
-    required String value,
-    required List<String> items,
-    required void Function(String?) onChanged,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: Colors.grey.shade300, width: 1),
-      ),
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '$label:',
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              color: Colors.grey.shade700,
-            ),
-          ),
-          SizedBox(width: 2),
-          DropdownButton<String>(
-            value: value,
-            icon: Icon(Icons.arrow_drop_down, size: 16),
-            iconSize: 16,
-            underline: SizedBox(),
-            isDense: true,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: Colors.black87,
-            ),
-            onChanged: onChanged,
-            items: items.map<DropdownMenuItem<String>>((String value) {
-              return DropdownMenuItem<String>(
-                value: value,
-                child: Text(
-                  value,
-                  style: GoogleFonts.poppins(fontSize: 12),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildCompactDateRangeFilter() {
-    final String displayText = _selectedDateRange != null
-        ? '${DateFormat('MM/dd').format(_selectedDateRange!.start)} - ${DateFormat('MM/dd').format(_selectedDateRange!.end)}'
-        : 'Date Range';
-    
-    return InkWell(
-      onTap: () async {
-        final DateTimeRange? picked = await showDateRangePicker(
-          context: context,
-          firstDate: DateTime(2022),
-          lastDate: DateTime.now().add(Duration(days: 365)),
-          initialDateRange: _selectedDateRange ?? DateTimeRange(
-            start: DateTime.now().subtract(Duration(days: 30)),
-            end: DateTime.now(),
-          ),
-          builder: (context, child) {
-            return Theme(
-              data: Theme.of(context).copyWith(
-                colorScheme: ColorScheme.light(
-                  primary: Color(0xFF3366CC),
-                ),
-              ),
-              child: child!,
-            );
-          },
-        );
-        
-        if (picked != null) {
-          setState(() {
-            _selectedDateRange = picked;
-          });
-        }
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: Colors.grey.shade300, width: 1),
-        ),
-        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.date_range,
-              size: 14,
-              color: Color(0xFF3366CC),
-            ),
-            SizedBox(width: 4),
-            Text(
-              displayText,
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
-              ),
-            ),
-            if (_selectedDateRange != null) ...[
-              SizedBox(width: 4),
-              InkWell(
-                onTap: () {
-                  setState(() {
-                    _selectedDateRange = null;
-                  });
-                },
-                child: Icon(
-                  Icons.close,
-                  size: 14,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-  
+  // Improved appointment card with better spacing, layouts, and responsiveness
   Widget _buildAppointmentCard(Map<String, dynamic> appointment) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 600;
+    
     Color statusColor;
     switch (appointment['status']) {
       case 'Confirmed':
@@ -692,7 +806,7 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
         statusColor = Color(0xFFFFC107);
         break;
       case 'Completed':
-        statusColor = Color(0xFF3366CC);
+        statusColor = AdminTheme.primaryPurple;
         break;
       case 'Cancelled':
         statusColor = Color(0xFFFF5722);
@@ -720,14 +834,16 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
               ),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'ID: ${appointment['id']}',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey.shade700,
+                Expanded(
+                  child: Text(
+                    'ID: ${appointment['id']}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade700,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 Container(
@@ -756,236 +872,17 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Doctor and patient info
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Doctor avatar
-                    CircleAvatar(
-                      radius: 24,
-                      backgroundColor: Colors.blue.shade100,
-                      child: Text(
-                        appointment['doctorName'].substring(0, 1),
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF3366CC),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            appointment['doctorName'],
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            appointment['specialty'] ?? 'Doctor',
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              color: Colors.grey.shade600,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                
-                SizedBox(height: 8),
-                
-                // Patient info (separated from doctor info to avoid overflow)
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Patient avatar
-                    CircleAvatar(
-                      radius: 24,
-                      backgroundColor: Colors.green.shade100,
-                      child: Text(
-                        appointment['patientName'].substring(0, 1),
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF4CAF50),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            appointment['patientName'],
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            'Patient',
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                // Doctor and patient info - adaptive for small screens
+                isSmallScreen
+                    ? _buildAppointmentInfoMobile(appointment)
+                    : _buildAppointmentInfoDesktop(appointment),
                 
                 SizedBox(height: 16),
                 
-                // Appointment date and time
-                Container(
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    children: [
-                      _buildDetailRow(
-                        icon: Icons.calendar_today,
-                        label: 'Date',
-                        value: appointment['date'],
-                      ),
-                      SizedBox(height: 8),
-                      _buildDetailRow(
-                        icon: Icons.access_time,
-                        label: 'Time',
-                        value: appointment['time'],
-                      ),
-                      SizedBox(height: 8),
-                      _buildDetailRow(
-                        icon: Icons.location_on,
-                        label: 'Location',
-                        value: appointment['hospital'],
-                      ),
-                      if (appointment['type'] != null) ...[
-                        SizedBox(height: 8),
-                        _buildDetailRow(
-                          icon: appointment['type'] == 'Video Consultation'
-                              ? Icons.videocam
-                              : Icons.person,
-                          label: 'Type',
-                          value: appointment['type'],
-                        ),
-                      ],
-                      SizedBox(height: 8),
-                      _buildDetailRow(
-                        icon: Icons.medical_services,
-                        label: 'Reason',
-                        value: appointment['reason'],
-                      ),
-                      if (appointment['displayAmount'] != null) ...[
-                        SizedBox(height: 8),
-                        _buildDetailRow(
-                          icon: Icons.payments,
-                          label: 'Fee',
-                          value: appointment['displayAmount'],
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                
-                SizedBox(height: 16),
-                
-                // Action buttons
-                Row(
-                  children: [
-                    if (appointment['status'] == 'Pending') ...[
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          icon: Icon(Icons.check_circle),
-                          label: Text('Confirm'),
-                          onPressed: () => _showConfirmationDialog(
-                            appointment['id'],
-                            'Are you sure you want to confirm this appointment?',
-                            'confirmed',
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Color(0xFF4CAF50),
-                            side: BorderSide(color: Color(0xFF4CAF50)),
-                            padding: EdgeInsets.symmetric(vertical: 12),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                    ],
-                    
-                    if (appointment['status'] != 'Cancelled' &&
-                        appointment['status'] != 'Completed') ...[
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          icon: Icon(Icons.cancel),
-                          label: Text('Cancel'),
-                          onPressed: () => _showConfirmationDialog(
-                            appointment['id'],
-                            'Are you sure you want to cancel this appointment?',
-                            'cancelled',
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Color(0xFFFF5722),
-                            side: BorderSide(color: Color(0xFFFF5722)),
-                            padding: EdgeInsets.symmetric(vertical: 12),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                    ],
-                    
-                    if (appointment['status'] == 'Confirmed') ...[
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          icon: Icon(Icons.done_all),
-                          label: Text('Complete'),
-                          onPressed: () => _showConfirmationDialog(
-                            appointment['id'],
-                            'Are you sure you want to mark this appointment as completed?',
-                            'completed',
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Color(0xFF3366CC),
-                            side: BorderSide(color: Color(0xFF3366CC)),
-                            padding: EdgeInsets.symmetric(vertical: 12),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                    ],
-                    
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        icon: Icon(Icons.visibility),
-                        label: Text('Details'),
-                        onPressed: () => _showAppointmentDetails(appointment),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF3366CC),
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                // Action buttons - adaptive for small screens
+                isSmallScreen
+                    ? _buildAppointmentActionsMobile(appointment)
+                    : _buildAppointmentActionsDesktop(appointment),
               ],
             ),
           ),
@@ -994,34 +891,508 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
     );
   }
   
-  Widget _buildDetailRow({
+  // New helper methods for responsive appointment cards
+  Widget _buildAppointmentInfoMobile(Map<String, dynamic> appointment) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Doctor info
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Doctor avatar
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: AdminTheme.lightPurple.withOpacity(0.5),
+              child: Text(
+                appointment['doctorName'].substring(0, 1),
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AdminTheme.primaryPurple,
+                ),
+              ),
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    appointment['doctorName'],
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    appointment['specialty'] ?? 'Doctor',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: Colors.grey.shade600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        
+        SizedBox(height: 16),
+        
+        // Patient info
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Patient avatar
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: Colors.blue.shade100,
+              child: Text(
+                appointment['patientName'].substring(0, 1),
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue.shade700,
+                ),
+              ),
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    appointment['patientName'],
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Patient ID: ${appointment['patientId']}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: Colors.grey.shade600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        
+        SizedBox(height: 16),
+        
+        // Appointment details in grid form
+        Wrap(
+          spacing: 16,
+          runSpacing: 12,
+          children: [
+            _buildDetailChip(
+              icon: Icons.event,
+              label: 'Date',
+              value: appointment['date'],
+            ),
+            _buildDetailChip(
+              icon: Icons.access_time,
+              label: 'Time',
+              value: appointment['time'],
+            ),
+            _buildDetailChip(
+              icon: Icons.local_hospital,
+              label: 'Hospital',
+              value: appointment['hospital'],
+              maxWidth: 150,
+            ),
+            _buildDetailChip(
+              icon: Icons.payment,
+              label: 'Fee',
+              value: appointment['displayAmount'] ?? 'Not specified',
+            ),
+            _buildDetailChip(
+              icon: Icons.category,
+              label: 'Type',
+              value: appointment['type'] ?? 'In-person',
+            ),
+            _buildDetailChip(
+              icon: Icons.description,
+              label: 'Reason',
+              value: appointment['reason'],
+              maxWidth: 150,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildAppointmentInfoDesktop(Map<String, dynamic> appointment) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Left column: Doctor avatar and info
+        Expanded(
+          flex: 4,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Doctor avatar
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: AdminTheme.lightPurple.withOpacity(0.5),
+                child: Text(
+                  appointment['doctorName'].substring(0, 1),
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AdminTheme.primaryPurple,
+                  ),
+                ),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      appointment['doctorName'],
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      appointment['specialty'] ?? 'Doctor',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 12),
+                    _buildDetailRow(
+                      icon: Icons.event,
+                      label: 'Date',
+                      value: appointment['date'],
+                    ),
+                    SizedBox(height: 4),
+                    _buildDetailRow(
+                      icon: Icons.access_time,
+                      label: 'Time',
+                      value: appointment['time'],
+                    ),
+                    SizedBox(height: 4),
+                    _buildDetailRow(
+                      icon: Icons.local_hospital,
+                      label: 'Hospital',
+                      value: appointment['hospital'],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        SizedBox(width: 24),
+        
+        // Right column: Patient and other details
+        Expanded(
+          flex: 4,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Patient info
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Patient avatar
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: Colors.blue.shade100,
+                    child: Text(
+                      appointment['patientName'].substring(0, 1),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue.shade700,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          appointment['patientName'],
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Patient ID: ${appointment['patientId']}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              
+              SizedBox(height: 12),
+              
+              // Additional details
+              _buildDetailRow(
+                icon: Icons.payment,
+                label: 'Fee',
+                value: appointment['displayAmount'] ?? 'Not specified',
+              ),
+              SizedBox(height: 4),
+              _buildDetailRow(
+                icon: Icons.category,
+                label: 'Type',
+                value: appointment['type'] ?? 'In-person',
+              ),
+              SizedBox(height: 4),
+              _buildDetailRow(
+                icon: Icons.description,
+                label: 'Reason',
+                value: appointment['reason'],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+  
+  // Detail chip for mobile view
+  Widget _buildDetailChip({
     required IconData icon,
     required String label,
     required String value,
+    double? maxWidth,
   }) {
-    return Row(
+    return Container(
+      constraints: BoxConstraints(
+        maxWidth: maxWidth ?? double.infinity,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 16,
+            color: Colors.grey.shade600,
+          ),
+          SizedBox(width: 4),
+          Flexible(
+            child: RichText(
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: '$label: ',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  TextSpan(
+                    text: value,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Action buttons for mobile view (stacked)
+  Widget _buildAppointmentActionsMobile(Map<String, dynamic> appointment) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Icon(
-          icon,
-          size: 16,
-          color: Colors.grey.shade600,
-        ),
-        SizedBox(width: 8),
-        Text(
-          '$label:',
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Colors.grey.shade700,
+        if (appointment['status'] == 'Pending') ...[
+          ElevatedButton.icon(
+            icon: Icon(Icons.check_circle),
+            label: Text('Confirm'),
+            onPressed: () => _showConfirmationDialog(
+              appointment['id'],
+              'Are you sure you want to confirm this appointment?',
+              'confirmed',
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF4CAF50),
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+          SizedBox(height: 8),
+        ],
+        
+        if (appointment['status'] != 'Cancelled' && 
+            appointment['status'] != 'Completed') ...[
+          OutlinedButton.icon(
+            icon: Icon(Icons.cancel),
+            label: Text('Cancel'),
+            onPressed: () => _showConfirmationDialog(
+              appointment['id'],
+              'Are you sure you want to cancel this appointment?',
+              'cancelled',
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Color(0xFFFF5722),
+              side: BorderSide(color: Color(0xFFFF5722)),
+              padding: EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+          SizedBox(height: 8),
+        ],
+        
+        if (appointment['status'] == 'Confirmed') ...[
+          OutlinedButton.icon(
+            icon: Icon(Icons.done_all),
+            label: Text('Complete'),
+            onPressed: () => _showConfirmationDialog(
+              appointment['id'],
+              'Are you sure you want to mark this appointment as completed?',
+              'completed',
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AdminTheme.primaryPurple,
+              side: BorderSide(color: AdminTheme.primaryPurple),
+              padding: EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+          SizedBox(height: 8),
+        ],
+        
+        ElevatedButton.icon(
+          icon: Icon(Icons.visibility),
+          label: Text('Details'),
+          onPressed: () => _showAppointmentDetails(appointment),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AdminTheme.primaryPurple,
+            foregroundColor: Colors.white,
+            padding: EdgeInsets.symmetric(vertical: 12),
           ),
         ),
-        SizedBox(width: 8),
+      ],
+    );
+  }
+  
+  // Action buttons for desktop view (horizontal)
+  Widget _buildAppointmentActionsDesktop(Map<String, dynamic> appointment) {
+    return Row(
+      children: [
+        if (appointment['status'] == 'Pending') ...[
+          Expanded(
+            child: ElevatedButton.icon(
+              icon: Icon(Icons.check_circle),
+              label: Text('Confirm'),
+              onPressed: () => _showConfirmationDialog(
+                appointment['id'],
+                'Are you sure you want to confirm this appointment?',
+                'confirmed',
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF4CAF50),
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+          SizedBox(width: 8),
+        ],
+        
+        if (appointment['status'] != 'Cancelled' && 
+            appointment['status'] != 'Completed') ...[
+          Expanded(
+            child: OutlinedButton.icon(
+              icon: Icon(Icons.cancel),
+              label: Text('Cancel'),
+              onPressed: () => _showConfirmationDialog(
+                appointment['id'],
+                'Are you sure you want to cancel this appointment?',
+                'cancelled',
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Color(0xFFFF5722),
+                side: BorderSide(color: Color(0xFFFF5722)),
+                padding: EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+          SizedBox(width: 8),
+        ],
+        
+        if (appointment['status'] == 'Confirmed') ...[
+          Expanded(
+            child: OutlinedButton.icon(
+              icon: Icon(Icons.done_all),
+              label: Text('Complete'),
+              onPressed: () => _showConfirmationDialog(
+                appointment['id'],
+                'Are you sure you want to mark this appointment as completed?',
+                'completed',
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AdminTheme.primaryPurple,
+                side: BorderSide(color: AdminTheme.primaryPurple),
+                padding: EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+          SizedBox(width: 8),
+        ],
+        
         Expanded(
-          child: Text(
-            value,
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              color: Colors.black87,
+          child: ElevatedButton.icon(
+            icon: Icon(Icons.visibility),
+            label: Text('Details'),
+            onPressed: () => _showAppointmentDetails(appointment),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AdminTheme.primaryPurple,
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(vertical: 12),
             ),
           ),
         ),
@@ -1029,34 +1400,11 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
     );
   }
   
-  void _showConfirmationDialog(String appointmentId, String message, String status) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Confirm Action'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _updateAppointmentStatus(appointmentId, status);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: status == 'cancelled' ? Color(0xFFFF5722) : Color(0xFF4CAF50),
-              foregroundColor: Colors.white,
-            ),
-            child: Text('Confirm'),
-          ),
-        ],
-      ),
-    );
-  }
-  
+  // Improved dialog UI
   void _showAppointmentDetails(Map<String, dynamic> appointment) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final dialogWidth = screenWidth < 600 ? screenWidth * 0.9 : 500.0;
+    
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -1064,8 +1412,8 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
           borderRadius: BorderRadius.circular(16),
         ),
         child: Container(
+          width: dialogWidth,
           padding: EdgeInsets.all(24),
-          constraints: BoxConstraints(maxWidth: 500),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1090,27 +1438,39 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
                 ],
               ),
               SizedBox(height: 16),
-              _buildDetailItem('Appointment ID', appointment['id']),
-              Divider(),
-              _buildDetailItem('Patient', appointment['patientName']),
-              _buildDetailItem('Doctor', appointment['doctorName']),
-              _buildDetailItem('Specialty', appointment['specialty'] ?? 'Not specified'),
-              Divider(),
-              _buildDetailItem('Date', appointment['date']),
-              _buildDetailItem('Time', appointment['time']),
-              _buildDetailItem('Hospital', appointment['hospital']),
-              _buildDetailItem('Type', appointment['type'] ?? 'In-person'),
-              Divider(),
-              _buildDetailItem('Reason', appointment['reason']),
-              _buildDetailItem('Fee', appointment['displayAmount'] ?? 'Not specified'),
-              _buildDetailItem('Status', appointment['status']),
-              _buildDetailItem('Payment Status', appointment['paymentStatus'] ?? 'Not specified'),
+              
+              // Scrollable content for small screens
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildDetailItem('Appointment ID', appointment['id']),
+                      Divider(),
+                      _buildDetailItem('Patient', appointment['patientName']),
+                      _buildDetailItem('Doctor', appointment['doctorName']),
+                      _buildDetailItem('Specialty', appointment['specialty'] ?? 'Not specified'),
+                      Divider(),
+                      _buildDetailItem('Date', appointment['date']),
+                      _buildDetailItem('Time', appointment['time']),
+                      _buildDetailItem('Hospital', appointment['hospital']),
+                      _buildDetailItem('Type', appointment['type'] ?? 'In-person'),
+                      Divider(),
+                      _buildDetailItem('Reason', appointment['reason']),
+                      _buildDetailItem('Fee', appointment['displayAmount'] ?? 'Not specified'),
+                      _buildDetailItem('Status', appointment['status']),
+                      _buildDetailItem('Payment Status', appointment['paymentStatus'] ?? 'Not specified'),
+                    ],
+                  ),
+                ),
+              ),
+              
               SizedBox(height: 24),
               Center(
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF3366CC),
+                    backgroundColor: AdminTheme.primaryPurple,
                     foregroundColor: Colors.white,
                     padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -1133,7 +1493,7 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
+          Container(
             width: 120,
             child: Text(
               label,
@@ -1153,6 +1513,83 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
                 color: Colors.black87,
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildDetailRow({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: Colors.grey.shade600,
+        ),
+        SizedBox(width: 8),
+        Expanded(
+          child: RichText(
+            overflow: TextOverflow.ellipsis,
+            maxLines: 2,
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text: '$label: ',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+                TextSpan(
+                  text: value,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+  
+  void _showConfirmationDialog(String appointmentId, String message, String status) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Confirm Action'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.grey.shade700,
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _updateAppointmentStatus(appointmentId, status);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: status == 'cancelled' 
+                ? Color(0xFFFF5722) 
+                : status == 'completed'
+                  ? AdminTheme.primaryPurple
+                  : Color(0xFF4CAF50),
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Confirm'),
           ),
         ],
       ),

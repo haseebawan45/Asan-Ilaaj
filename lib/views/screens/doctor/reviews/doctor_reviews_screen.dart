@@ -186,316 +186,316 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
         return true;
       },
       child: Scaffold(
-        backgroundColor: Colors.grey[50],
-        appBar: AppBar(
-          title: Text(
-            "Reviews & Ratings",
-            style: GoogleFonts.poppins(
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-              fontSize: 20,
-            ),
+      backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        title: Text(
+          "Reviews & Ratings",
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+            fontSize: 20,
           ),
-          centerTitle: true,
-          elevation: 0,
-          backgroundColor: AppTheme.primaryPink,
-          leading: IconButton(
-            icon: Icon(LucideIcons.chevronLeft, color: Colors.white),
+        ),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: AppTheme.primaryPink,
+        leading: IconButton(
+          icon: Icon(LucideIcons.chevronLeft, color: Colors.white),
             onPressed: () {
               // Apply pink status bar before popping
               UIHelper.applyPinkStatusBar(withPostFrameCallback: true);
               Navigator.pop(context);
             },
-          ),
         ),
-        body: RefreshIndicator(
+      ),
+      body: RefreshIndicator(
           onRefresh: () async {
             // Ensure status bar style is maintained during and after refresh
             UIHelper.applyPinkStatusBar();
             await _loadReviews();
             UIHelper.applyPinkStatusBar();
           },
-          color: AppTheme.primaryPink,
-          child: _isLoading
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(
-                        color: AppTheme.primaryPink,
+        color: AppTheme.primaryPink,
+        child: _isLoading
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      color: AppTheme.primaryPink,
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      "Loading reviews...",
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        color: AppTheme.mediumText,
                       ),
-                      SizedBox(height: 16),
-                      Text(
-                        "Loading reviews...",
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          color: AppTheme.mediumText,
+                    ),
+                  ],
+                ),
+              )
+            : _errorMessage.isNotEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: AppTheme.error.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.error_outline_rounded,
+                            size: 48,
+                            color: AppTheme.error,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                )
-              : _errorMessage.isNotEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: AppTheme.error.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.error_outline_rounded,
-                              size: 48,
-                              color: AppTheme.error,
+                        SizedBox(height: 16),
+                        Text(
+                          _errorMessage,
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            color: AppTheme.darkText,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 24),
+                        TextButton.icon(
+                          onPressed: _loadReviews,
+                          icon: Icon(Icons.refresh_rounded),
+                          label: Text("Try Again"),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppTheme.primaryPink,
+                            backgroundColor: AppTheme.primaryPink.withOpacity(0.1),
+                            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          SizedBox(height: 16),
-                          Text(
-                            _errorMessage,
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              color: AppTheme.darkText,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          SizedBox(height: 24),
-                          TextButton.icon(
-                            onPressed: _loadReviews,
-                            icon: Icon(Icons.refresh_rounded),
-                            label: Text("Try Again"),
-                            style: TextButton.styleFrom(
-                              foregroundColor: AppTheme.primaryPink,
-                              backgroundColor: AppTheme.primaryPink.withOpacity(0.1),
-                              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                        ),
+                      ],
+                    ),
+                  )
+                : SingleChildScrollView(
+                    physics: AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      children: [
+                        // Rating summary section
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(vertical: 30, horizontal: 24),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryPink,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.primaryPink.withOpacity(0.2),
+                                blurRadius: 15,
+                                offset: Offset(0, 4),
                               ),
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
-                    )
-                  : SingleChildScrollView(
-                      physics: AlwaysScrollableScrollPhysics(),
-                      child: Column(
-                        children: [
-                          // Rating summary section
-                          Container(
-                            width: double.infinity,
-                            padding: EdgeInsets.symmetric(vertical: 30, horizontal: 24),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryPink,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppTheme.primaryPink.withOpacity(0.2),
-                                  blurRadius: 15,
-                                  offset: Offset(0, 4),
+                          child: Column(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
                                 ),
-                              ],
-                            ),
-                            child: Column(
-                              children: [
-                                Container(
-                                  padding: EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(20),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      _averageRating.toStringAsFixed(1),
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 48,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    SizedBox(height: 8),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: List.generate(
+                                        5,
+                                        (index) => Icon(
+                                          index < _averageRating
+                                              ? Icons.star_rounded
+                                              : index < _averageRating + 0.5
+                                                  ? Icons.star_half_rounded
+                                                  : Icons.star_border_rounded,
+                                          color: Colors.amber,
+                                          size: 28,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      "${_reviews.length} ${_reviews.length == 1 ? 'Review' : 'Reviews'}",
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        color: Colors.white.withOpacity(0.9),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Filter section
+                        Container(
+                          padding: EdgeInsets.all(16),
+                          color: Colors.white,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.primaryPink.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(
+                                      Icons.filter_list_rounded,
+                                      color: AppTheme.primaryPink,
+                                      size: 20,
+                                    ),
                                   ),
-                                  child: Column(
-                                    children: [
-                                      Text(
-                                        _averageRating.toStringAsFixed(1),
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 48,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      SizedBox(height: 8),
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: List.generate(
-                                          5,
-                                          (index) => Icon(
-                                            index < _averageRating
-                                                ? Icons.star_rounded
-                                                : index < _averageRating + 0.5
-                                                    ? Icons.star_half_rounded
-                                                    : Icons.star_border_rounded,
-                                            color: Colors.amber,
-                                            size: 28,
+                                  SizedBox(width: 12),
+                                  Text(
+                                    "Filter Reviews",
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.darkText,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 16),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: _filterOptions.map((filter) {
+                                    final bool isSelected = _selectedFilter == filter;
+                                    return GestureDetector(
+                                      onTap: () {
+                                        if (_selectedFilter != filter) {
+                                          setState(() {
+                                            _selectedFilter = filter;
+                                          });
+                                          _loadReviews();
+                                        }
+                                      },
+                                      child: Container(
+                                        margin: EdgeInsets.only(right: 12),
+                                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                        decoration: BoxDecoration(
+                                          color: isSelected ? AppTheme.primaryPink : Colors.white,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: isSelected ? AppTheme.primaryPink : Colors.grey[300]!,
                                           ),
+                                          boxShadow: isSelected
+                                              ? [
+                                                  BoxShadow(
+                                                    color: AppTheme.primaryPink.withOpacity(0.2),
+                                                    blurRadius: 8,
+                                                    offset: Offset(0, 4),
+                                                  ),
+                                                ]
+                                              : [],
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              _getFilterIcon(filter),
+                                              color: isSelected ? Colors.white : AppTheme.mediumText,
+                                              size: 18,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              filter,
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 14,
+                                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                                color: isSelected ? Colors.white : AppTheme.darkText,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Reviews list
+                        _reviews.isEmpty
+                            ? Padding(
+                                padding: EdgeInsets.only(top: 40),
+                                child: Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        padding: EdgeInsets.all(20),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.lightPink,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          LucideIcons.messageSquare,
+                                          size: 48,
+                                          color: AppTheme.primaryPink,
+                                        ),
+                                      ),
+                                      SizedBox(height: 24),
+                                      Text(
+                                        "No Reviews Yet",
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppTheme.darkText,
                                         ),
                                       ),
                                       SizedBox(height: 8),
-                                      Text(
-                                        "${_reviews.length} ${_reviews.length == 1 ? 'Review' : 'Reviews'}",
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 14,
-                                          color: Colors.white.withOpacity(0.9),
-                                          fontWeight: FontWeight.w500,
+                                      Padding(
+                                        padding: EdgeInsets.symmetric(horizontal: 40),
+                                        child: Text(
+                                          "Reviews will appear here as patients provide feedback",
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 14,
+                                            color: AppTheme.mediumText,
+                                            height: 1.5,
+                                          ),
+                                          textAlign: TextAlign.center,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-
-                          // Filter section
-                          Container(
-                            padding: EdgeInsets.all(16),
-                            color: Colors.white,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        color: AppTheme.primaryPink.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Icon(
-                                        Icons.filter_list_rounded,
-                                        color: AppTheme.primaryPink,
-                                        size: 20,
-                                      ),
-                                    ),
-                                    SizedBox(width: 12),
-                                    Text(
-                                      "Filter Reviews",
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppTheme.darkText,
-                                      ),
-                                    ),
-                                  ],
+                              )
+                            : Padding(
+                                padding: EdgeInsets.all(16),
+                                child: Column(
+                                  children: _reviews.map((review) => _buildReviewCard(review, screenWidth)).toList(),
                                 ),
-                                SizedBox(height: 16),
-                                SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: Row(
-                                    children: _filterOptions.map((filter) {
-                                      final bool isSelected = _selectedFilter == filter;
-                                      return GestureDetector(
-                                        onTap: () {
-                                          if (_selectedFilter != filter) {
-                                            setState(() {
-                                              _selectedFilter = filter;
-                                            });
-                                            _loadReviews();
-                                          }
-                                        },
-                                        child: Container(
-                                          margin: EdgeInsets.only(right: 12),
-                                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                          decoration: BoxDecoration(
-                                            color: isSelected ? AppTheme.primaryPink : Colors.white,
-                                            borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(
-                                              color: isSelected ? AppTheme.primaryPink : Colors.grey[300]!,
-                                            ),
-                                            boxShadow: isSelected
-                                                ? [
-                                                    BoxShadow(
-                                                      color: AppTheme.primaryPink.withOpacity(0.2),
-                                                      blurRadius: 8,
-                                                      offset: Offset(0, 4),
-                                                    ),
-                                                  ]
-                                                : [],
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              Icon(
-                                                _getFilterIcon(filter),
-                                                color: isSelected ? Colors.white : AppTheme.mediumText,
-                                                size: 18,
-                                              ),
-                                              SizedBox(width: 8),
-                                              Text(
-                                                filter,
-                                                style: GoogleFonts.poppins(
-                                                  fontSize: 14,
-                                                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                                  color: isSelected ? Colors.white : AppTheme.darkText,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Reviews list
-                          _reviews.isEmpty
-                              ? Padding(
-                                  padding: EdgeInsets.only(top: 40),
-                                  child: Center(
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Container(
-                                          padding: EdgeInsets.all(20),
-                                          decoration: BoxDecoration(
-                                            color: AppTheme.lightPink,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Icon(
-                                            LucideIcons.messageSquare,
-                                            size: 48,
-                                            color: AppTheme.primaryPink,
-                                          ),
-                                        ),
-                                        SizedBox(height: 24),
-                                        Text(
-                                          "No Reviews Yet",
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.w600,
-                                            color: AppTheme.darkText,
-                                          ),
-                                        ),
-                                        SizedBox(height: 8),
-                                        Padding(
-                                          padding: EdgeInsets.symmetric(horizontal: 40),
-                                          child: Text(
-                                            "Reviews will appear here as patients provide feedback",
-                                            style: GoogleFonts.poppins(
-                                              fontSize: 14,
-                                              color: AppTheme.mediumText,
-                                              height: 1.5,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                              : Padding(
-                                  padding: EdgeInsets.all(16),
-                                  child: Column(
-                                    children: _reviews.map((review) => _buildReviewCard(review, screenWidth)).toList(),
-                                  ),
-                                ),
-                        ],
+                              ),
+                      ],
                       ),
                     ),
-        ),
+                  ),
       ),
     );
   }

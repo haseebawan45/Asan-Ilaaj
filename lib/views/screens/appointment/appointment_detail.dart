@@ -13,6 +13,7 @@ import 'package:healthcare/views/screens/common/chat/chat_detail_screen.dart';
 import 'package:healthcare/models/chat_room_model.dart';
 import 'package:healthcare/services/chat_service.dart';
 import 'package:healthcare/utils/app_theme.dart';
+import 'package:healthcare/views/screens/patient/appointment/simplified_booking_flow.dart';
 
 class AppointmentDetailsScreen extends StatefulWidget {
   final String? appointmentId;
@@ -1555,11 +1556,21 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
         width: double.infinity,
         child: ElevatedButton.icon(
           onPressed: () {
-            // Book again
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Booking functionality not implemented'),
-                backgroundColor: Color(0xFF4CAF50),
+            // Prepare doctor data for booking
+            Map<String, dynamic> doctorData = {
+              'id': _appointmentData['doctorId'],
+              'name': _doctorName,
+              'specialty': _doctorSpecialty,
+              'profileImageUrl': _doctorImage.startsWith('assets') ? '' : _doctorImage,
+            };
+            
+            // Navigate to booking flow with pre-selected doctor
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SimplifiedBookingFlow(
+                  preSelectedDoctor: doctorData,
+                ),
               ),
             );
           },

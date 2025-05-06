@@ -315,25 +315,25 @@ class _FinancialAnalyticsScreenState extends State<FinancialAnalyticsScreen> wit
                           
                           // Content
                           Expanded(
-                            child: SingleChildScrollView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
-                              child: !_hasFinancialData 
-                                ? _buildNoDataView()
-                                : Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildSectionHeader("Financial Summary"),
-                                    const SizedBox(height: 20),
-                                    _buildFinanceCards(),
-                                    const SizedBox(height: 25),
-                                    _buildInsightsCard(),
-                                    const SizedBox(height: 25),
-                                    _buildSectionHeader("Earnings Breakdown"),
-                                    const SizedBox(height: 20),
-                                    _buildEarningsChart(),
-                                  ],
-                                ),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
+                  child: !_hasFinancialData 
+                    ? _buildNoDataView()
+                    : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSectionHeader("Financial Summary"),
+                        const SizedBox(height: 20),
+                        _buildFinanceCards(),
+                        const SizedBox(height: 25),
+                        _buildInsightsCard(),
+                        const SizedBox(height: 25),
+                        _buildSectionHeader("Earnings Breakdown"),
+                        const SizedBox(height: 20),
+                        _buildEarningsChart(),
+                      ],
+                    ),
                             ),
                           ),
                         ],
@@ -349,47 +349,47 @@ class _FinancialAnalyticsScreenState extends State<FinancialAnalyticsScreen> wit
   Widget _buildNoDataView() {
     return Container(
       width: double.infinity,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
+          children: [
           const SizedBox(height: 40),
-          Icon(
-            Icons.analytics_outlined,
-            size: 80,
-            color: Colors.grey.shade400,
-          ),
-          const SizedBox(height: 20),
-          Text(
-            "No Financial Data Available",
-            style: GoogleFonts.poppins(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.darkText,
+            Icon(
+              Icons.analytics_outlined,
+              size: 80,
+              color: Colors.grey.shade400,
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            "Your financial analytics will appear here once you start receiving payments.",
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              color: AppTheme.mediumText,
+            const SizedBox(height: 20),
+            Text(
+              "No Financial Data Available",
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.darkText,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 30),
-          ElevatedButton.icon(
-            onPressed: _loadFinancialData,
-            icon: Icon(Icons.refresh),
-            label: Text("Refresh"),
-            style: ElevatedButton.styleFrom(
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              backgroundColor: AppTheme.primaryPink,
-              foregroundColor: Colors.white,
+            const SizedBox(height: 12),
+            Text(
+              "Your financial analytics will appear here once you start receiving payments.",
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                color: AppTheme.mediumText,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-        ],
+            const SizedBox(height: 30),
+            ElevatedButton.icon(
+              onPressed: _loadFinancialData,
+              icon: Icon(Icons.refresh),
+              label: Text("Refresh"),
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                backgroundColor: AppTheme.primaryPink,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
       ),
     );
   }

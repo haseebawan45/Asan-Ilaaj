@@ -289,269 +289,269 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with WidgetsBindingOb
     return UIHelper.ensureStatusBarStyle(
       style: UIHelper.pinkStatusBarStyle,
       child: WillPopScope(
-        onWillPop: () async {
-          // Navigate to the bottom navigation bar with home tab selected
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => BottomNavigationBarScreen(
-                profileStatus: "complete",
-                initialIndex: 0, // Home tab index
-              ),
+      onWillPop: () async {
+        // Navigate to the bottom navigation bar with home tab selected
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BottomNavigationBarScreen(
+              profileStatus: "complete",
+              initialIndex: 0, // Home tab index
             ),
-          );
-          return false; // Prevent default back button behavior
-        },
-        child: Scaffold(
-          backgroundColor: Colors.white,
-          body: Stack(
-            children: [
-              SafeArea(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Custom app bar with gradient
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                      decoration: BoxDecoration(
+          ),
+        );
+        return false; // Prevent default back button behavior
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: Stack(
+          children: [
+            SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Custom app bar with gradient
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                    decoration: BoxDecoration(
                         color: AppTheme.primaryPink,
                         borderRadius: BorderRadius.only(
                           bottomLeft: Radius.circular(20),
                           bottomRight: Radius.circular(20),
                         ),
-                        boxShadow: [
-                          BoxShadow(
+                      boxShadow: [
+                        BoxShadow(
                             color: AppTheme.primaryPink.withOpacity(0.3),
                             spreadRadius: 0,
                             blurRadius: 10,
                             offset: Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Text(
-                            "Analytics Dashboard",
-                            style: GoogleFonts.poppins(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          "Analytics Dashboard",
+                          style: GoogleFonts.poppins(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
                               color: Colors.white,
-                            ),
                           ),
-                          Spacer(),
-                          Container(
-                            padding: EdgeInsets.all(8),
-                            decoration: BoxDecoration(
+                        ),
+                        Spacer(),
+                        Container(
+                          padding: EdgeInsets.all(8),
+                          decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              LucideIcons.activity,
-                              color: Colors.white,
-                            ),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                        ],
-                      ),
-                    ),
-                    
-                    // Summary stats row with loading state
-                    Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Container(
-                        padding: EdgeInsets.all(15),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryPink,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppTheme.primaryPink.withOpacity(0.3),
-                              blurRadius: 10,
-                              offset: Offset(0, 5),
-                            ),
-                          ],
+                          child: Icon(
+                            LucideIcons.activity,
+                              color: Colors.white,
+                          ),
                         ),
-                        child: _isLoading
-                            ? Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 20.0),
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                ),
-                              )
-                            : Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  _buildSummaryItem("${_totalPatients}", "Patients"),
-                                  Container(
-                                    height: 40,
-                                    width: 1,
-                                    color: Colors.white.withOpacity(0.3),
-                                    margin: EdgeInsets.symmetric(horizontal: 30),
-                                  ),
-                                  _buildSummaryItem("${_totalAppointments}", "Appointments"),
-                                ],
-                              ),
-                      ),
+                      ],
                     ),
-                    
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Text(
-                        "Analytics Categories",
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.darkText,
-                        ),
-                      ),
-                    ),
-                    
-                    // Analytics cards
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(15.0),
-                        child: GridView.count(
-                          crossAxisCount: 2,
-                          childAspectRatio: 1.05,
-                          crossAxisSpacing: 15,
-                          mainAxisSpacing: 15,
-                          children: [
-                            _buildAnalyticsCard(
-                              icon: LucideIcons.activity,
-                              title: "Financial Analytics",
-                              description: "Revenue & expense reports",
-                              bgColor: AppTheme.lightPink,
-                              iconColor: AppTheme.primaryPink,
-                              onPressed: () {
-                                NavigationHelper.navigateWithBottomBar(context, FinancialAnalyticsScreen());
-                              },
-                            ),
-                            _buildAnalyticsCard(
-                              icon: LucideIcons.clipboardCheck,
-                              title: "Appointments",
-                              description: "View appointment history",
-                              bgColor: AppTheme.lightTeal,
-                              iconColor: AppTheme.primaryTeal,
-                              onPressed: () {
-                                NavigationHelper.navigateWithBottomBar(context, AppointmentHistoryScreen());
-                              },
-                            ),
-                            _buildAnalyticsCard(
-                              icon: LucideIcons.calendar,
-                              title: "Manage Availability",
-                              description: "Set your schedule & locations",
-                              bgColor: AppTheme.lightTeal,
-                              iconColor: AppTheme.primaryTeal,
-                              onPressed: () {
-                                NavigationHelper.navigateToCachedScreen(
-                                  context, 
-                                  "DoctorAvailabilityScreen", 
-                                  () => DoctorAvailabilityScreen()
-                                );
-                              },
-                            ),
-                            _buildAnalyticsCard(
-                              icon: LucideIcons.users,
-                              title: "Patients",
-                              description: "Manage patient data",
-                              bgColor: AppTheme.lightPink,
-                              iconColor: AppTheme.primaryPink,
-                              onPressed: () {
-                                // Apply status bar style once more before navigation
-                                UIHelper.applyPinkStatusBar();
-                                NavigationHelper.navigateWithBottomBar(context, PatientsScreen());
-                              },
-                            ),
-                            _buildAnalyticsCard(
-                              icon: LucideIcons.building2,
-                              title: "Hospital Selection",
-                              description: "Manage your practice locations",
-                              bgColor: AppTheme.veryLightTeal,
-                              iconColor: AppTheme.darkTeal,
-                              onPressed: () async {
-                                try {
-                                  // Get current selected hospitals
-                                  final doctorService = DoctorProfileService();
-                                  final currentHospitals = await doctorService.getDoctorSelectedHospitals();
-                                  
-                                  // Apply status bar style once more before navigation
-                                  UIHelper.applyPinkStatusBar();
-                                  // Navigate to hospital selection screen
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => HospitalSelectionScreen(
-                                        selectedHospitals: currentHospitals,
-                                      ),
-                                    ),
-                                  );
-                                } catch (e) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Could not load hospital selection'),
-                                      backgroundColor: AppTheme.error,
-                                    ),
-                                  );
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              // Bottom refresh indicator
-              if (_isRefreshing)
-                Positioned(
-                  bottom: 16,
-                  left: 0,
-                  right: 0,
-                  child: Center(
+                  ),
+                  
+                  // Summary stats row with loading state
+                  Padding(
+                    padding: const EdgeInsets.all(20.0),
                     child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: EdgeInsets.all(15),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppTheme.primaryPink,
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 8,
-                            offset: Offset(0, 2),
+                            color: AppTheme.primaryPink.withOpacity(0.3),
+                            blurRadius: 10,
+                            offset: Offset(0, 5),
                           ),
                         ],
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                AppTheme.primaryTeal,
+                      child: _isLoading
+                          ? Center(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 20.0),
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
                               ),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                _buildSummaryItem("${_totalPatients}", "Patients"),
+                                Container(
+                                  height: 40,
+                                  width: 1,
+                                  color: Colors.white.withOpacity(0.3),
+                                  margin: EdgeInsets.symmetric(horizontal: 30),
+                                ),
+                                _buildSummaryItem("${_totalAppointments}", "Appointments"),
+                              ],
                             ),
+                    ),
+                  ),
+                  
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text(
+                      "Analytics Categories",
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.darkText,
+                      ),
+                    ),
+                  ),
+                  
+                  // Analytics cards
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(15.0),
+                      child: GridView.count(
+                        crossAxisCount: 2,
+                        childAspectRatio: 1.05,
+                        crossAxisSpacing: 15,
+                        mainAxisSpacing: 15,
+                        children: [
+                          _buildAnalyticsCard(
+                            icon: LucideIcons.activity,
+                            title: "Financial Analytics",
+                            description: "Revenue & expense reports",
+                            bgColor: AppTheme.lightPink,
+                            iconColor: AppTheme.primaryPink,
+                            onPressed: () {
+                              NavigationHelper.navigateWithBottomBar(context, FinancialAnalyticsScreen());
+                            },
                           ),
-                          SizedBox(width: 8),
-                          Text(
-                            "Refreshing analytics...",
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: AppTheme.mediumText,
-                            ),
+                          _buildAnalyticsCard(
+                            icon: LucideIcons.clipboardCheck,
+                            title: "Appointments",
+                            description: "View appointment history",
+                            bgColor: AppTheme.lightTeal,
+                            iconColor: AppTheme.primaryTeal,
+                            onPressed: () {
+                              NavigationHelper.navigateWithBottomBar(context, AppointmentHistoryScreen());
+                            },
+                          ),
+                          _buildAnalyticsCard(
+                            icon: LucideIcons.calendar,
+                            title: "Manage Availability",
+                            description: "Set your schedule & locations",
+                            bgColor: AppTheme.lightTeal,
+                            iconColor: AppTheme.primaryTeal,
+                            onPressed: () {
+                              NavigationHelper.navigateToCachedScreen(
+                                context, 
+                                "DoctorAvailabilityScreen", 
+                                () => DoctorAvailabilityScreen()
+                              );
+                            },
+                          ),
+                          _buildAnalyticsCard(
+                            icon: LucideIcons.users,
+                            title: "Patients",
+                            description: "Manage patient data",
+                            bgColor: AppTheme.lightPink,
+                            iconColor: AppTheme.primaryPink,
+                            onPressed: () {
+                                // Apply status bar style once more before navigation
+                                UIHelper.applyPinkStatusBar();
+                              NavigationHelper.navigateWithBottomBar(context, PatientsScreen());
+                            },
+                          ),
+                          _buildAnalyticsCard(
+                            icon: LucideIcons.building2,
+                            title: "Hospital Selection",
+                            description: "Manage your practice locations",
+                            bgColor: AppTheme.veryLightTeal,
+                            iconColor: AppTheme.darkTeal,
+                            onPressed: () async {
+                              try {
+                                // Get current selected hospitals
+                                final doctorService = DoctorProfileService();
+                                final currentHospitals = await doctorService.getDoctorSelectedHospitals();
+                                
+                                  // Apply status bar style once more before navigation
+                                  UIHelper.applyPinkStatusBar();
+                                // Navigate to hospital selection screen
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => HospitalSelectionScreen(
+                                      selectedHospitals: currentHospitals,
+                                    ),
+                                  ),
+                                );
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Could not load hospital selection'),
+                                    backgroundColor: AppTheme.error,
+                                  ),
+                                );
+                              }
+                            },
                           ),
                         ],
                       ),
                     ),
                   ),
+                ],
+              ),
+            ),
+            
+            // Bottom refresh indicator
+            if (_isRefreshing)
+              Positioned(
+                bottom: 16,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppTheme.primaryTeal,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          "Refreshing analytics...",
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: AppTheme.mediumText,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-            ],
+              ),
+          ],
           ),
         ),
       ),

@@ -3141,6 +3141,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> with SingleTicker
     bool result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
+      barrierColor: Colors.black54.withOpacity(0.7), // Darker background for better contrast
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, setState) {
@@ -3148,7 +3149,8 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> with SingleTicker
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(screenSize.width * 0.05),
               ),
-              elevation: 10,
+              elevation: 24, // Increased elevation for more pronounced shadow
+              clipBehavior: Clip.antiAlias, // Ensure content respects rounded corners
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   // Calculate proportional sizes based on the dialog's constraints
@@ -3161,45 +3163,106 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> with SingleTicker
                     constraints: BoxConstraints(
                       maxHeight: screenSize.height * 0.8, // Ensure dialog doesn't exceed 80% of screen height
                     ),
-            decoration: BoxDecoration(
+                    decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(screenSize.width * 0.05),
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [Colors.white, Color(0xFFF5F7FF)],
+                        colors: [Colors.white, Color(0xFFF0F8FF)], // Subtle blue gradient background
+                        stops: [0.0, 1.0],
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                          offset: Offset(0, 10),
+                        ),
+                      ],
                     ),
                     child: SafeArea(
                       minimum: EdgeInsets.all(horizontalPadding * 0.5),
                       child: SingleChildScrollView(
                         child: Padding(
                           padding: EdgeInsets.all(horizontalPadding * 0.8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                              // Dialog Header
+                            children: [
+                              // Dialog Header with decoration
                               Container(
                                 margin: EdgeInsets.only(bottom: verticalPadding),
                                 child: Stack(
                                   children: [
-                                    // Centered title
+                                    // Centered title with decorative elements
                                     Align(
                                       alignment: Alignment.center,
-                                      child: FittedBox(
-                                        fit: BoxFit.scaleDown,
-                                        child: Padding(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: buttonSize + horizontalPadding
-                                          ),
-                                          child: Text(
-                                            "Find Doctors",
-                  style: GoogleFonts.poppins(
-                                              fontSize: maxWidth * 0.06,
-                                              fontWeight: FontWeight.bold,
-                                              color: Color(0xFF3366CC),
+                                      child: Container(
+                                        padding: EdgeInsets.only(
+                                          top: verticalPadding * 0.5,
+                                          bottom: verticalPadding * 0.5
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            // Icon above title
+                                            Container(
+                                              padding: EdgeInsets.all(maxWidth * 0.03),
+                                              decoration: BoxDecoration(
+                                                gradient: LinearGradient(
+                                                  colors: [
+                                                    Color(0xFF3366CC).withOpacity(0.8),
+                                                    Color(0xFF3366CC),
+                                                  ],
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                ),
+                                                shape: BoxShape.circle,
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Color(0xFF3366CC).withOpacity(0.25),
+                                                    blurRadius: 8,
+                                                    spreadRadius: 1,
+                                                    offset: Offset(0, 4),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Icon(
+                                                LucideIcons.search,
+                                                color: Colors.white,
+                                                size: maxWidth * 0.06,
+                                              ),
                                             ),
-                                          ),
+                                            SizedBox(height: verticalPadding * 0.5),
+                                            // Animated title
+                                            TweenAnimationBuilder(
+                                              duration: Duration(milliseconds: 500),
+                                              tween: Tween<double>(begin: 0.8, end: 1.0),
+                                              builder: (context, value, child) {
+                                                return Transform.scale(
+                                                  scale: value,
+                                                  child: child,
+                                                );
+                                              },
+                                              child: Text(
+                                                "Find Doctors",
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: maxWidth * 0.06,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Color(0xFF3366CC),
+                                                  letterSpacing: 0.5,
+                                                ),
+                                              ),
+                                            ),
+                                            SizedBox(height: verticalPadding * 0.2),
+                                            Text(
+                                              "Customize your search preferences",
+                                              style: GoogleFonts.poppins(
+                                                fontSize: maxWidth * 0.035,
+                                                color: Colors.grey.shade600,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ),
@@ -3211,8 +3274,9 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> with SingleTicker
                                         width: buttonSize,
                                         height: buttonSize,
                                         child: Material(
-                                          color: Colors.grey.shade100,
+                                          color: Colors.grey.shade200,
                                           shape: CircleBorder(),
+                                          elevation: 2,
                                           child: InkWell(
                                             borderRadius: BorderRadius.circular(buttonSize),
                                             onTap: () => Navigator.pop(context, false),
@@ -3223,488 +3287,528 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> with SingleTicker
                                             ),
                                           ),
                                         ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-                              
-                              // Divider
-                              Divider(color: Colors.grey.shade300, thickness: 1),
-                              SizedBox(height: verticalPadding * 0.5),
-                              
-                              // Specialty Selection Section
-                              Row(
-                  children: [
-                                  Container(
-                                    padding: EdgeInsets.all(maxWidth * 0.02),
-                                    decoration: BoxDecoration(
-                                      color: Color(0xFF3366CC).withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(maxWidth * 0.02),
-                                    ),
-                                    child: Icon(
-                                      LucideIcons.stethoscope,
-                                      color: Color(0xFF3366CC),
-                                      size: maxWidth * 0.05,
-                                    ),
-                                  ),
-                                  SizedBox(width: maxWidth * 0.03),
-                                  Flexible(
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      alignment: Alignment.centerLeft,
-                                      child: Text(
-                      "Select Specialty",
-                      style: GoogleFonts.poppins(
-                                          fontSize: maxWidth * 0.04,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                    ),
-                                    ),
-                    ),
-                  ],
-                ),
-                              SizedBox(height: verticalPadding * 0.5),
-                Container(
-                                padding: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-                            decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(15),
-                                  color: Colors.white,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
-                                      blurRadius: 10,
-                                      offset: Offset(0, 5),
-                                    ),
-                                  ],
-                                  border: Border.all(color: Colors.grey.shade200),
-                                ),
-                                child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<DiseaseCategory>(
-                                    isExpanded: true,
-                                    value: selectedSpecialty,
-                                    icon: Icon(
-                                      LucideIcons.chevronDown,
-                                      color: Color(0xFF3366CC),
-                                      size: maxWidth * 0.04,
-                                    ),
-                                    hint: Text(
-                                      "Choose a specialty",
-                            style: GoogleFonts.poppins(
-                                        color: Colors.grey[600],
-                                        fontSize: maxWidth * 0.035,
                                       ),
                                     ),
-                                    menuMaxHeight: screenSize.height * 0.5,
-                                    dropdownColor: Colors.white,
-                                    elevation: 8,
-                                    borderRadius: BorderRadius.circular(15),
-                                    itemHeight: 48.0, // Fixed value to meet minimum requirements
-                            style: GoogleFonts.poppins(
-                                      color: Colors.black87,
-                                      fontSize: maxWidth * 0.035,
-                                    ),
-                                    items: _diseaseCategories.map((category) {
-                                      return DropdownMenuItem<DiseaseCategory>(
-                                        value: category,
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            border: Border(
-                                              bottom: BorderSide(
-                                                color: Colors.grey.shade200,
-                                                width: 1.0,
+                                  ],
+                                ),
+                              ),
+                              
+                              // Divider with gradient
+                              Container(
+                                height: 2,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.grey.shade200,
+                                      Color(0xFF3366CC).withOpacity(0.3),
+                                      Colors.grey.shade200,
+                                    ],
+                                    stops: [0.0, 0.5, 1.0],
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: verticalPadding * 0.8),
+                              
+                              // Specialty Selection Section with enhanced design
+                              TweenAnimationBuilder<Offset>(
+                                duration: Duration(milliseconds: 600),
+                                tween: Tween<Offset>(begin: Offset(0.05, 0), end: Offset.zero),
+                                builder: (context, offset, child) {
+                                  return Transform.translate(
+                                    offset: offset,
+                                    child: child,
+                                  );
+                                },
+                                child: Container(
+                                  margin: EdgeInsets.only(bottom: verticalPadding * 0.5),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Container(
+                                            padding: EdgeInsets.all(maxWidth * 0.025),
+                                            decoration: BoxDecoration(
+                                              color: Color(0xFF3366CC).withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(maxWidth * 0.02),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Color(0xFF3366CC).withOpacity(0.1),
+                                                  blurRadius: 4,
+                                                  offset: Offset(0, 2),
+                                                ),
+                                              ],
+                                            ),
+                                            child: Icon(
+                                              LucideIcons.stethoscope,
+                                              color: Color(0xFF3366CC),
+                                              size: maxWidth * 0.05,
+                                            ),
+                                          ),
+                                          SizedBox(width: maxWidth * 0.03),
+                                          Flexible(
+                                            child: FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              alignment: Alignment.centerLeft,
+                                              child: Text(
+                                                "Select Specialty",
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: maxWidth * 0.04,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.black87,
+                                                ),
                                               ),
                                             ),
                                           ),
-                                          padding: EdgeInsets.symmetric(vertical: 5),
+                                        ],
+                                      ),
+                                      SizedBox(height: verticalPadding * 0.5),
+                                      Container(
+                                        padding: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(15),
+                                          color: Colors.white,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(0.05),
+                                              blurRadius: 10,
+                                              offset: Offset(0, 5),
+                                            ),
+                                          ],
+                                          border: Border.all(
+                                            color: selectedSpecialty != null 
+                                                ? Color(0xFF3366CC).withOpacity(0.3) 
+                                                : Colors.grey.shade200,
+                                            width: 1.5,
+                                          ),
+                                        ),
+                                        child: DropdownButtonHideUnderline(
+                                          child: DropdownButton<DiseaseCategory>(
+                                            isExpanded: true,
+                                            value: selectedSpecialty,
+                                            icon: Container(
+                                              padding: EdgeInsets.all(maxWidth * 0.01),
+                                              decoration: BoxDecoration(
+                                                color: Color(0xFF3366CC).withOpacity(0.1),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: Icon(
+                                                LucideIcons.chevronDown,
+                                                color: Color(0xFF3366CC),
+                                                size: maxWidth * 0.04,
+                                              ),
+                                            ),
+                                            hint: Text(
+                                              "Choose a specialty",
+                                              style: GoogleFonts.poppins(
+                                                color: Colors.grey[600],
+                                                fontSize: maxWidth * 0.035,
+                                              ),
+                                            ),
+                                            menuMaxHeight: screenSize.height * 0.5,
+                                            dropdownColor: Colors.white,
+                                            elevation: 8,
+                                            borderRadius: BorderRadius.circular(15),
+                                            itemHeight: 48.0, // Fixed value to meet minimum requirements
+                                            style: GoogleFonts.poppins(
+                                              color: Colors.black87,
+                                              fontSize: maxWidth * 0.035,
+                                            ),
+                                            items: _diseaseCategories.map((category) {
+                                              return DropdownMenuItem<DiseaseCategory>(
+                                                value: category,
+                                                child: Container(
+                                                  decoration: BoxDecoration(
+                                                    border: Border(
+                                                      bottom: BorderSide(
+                                                        color: Colors.grey.shade200,
+                                                        width: 1.0,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  padding: EdgeInsets.symmetric(vertical: 5),
+                                                  child: Row(
+                                                    children: [
+                                                      Container(
+                                                        padding: EdgeInsets.all(maxWidth * 0.015),
+                                                        decoration: BoxDecoration(
+                                                          color: category.color.withOpacity(0.1),
+                                                          shape: BoxShape.circle,
+                                                        ),
+                                                        child: Icon(
+                                                          category.icon,
+                                                          color: category.color,
+                                                          size: maxWidth * 0.05,
+                                                        ),
+                                                      ),
+                                                      SizedBox(width: maxWidth * 0.02),
+                                                      Flexible(
+                                                        child: FittedBox(
+                                                          fit: BoxFit.scaleDown,
+                                                          alignment: Alignment.centerLeft,
+                                                          child: Text(
+                                                            category.name,
+                                                            style: GoogleFonts.poppins(
+                                                              fontSize: maxWidth * 0.035,
+                                                              fontWeight: FontWeight.w500,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              );
+                                            }).toList(),
+                                            onChanged: (value) {
+                                              setState(() {
+                                                selectedSpecialty = value;
+                                              });
+                                            },
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              
+                              SizedBox(height: verticalPadding * 1.2),
+                              
+                              // City Selection Section with enhanced design
+                              TweenAnimationBuilder(
+                                duration: Duration(milliseconds: 700),
+                                tween: Tween<Offset>(begin: Offset(0.05, 0), end: Offset.zero),
+                                builder: (context, offset, child) {
+                                  return Transform.translate(
+                                    offset: offset,
+                                    child: child,
+                                  );
+                                },
+                                child: Container(
+                                  margin: EdgeInsets.only(bottom: verticalPadding * 0.5),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Container(
+                                            padding: EdgeInsets.all(maxWidth * 0.025),
+                                            decoration: BoxDecoration(
+                                              color: Color(0xFF4CAF50).withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(maxWidth * 0.02),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Color(0xFF4CAF50).withOpacity(0.1),
+                                                  blurRadius: 4,
+                                                  offset: Offset(0, 2),
+                                                ),
+                                              ],
+                                            ),
+                                            child: Icon(
+                                              LucideIcons.mapPin,
+                                              color: Color(0xFF4CAF50),
+                                              size: maxWidth * 0.05,
+                                            ),
+                                          ),
+                                          SizedBox(width: maxWidth * 0.03),
+                                          Flexible(
+                                            child: FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              alignment: Alignment.centerLeft,
+                                              child: Text(
+                                                "Select City",
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: maxWidth * 0.04,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.black87,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SizedBox(height: verticalPadding * 0.5),
+                                      InkWell(
+                                        onTap: () {
+                                          _showCitySelectionBottomSheet(context, (city) {
+                                            setState(() {
+                                              selectedCity = city;
+                                            });
+                                          });
+                                        },
+                                        borderRadius: BorderRadius.circular(15),
+                                        child: Container(
+                                          padding: EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(15),
+                                            color: Colors.white,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(0.05),
+                                                blurRadius: 10,
+                                                offset: Offset(0, 5),
+                                              ),
+                                            ],
+                                            border: Border.all(
+                                              color: selectedCity != null 
+                                                  ? Color(0xFF4CAF50).withOpacity(0.3) 
+                                                  : Colors.grey.shade200,
+                                              width: 1.5,
+                                            ),
+                                          ),
                                           child: Row(
                                             children: [
+                                              Icon(
+                                                LucideIcons.mapPin,
+                                                color: Color(0xFF4CAF50),
+                                                size: maxWidth * 0.05,
+                                              ),
+                                              SizedBox(width: maxWidth * 0.02),
+                                              Expanded(
+                                                child: Text(
+                                                  selectedCity ?? "Choose a city",
+                                                  style: GoogleFonts.poppins(
+                                                    color: selectedCity != null ? Colors.black87 : Colors.grey[600],
+                                                    fontSize: maxWidth * 0.035,
+                                                    fontWeight: selectedCity != null ? FontWeight.w500 : FontWeight.normal,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
                                               Container(
-                                                padding: EdgeInsets.all(maxWidth * 0.015),
+                                                padding: EdgeInsets.all(maxWidth * 0.01),
                                                 decoration: BoxDecoration(
-                                                  color: category.color.withOpacity(0.1),
+                                                  color: Color(0xFF4CAF50).withOpacity(0.1),
                                                   shape: BoxShape.circle,
                                                 ),
                                                 child: Icon(
-                                                  category.icon,
-                                                  color: category.color,
-                                                  size: maxWidth * 0.05,
+                                                  LucideIcons.chevronDown,
+                                                  color: Color(0xFF4CAF50),
+                                                  size: maxWidth * 0.04,
                                                 ),
                                               ),
-                                              SizedBox(width: maxWidth * 0.02),
-                                              Flexible(
-                                                child: FittedBox(
-                                                  fit: BoxFit.scaleDown,
-                                                  alignment: Alignment.centerLeft,
-                                                  child: Text(
-                                                    category.name,
-                                                    style: GoogleFonts.poppins(
-                                                      fontSize: maxWidth * 0.035,
-                                                      fontWeight: FontWeight.w500,
-                                                    ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-                                    }).toList(),
-                                    onChanged: (value) {
-              setState(() {
-                                        selectedSpecialty = value;
-                                      });
-                                    },
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
+                              
                               SizedBox(height: verticalPadding * 1.2),
                               
-                              // City Selection Section
-                              Row(
-                      children: [
-                                  Container(
-                                    padding: EdgeInsets.all(maxWidth * 0.02),
-                                    decoration: BoxDecoration(
-                                      color: Color(0xFF4CAF50).withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(maxWidth * 0.02),
-                                    ),
-                                    child: Icon(
-                                      LucideIcons.mapPin,
-                                      color: Color(0xFF4CAF50),
-                                      size: maxWidth * 0.05,
-                                    ),
-                                  ),
-                                  SizedBox(width: maxWidth * 0.03),
-                                  Flexible(
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      alignment: Alignment.centerLeft,
-                                      child: Text(
-                          "Select City",
-                          style: GoogleFonts.poppins(
-                                          fontSize: maxWidth * 0.04,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87,
-                          ),
-                        ),
-                                    ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: verticalPadding * 0.5),
-                              InkWell(
-                                onTap: () {
-                                  _showCitySelectionBottomSheet(context, (city) {
-                                    setState(() {
-                                      selectedCity = city;
-                                    });
-                                  });
-                                },
-                                child: Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 15, vertical: 12),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(15),
-                                    color: Colors.white,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.05),
-                                        blurRadius: 10,
-                                        offset: Offset(0, 5),
-                                      ),
-                                    ],
-                                    border: Border.all(color: Colors.grey.shade200),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        LucideIcons.mapPin,
-                                        color: Color(0xFF4CAF50),
-                                        size: maxWidth * 0.05,
-                                      ),
-                                      SizedBox(width: maxWidth * 0.02),
-                                      Expanded(
-                                        child: Text(
-                                          selectedCity ?? "Choose a city",
-                                          style: GoogleFonts.poppins(
-                                            color: selectedCity != null ? Colors.black87 : Colors.grey[600],
-                                            fontSize: maxWidth * 0.035,
-                                            fontWeight: selectedCity != null ? FontWeight.w500 : FontWeight.normal,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      Icon(
-                                        LucideIcons.chevronDown,
-                                        color: Color(0xFF4CAF50),
-                                        size: maxWidth * 0.04,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              SizedBox(height: verticalPadding * 1.2),
-                              
-                              // Gender Selection Section
-                              Row(
-                  children: [
-                                  Container(
-                                    padding: EdgeInsets.all(maxWidth * 0.02),
-                                    decoration: BoxDecoration(
-                                      color: Color(0xFFE91E63).withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(maxWidth * 0.02),
-                                    ),
-                                    child: Icon(
-                                      LucideIcons.users,
-                                      color: Color(0xFFE91E63),
-                                      size: maxWidth * 0.05,
-                                    ),
-                                  ),
-                                  SizedBox(width: maxWidth * 0.03),
-                                  Flexible(
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      alignment: Alignment.centerLeft,
-                                      child: Text(
-                                        "Select Gender",
-                      style: GoogleFonts.poppins(
-                                          fontSize: maxWidth * 0.04,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                    ),
-                                    ),
-                    ),
-                  ],
-                ),
-                              SizedBox(height: verticalPadding * 0.7),
-                              
-                              // Custom Radio Buttons for Gender
-                    Container(
-                                child: AspectRatio(
-                                  aspectRatio: 3.5, // Maintain consistent aspect ratio
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      // All Option
-                                      Expanded(
-                                        child: GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              selectedGender = "All";
-                                            });
-                                          },
-                                          child: Container(
-                                            margin: EdgeInsets.symmetric(horizontal: maxWidth * 0.01),
-                                            padding: EdgeInsets.symmetric(vertical: maxWidth * 0.02),
-                                            decoration: BoxDecoration(
-                                              color: selectedGender == "All" 
-                                                  ? Color(0xFF9C27B0).withOpacity(0.1) 
-                                                  : Colors.white,
-                                              borderRadius: BorderRadius.circular(maxWidth * 0.025),
-                                              border: Border.all(
-                                                color: selectedGender == "All"
-                                                    ? Color(0xFF9C27B0)
-                                                    : Colors.grey.shade300,
-                                                width: 1.5,
-                                              ),
-                                            ),
-                                            child: Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: [
-                                                Icon(
-                                                  Icons.people,
-                                                  color: Color(0xFF9C27B0),
-                                                  size: maxWidth * 0.06,
-                                                ),
-                                                SizedBox(height: maxWidth * 0.01),
-                                                FittedBox(
-                                                  fit: BoxFit.scaleDown,
-                            child: Text(
-                                                    "All",
-                              style: GoogleFonts.poppins(
-                                                      fontSize: maxWidth * 0.03,
-                                                      fontWeight: FontWeight.w500,
-                                                      color: selectedGender == "All"
-                                                          ? Color(0xFF9C27B0)
-                                                          : Colors.grey.shade700,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      
-                                      // Male Option
-                                      Expanded(
-                                        child: GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              selectedGender = "Male";
-                                            });
-                                          },
-                                          child: Container(
-                                            margin: EdgeInsets.symmetric(horizontal: maxWidth * 0.01),
-                                            padding: EdgeInsets.symmetric(vertical: maxWidth * 0.02),
-                                            decoration: BoxDecoration(
-                                              color: selectedGender == "Male" 
-                                                  ? Color(0xFF2196F3).withOpacity(0.1) 
-                                                  : Colors.white,
-                                              borderRadius: BorderRadius.circular(maxWidth * 0.025),
-                                              border: Border.all(
-                                                color: selectedGender == "Male"
-                                                    ? Color(0xFF2196F3)
-                                                    : Colors.grey.shade300,
-                                                width: 1.5,
-                                              ),
-                                            ),
-                                            child: Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: [
-                                                Icon(
-                                                  Icons.male,
-                                                  color: Color(0xFF2196F3),
-                                                  size: maxWidth * 0.06,
-                                                ),
-                                                SizedBox(height: maxWidth * 0.01),
-                                                FittedBox(
-                                                  fit: BoxFit.scaleDown,
-                                                  child: Text(
-                                                    "Male",
-                                  style: GoogleFonts.poppins(
-                                                      fontSize: maxWidth * 0.03,
-                                    fontWeight: FontWeight.w500,
-                                                      color: selectedGender == "Male"
-                                                          ? Color(0xFF2196F3)
-                                                          : Colors.grey.shade700,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      
-                                      // Female Option
-                                      Expanded(
-                                        child: GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              selectedGender = "Female";
-                                            });
-                                          },
-                                          child: Container(
-                                            margin: EdgeInsets.symmetric(horizontal: maxWidth * 0.01),
-                                            padding: EdgeInsets.symmetric(vertical: maxWidth * 0.02),
-                                            decoration: BoxDecoration(
-                                              color: selectedGender == "Female" 
-                                                  ? Color(0xFFE91E63).withOpacity(0.1) 
-                                                  : Colors.white,
-                                              borderRadius: BorderRadius.circular(maxWidth * 0.025),
-                                              border: Border.all(
-                                                color: selectedGender == "Female"
-                                                    ? Color(0xFFE91E63)
-                                                    : Colors.grey.shade300,
-                                                width: 1.5,
-                                              ),
-                                            ),
-                                            child: Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: [
-                                                Icon(
-                                                  Icons.female,
-                                                  color: Color(0xFFE91E63),
-                                                  size: maxWidth * 0.06,
-                                                ),
-                                                SizedBox(height: maxWidth * 0.01),
-                                                FittedBox(
-                                                  fit: BoxFit.scaleDown,
-                                                  child: Text(
-                                                    "Female",
-                                                    style: GoogleFonts.poppins(
-                                                      fontSize: maxWidth * 0.03,
-                                                      fontWeight: FontWeight.w500,
-                                                      color: selectedGender == "Female"
-                                                          ? Color(0xFFE91E63)
-                                                          : Colors.grey.shade700,
-                                                    ),
-                          ),
-                    ),
-                  ],
-                ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              
-                              SizedBox(height: verticalPadding * 1.8),
-                              
-                              // Search Button with gradient
-                              Center(
-                                child: Container(
-                                  width: maxWidth * 0.7,
-                                  height: maxWidth * 0.12,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(maxWidth * 0.06),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Color(0xFF3366CC).withOpacity(0.3),
-                                        blurRadius: 12,
-                                        offset: Offset(0, 6),
-                                      ),
-                                    ],
-                                    gradient: LinearGradient(
-                                      colors: [AppTheme.primaryTeal, AppTheme.primaryTeal],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                                  ),
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
-                                      borderRadius: BorderRadius.circular(maxWidth * 0.06),
-                                      onTap: () {
-                                        if (selectedSpecialty != null) {
-                                          Navigator.pop(context, true);
-                                        } else {
-                                          // Show error about required selection
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text('Please select a specialty'),
-                                              backgroundColor: Colors.red,
-              ),
-            );
-          }
-                                      },
-                                      child: Center(
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
+                              // Gender Selection Section with enhanced design
+                               TweenAnimationBuilder(
+                                 duration: Duration(milliseconds: 800),
+                                 tween: Tween<Offset>(begin: Offset(0.05, 0), end: Offset.zero),
+                                 builder: (context, offset, child) {
+                                   return Transform.translate(
+                                     offset: offset,
+                                     child: child,
+                                   );
+                                 },
+                                 child: Container(
+                                   margin: EdgeInsets.only(bottom: verticalPadding * 0.5),
+                                   child: Column(
+                                     crossAxisAlignment: CrossAxisAlignment.start,
+                                     children: [
+                                        Row(
                                           children: [
-                                            Icon(
-                                              LucideIcons.search,
-                                              color: Colors.white,
-                                              size: maxWidth * 0.045,
+                                            Container(
+                                             padding: EdgeInsets.all(maxWidth * 0.025),
+                                              decoration: BoxDecoration(
+                                                color: Color(0xFFE91E63).withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(maxWidth * 0.02),
+                                               boxShadow: [
+                                                 BoxShadow(
+                                                   color: Color(0xFFE91E63).withOpacity(0.1),
+                                                   blurRadius: 4,
+                                                   offset: Offset(0, 2),
+                                                 ),
+                                               ],
+                                              ),
+                                              child: Icon(
+                                                LucideIcons.users,
+                                                color: Color(0xFFE91E63),
+                                                size: maxWidth * 0.05,
+                                              ),
                                             ),
-                                            SizedBox(width: maxWidth * 0.02),
-                                            FittedBox(
-                                              fit: BoxFit.scaleDown,
-                                              child: Text(
-                                                "Find Doctors",
-                                                style: GoogleFonts.poppins(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: maxWidth * 0.04,
+                                            SizedBox(width: maxWidth * 0.03),
+                                            Flexible(
+                                              child: FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                alignment: Alignment.centerLeft,
+                                                child: Text(
+                                                  "Select Gender",
+                                                  style: GoogleFonts.poppins(
+                                                    fontSize: maxWidth * 0.04,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Colors.black87,
+                                                  ),
                                                 ),
                                               ),
                                             ),
                                           ],
+                                        ),
+                                        SizedBox(height: verticalPadding * 0.7),
+                                        
+                                       // Custom Radio Buttons for Gender with improved visuals
+                                        Container(
+                                          child: AspectRatio(
+                                            aspectRatio: 3.5, // Maintain consistent aspect ratio
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                              children: [
+                                                // All Option
+                                                Expanded(
+                                                 child: _buildGenderOption(
+                                                   context,
+                                                   icon: Icons.people,
+                                                   label: "All",
+                                                   color: Color(0xFF9C27B0),
+                                                   isSelected: selectedGender == "All",
+                                                    onTap: () {
+                                                      setState(() {
+                                                        selectedGender = "All";
+                                                      });
+                                                    },
+                                                   maxWidth: maxWidth,
+                                                  ),
+                                                ),
+                                                
+                                                // Male Option
+                                                Expanded(
+                                                 child: _buildGenderOption(
+                                                   context,
+                                                   icon: Icons.male,
+                                                   label: "Male",
+                                                   color: Color(0xFF2196F3),
+                                                   isSelected: selectedGender == "Male",
+                                                    onTap: () {
+                                                      setState(() {
+                                                        selectedGender = "Male";
+                                                      });
+                                                    },
+                                                   maxWidth: maxWidth,
+                                                  ),
+                                                ),
+                                                
+                                                // Female Option
+                                                Expanded(
+                                                 child: _buildGenderOption(
+                                                   context,
+                                                   icon: Icons.female,
+                                                   label: "Female",
+                                                   color: Color(0xFFE91E63),
+                                                   isSelected: selectedGender == "Female",
+                                                    onTap: () {
+                                                      setState(() {
+                                                        selectedGender = "Female";
+                                                      });
+                                                    },
+                                                   maxWidth: maxWidth,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                     ],
+                                   ),
+                                 ),
+                               ),
+                              
+                              SizedBox(height: verticalPadding * 1.8),
+                              
+                              // Search Button with enhanced design and animation
+                              TweenAnimationBuilder(
+                                duration: Duration(milliseconds: 900),
+                                tween: Tween<double>(begin: 0.9, end: 1.0),
+                                builder: (context, value, child) {
+                                  return Transform.scale(
+                                    scale: value,
+                                    child: child,
+                                  );
+                                },
+                                child: Center(
+                                  child: Container(
+                                    width: maxWidth * 0.7,
+                                    height: maxWidth * 0.12,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(maxWidth * 0.06),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Color(0xFF3366CC).withOpacity(0.3),
+                                          blurRadius: 12,
+                                          offset: Offset(0, 6),
+                                        ),
+                                      ],
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          AppTheme.primaryTeal,
+                                          Color(0xFF1A54C9), // Darker shade for depth
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                    ),
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        borderRadius: BorderRadius.circular(maxWidth * 0.06),
+                                        splashColor: Colors.white.withOpacity(0.2),
+                                        highlightColor: Colors.white.withOpacity(0.1),
+                                        onTap: () {
+                                          if (selectedSpecialty != null) {
+                                            Navigator.pop(context, true);
+                                          } else {
+                                            // Show error about required selection
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Please select a specialty',
+                                                  style: GoogleFonts.poppins(),
+                                                ),
+                                                backgroundColor: Colors.red.shade800,
+                                                behavior: SnackBarBehavior.floating,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                                action: SnackBarAction(
+                                                  label: 'OK',
+                                                  textColor: Colors.white,
+                                                  onPressed: () {},
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        },
+                                        child: Center(
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                LucideIcons.search,
+                                                color: Colors.white,
+                                                size: maxWidth * 0.045,
+                                              ),
+                                              SizedBox(width: maxWidth * 0.02),
+                                              FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                child: Text(
+                                                  "Find Doctors",
+                                                  style: GoogleFonts.poppins(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: maxWidth * 0.04,
+                                                    letterSpacing: 0.5,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -3729,10 +3833,11 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> with SingleTicker
     // User cancelled or dialog was dismissed
     if (!result || !context.mounted) return;
     
-    // Show loading dialog
+    // Show loading dialog with enhanced design
     showDialog(
       context: context,
       barrierDismissible: false,
+      barrierColor: Colors.black54.withOpacity(0.7),
       builder: (BuildContext context) {
         return Dialog(
           backgroundColor: Colors.transparent,
@@ -3740,63 +3845,90 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> with SingleTicker
           child: LayoutBuilder(
             builder: (context, constraints) {
               final double dialogWidth = constraints.maxWidth * 0.8;
-              return Center(
-      child: Container(
-                  padding: EdgeInsets.all(dialogWidth * 0.08),
-                  width: dialogWidth,
-        decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(dialogWidth * 0.08),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 20,
-                        offset: Offset(0, 10),
-                      ),
-                    ],
+              return TweenAnimationBuilder<double>(
+                duration: Duration(milliseconds: 400),
+                tween: Tween<double>(begin: 0.8, end: 1.0),
+                builder: (context, value, child) {
+                  return Transform.scale(
+                    scale: value,
+                    child: child,
+                  );
+                },
+                child: Center(
+                  child: Container(
+                    padding: EdgeInsets.all(dialogWidth * 0.08),
+                    width: dialogWidth,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(dialogWidth * 0.08),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                          offset: Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(dialogWidth * 0.07),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Color(0xFF3366CC).withOpacity(0.8),
+                                Color(0xFF3366CC),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Color(0xFF3366CC).withOpacity(0.3),
+                                blurRadius: 12,
+                                spreadRadius: 2,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            strokeWidth: 3,
+                          ),
+                        ),
+                        SizedBox(height: dialogWidth * 0.08),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            "Finding Doctors...",
+                            style: GoogleFonts.poppins(
+                              fontSize: dialogWidth * 0.07,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: dialogWidth * 0.02),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            "Please wait while we search",
+                            style: GoogleFonts.poppins(
+                              fontSize: dialogWidth * 0.05,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-            Container(
-                        padding: EdgeInsets.all(dialogWidth * 0.07),
-              decoration: BoxDecoration(
-                          color: Color(0xFF3366CC).withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3366CC)),
-                          strokeWidth: 3,
-                        ),
-                      ),
-                      SizedBox(height: dialogWidth * 0.08),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          "Finding Doctors...",
-                      style: GoogleFonts.poppins(
-                            fontSize: dialogWidth * 0.07,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                    ),
-                      ),
-                      SizedBox(height: dialogWidth * 0.02),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          "Please wait while we search",
-                    style: GoogleFonts.poppins(
-                            fontSize: dialogWidth * 0.05,
-                      color: Colors.grey[600],
-                    ),
-              ),
                 ),
-              ],
-            ),
-          ),
-        );
-      },
+              );
+            },
           ),
         );
       },
@@ -3814,15 +3946,115 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> with SingleTicker
       if (context.mounted) {
         Navigator.pop(context); // Close loading dialog
         
-        // Show error message
+        // Show enhanced error message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error finding doctors: $e'),
-            backgroundColor: Colors.red,
+            content: Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.white),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Error finding doctors. Please try again.',
+                    style: GoogleFonts.poppins(),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red.shade800,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: () => _showFindDoctorsDialog(),
+            ),
           )
         );
       }
     }
+  }
+
+  // Helper method to build gender option buttons with improved design
+  Widget _buildGenderOption(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required double maxWidth,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        margin: EdgeInsets.symmetric(horizontal: maxWidth * 0.01),
+        padding: EdgeInsets.symmetric(vertical: maxWidth * 0.02),
+        decoration: BoxDecoration(
+          gradient: isSelected 
+              ? LinearGradient(
+                  colors: [
+                    color.withOpacity(0.1),
+                    color.withOpacity(0.2),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          color: isSelected ? null : Colors.white,
+          borderRadius: BorderRadius.circular(maxWidth * 0.025),
+          border: Border.all(
+            color: isSelected
+                ? color
+                : Colors.grey.shade300,
+            width: 1.5,
+          ),
+          boxShadow: isSelected ? [
+            BoxShadow(
+              color: color.withOpacity(0.2),
+              blurRadius: 8,
+              offset: Offset(0, 3),
+            )
+          ] : null,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedContainer(
+              duration: Duration(milliseconds: 300),
+              padding: EdgeInsets.all(isSelected ? maxWidth * 0.015 : maxWidth * 0.01),
+              decoration: BoxDecoration(
+                color: color.withOpacity(isSelected ? 0.2 : 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: color,
+                size: maxWidth * 0.06,
+              ),
+            ),
+            SizedBox(height: maxWidth * 0.01),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: maxWidth * 0.03,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  color: isSelected
+                      ? color
+                      : Colors.grey.shade700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // Helper method to show the city selection bottom sheet with all available cities

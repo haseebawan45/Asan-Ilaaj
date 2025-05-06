@@ -615,496 +615,496 @@ class _HomeScreenState extends State<HomeScreen> {
       child: UIHelper.ensureStatusBarStyle(
         style: UIHelper.pinkStatusBarStyle,
         child: Scaffold(
-          backgroundColor: Colors.grey.shade50,
-          appBar: AppBar(
-            elevation: 0,
-            backgroundColor: AppTheme.primaryPink,
+      backgroundColor: Colors.grey.shade50,
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: AppTheme.primaryPink,
             systemOverlayStyle: UIHelper.pinkStatusBarStyle,
-            title: Text(
-              "Specialist Doctors",
-              style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            centerTitle: true,
-            leading: Builder(
-              builder: (context) => IconButton(
-                icon: Icon(
-                  LucideIcons.menu,
-                  color: Colors.white,
-                ),
-                onPressed: () {
-                  Scaffold.of(context).openDrawer();
-                },
-              ),
-            ),
-            actions: [
-              // Add Chat icon
-              IconButton(
-                icon: Icon(Icons.chat_outlined, color: Colors.white),
-                onPressed: () {
-                  _navigateWithStatusBar(
-                    context,
-                    ChatListScreen(isDoctor: true),
-                  );
-                },
-                tooltip: 'Chat with patients',
-              ),
-              // Notification icon
-              IconButton(
-                icon: Icon(
-                  LucideIcons.bell,
-                  color: Colors.white,
-                ),
-                onPressed: () {
-                  _navigateWithStatusBar(
-                    context,
-                    const NotificationScreen(),
-                  );
-                },
-              ),
-            ],
+        title: Text(
+          "Specialist Doctors",
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
           ),
-          drawer: _buildDrawer(context, screenWidth),
-          body: SafeArea(
-            child: _isLoading
-                ? Center(
-                    child: CircularProgressIndicator(
-                      color: AppTheme.primaryPink,
-                    ),
-                  )
-                : LayoutBuilder(
-                    builder: (context, constraints) {
-                    return Stack(
-                      children: [
-                          // Main scrollable content
-                        SingleChildScrollView(
-                            physics: BouncingScrollPhysics(),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Header with background
-                                Container(
-                                  height: headerHeight,
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.primaryPink,
-                                    borderRadius: BorderRadius.only(
-                                      bottomLeft: Radius.circular(30),
-                                      bottomRight: Radius.circular(30),
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: AppTheme.primaryPink.withOpacity(0.3),
-                                        blurRadius: 20,
-                                        offset: Offset(0, 10),
-                                      ),
-                                    ],
-                                  ),
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: horizontalPadding,
-                                    vertical: verticalSpacing * 0.6,
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      // Top row with user info
-                                      Row(
-                                        children: [
-                                          // Profile image
-                                          GestureDetector(
-                                            onTap: () {
-                                              NavigationHelper.navigateToTab(context, 3); // Navigate to Menu tab
-                                            },
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                border: Border.all(color: Colors.white, width: 2),
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: Colors.black12,
-                                                    blurRadius: 8,
-                                                    offset: Offset(0, 3),
-                                                  ),
-                                                ],
-                                              ),
-                                              child: Hero(
-                                                tag: 'profileImage',
-                                                child: _profileImageUrl != null && _profileImageUrl!.isNotEmpty
-                                                    ? CircleAvatar(
-                                                        radius: screenWidth * 0.065,
-                                                        backgroundImage: NetworkImage(_profileImageUrl!),
-                                                      )
-                                                    : CircleAvatar(
-                                                        radius: screenWidth * 0.065,
-                                                        backgroundImage: AssetImage("assets/images/User.png"),
-                                                      ),
-                                              ),
-                                            ),
-                                          ),
-                                          SizedBox(width: horizontalPadding * 0.8),
-                                          // User name and specialty with flexible width
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  "Welcome",
-                                                  style: GoogleFonts.poppins(
-                                                    fontSize: screenWidth * 0.04,
-                                                    fontWeight: FontWeight.w500,
-                                                    color: Colors.white.withOpacity(0.9),
-                                                  ),
-                                                  maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                                Text(
-                                                  _userName,
-                                                  style: GoogleFonts.poppins(
-                                                    fontSize: screenWidth * 0.055,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: Colors.white,
-                                                  ),
-                                                  maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                                if (_specialty.isNotEmpty)
-                                                  Text(
-                                                    _specialty,
-                                                    style: GoogleFonts.poppins(
-                                                      fontSize: screenWidth * 0.035,
-                                                      color: Colors.white.withOpacity(0.9),
-                                                    ),
-                                                    maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
-                                                  ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      
-                                      // Earnings info in header
-                                      Container(
-                                        margin: EdgeInsets.only(top: verticalSpacing * 0.8),
-                                        padding: EdgeInsets.all(screenWidth * 0.035),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.15),
-                                          borderRadius: BorderRadius.circular(15),
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            // Icon and labels
-                                            Expanded(
-                                              child: Row(
-                                                children: [
-                                                  Container(
-                                                    padding: EdgeInsets.all(screenWidth * 0.02),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.white,
-                                                      borderRadius: BorderRadius.circular(10),
-                                                    ),
-                                                    child: Icon(
-                                                      Icons.paid_outlined,
-                                                      color: AppTheme.primaryTeal,
-                                                      size: screenWidth * 0.055,
-                                                    ),
-                                                  ),
-                                                  SizedBox(width: screenWidth * 0.03),
-                                                  Expanded(
-                                                    child: Column(
-                                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                                      mainAxisSize: MainAxisSize.min,
-                                                      children: [
-                                                        Text(
-                                                          "Total Earning",
-                                                          style: GoogleFonts.poppins(
-                                                            color: Colors.white,
-                                                            fontSize: screenWidth * 0.032,
-                                                          ),
-                                                        ),
-                                                        Text(
-                                                          "Rs ${_totalEarnings.toStringAsFixed(2)}",
-                                                          style: GoogleFonts.poppins(
-                                                            color: Colors.white,
-                                                            fontSize: screenWidth * 0.045,
-                                                            fontWeight: FontWeight.bold,
-                                                          ),
-                                                          maxLines: 1,
-                                                          overflow: TextOverflow.ellipsis,
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            // Arrow button
-                                            Container(
-                                              width: screenWidth * 0.08,
-                                              height: screenWidth * 0.08,
-                                              decoration: BoxDecoration(
-                                                color: Colors.white.withOpacity(0.2),
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: IconButton(
-                                                onPressed: () {
-                                                  NavigationHelper.navigateToTab(context, 2); // Navigate to Finances tab
-                                                },
-                                                icon: Icon(
-                                                  LucideIcons.arrowRight,
-                                                  color: Colors.white,
-                                                  size: screenWidth * 0.04,
-                                                ),
-                                                padding: EdgeInsets.zero,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+        ),
+        centerTitle: true,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: Icon(
+              LucideIcons.menu,
+              color: Colors.white,
+            ),
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+            },
+          ),
+        ),
+        actions: [
+          // Add Chat icon
+          IconButton(
+            icon: Icon(Icons.chat_outlined, color: Colors.white),
+            onPressed: () {
+                  _navigateWithStatusBar(
+                context,
+                    ChatListScreen(isDoctor: true),
+              );
+            },
+            tooltip: 'Chat with patients',
+          ),
+          // Notification icon
+          IconButton(
+            icon: Icon(
+              LucideIcons.bell,
+              color: Colors.white,
+            ),
+            onPressed: () {
+                  _navigateWithStatusBar(
+                context,
+                    const NotificationScreen(),
+              );
+            },
+          ),
+        ],
+      ),
+      drawer: _buildDrawer(context, screenWidth),
+      body: SafeArea(
+        child: _isLoading
+            ? Center(
+                child: CircularProgressIndicator(
+                  color: AppTheme.primaryPink,
+                ),
+              )
+            : LayoutBuilder(
+                builder: (context, constraints) {
+                return Stack(
+                  children: [
+                      // Main scrollable content
+                    SingleChildScrollView(
+                        physics: BouncingScrollPhysics(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Header with background
+                            Container(
+                              height: headerHeight,
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryPink,
+                                borderRadius: BorderRadius.only(
+                                  bottomLeft: Radius.circular(30),
+                                  bottomRight: Radius.circular(30),
                                 ),
-                                
-                                Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppTheme.primaryPink.withOpacity(0.3),
+                                    blurRadius: 20,
+                                    offset: Offset(0, 10),
+                                  ),
+                                ],
+                              ),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: horizontalPadding,
+                                vertical: verticalSpacing * 0.6,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  // Top row with user info
+                                  Row(
                                     children: [
-                                      SizedBox(height: verticalSpacing),
-                                      
-                                      // Redesigned ratings Card with modern design
-                                      Container(
-                                        width: double.infinity,
-                                        padding: EdgeInsets.all(screenWidth * 0.05),
-                                        decoration: BoxDecoration(
-                                          color: AppTheme.primaryTeal,
-                                          borderRadius: BorderRadius.circular(20),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: AppTheme.primaryTeal.withOpacity(0.3),
-                                              blurRadius: 15,
-                                              offset: Offset(0, 5),
-                                            ),
-                                          ],
+                                      // Profile image
+                                      GestureDetector(
+                                        onTap: () {
+                                          NavigationHelper.navigateToTab(context, 3); // Navigate to Menu tab
+                                        },
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(color: Colors.white, width: 2),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black12,
+                                                blurRadius: 8,
+                                                offset: Offset(0, 3),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Hero(
+                                            tag: 'profileImage',
+                                            child: _profileImageUrl != null && _profileImageUrl!.isNotEmpty
+                                                ? CircleAvatar(
+                                                    radius: screenWidth * 0.065,
+                                                    backgroundImage: NetworkImage(_profileImageUrl!),
+                                                  )
+                                                : CircleAvatar(
+                                                    radius: screenWidth * 0.065,
+                                                    backgroundImage: AssetImage("assets/images/User.png"),
+                                                  ),
+                                          ),
                                         ),
+                                      ),
+                                      SizedBox(width: horizontalPadding * 0.8),
+                                      // User name and specialty with flexible width
+                                      Expanded(
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                // Title section
-                                                Row(
+                                            Text(
+                                              "Welcome",
+                                              style: GoogleFonts.poppins(
+                                                fontSize: screenWidth * 0.04,
+                                                fontWeight: FontWeight.w500,
+                                                color: Colors.white.withOpacity(0.9),
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            Text(
+                                              _userName,
+                                              style: GoogleFonts.poppins(
+                                                fontSize: screenWidth * 0.055,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.white,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            if (_specialty.isNotEmpty)
+                                              Text(
+                                                _specialty,
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: screenWidth * 0.035,
+                                                  color: Colors.white.withOpacity(0.9),
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  
+                                  // Earnings info in header
+                                  Container(
+                                    margin: EdgeInsets.only(top: verticalSpacing * 0.8),
+                                    padding: EdgeInsets.all(screenWidth * 0.035),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(15),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        // Icon and labels
+                                        Expanded(
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                padding: EdgeInsets.all(screenWidth * 0.02),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white,
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                                child: Icon(
+                                                  Icons.paid_outlined,
+                                                  color: AppTheme.primaryTeal,
+                                                  size: screenWidth * 0.055,
+                                                ),
+                                              ),
+                                              SizedBox(width: screenWidth * 0.03),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  mainAxisSize: MainAxisSize.min,
                                                   children: [
-                                                    Container(
-                                                      padding: EdgeInsets.all(screenWidth * 0.02),
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.white.withOpacity(0.2),
-                                                        borderRadius: BorderRadius.circular(10),
-                                                      ),
-                                                      child: Icon(
-                                                        LucideIcons.star,
+                                                    Text(
+                                                      "Total Earning",
+                                                      style: GoogleFonts.poppins(
                                                         color: Colors.white,
-                                                        size: screenWidth * 0.05,
+                                                        fontSize: screenWidth * 0.032,
                                                       ),
                                                     ),
-                                                    SizedBox(width: screenWidth * 0.03),
                                                     Text(
-                                                      "Doctor Rating",
+                                                      "Rs ${_totalEarnings.toStringAsFixed(2)}",
                                                       style: GoogleFonts.poppins(
-                                                        fontSize: screenWidth * 0.04,
-                                                        fontWeight: FontWeight.w600,
                                                         color: Colors.white,
+                                                        fontSize: screenWidth * 0.045,
+                                                        fontWeight: FontWeight.bold,
                                                       ),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
                                                     ),
                                                   ],
                                                 ),
-                                                // Review count pill
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        // Arrow button
+                                        Container(
+                                          width: screenWidth * 0.08,
+                                          height: screenWidth * 0.08,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withOpacity(0.2),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: IconButton(
+                                            onPressed: () {
+                                              NavigationHelper.navigateToTab(context, 2); // Navigate to Finances tab
+                                            },
+                                            icon: Icon(
+                                              LucideIcons.arrowRight,
+                                              color: Colors.white,
+                                              size: screenWidth * 0.04,
+                                            ),
+                                            padding: EdgeInsets.zero,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            
+                            Padding(
+                              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SizedBox(height: verticalSpacing),
+                                  
+                                  // Redesigned ratings Card with modern design
+                                  Container(
+                                    width: double.infinity,
+                                    padding: EdgeInsets.all(screenWidth * 0.05),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.primaryTeal,
+                                      borderRadius: BorderRadius.circular(20),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppTheme.primaryTeal.withOpacity(0.3),
+                                          blurRadius: 15,
+                                          offset: Offset(0, 5),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            // Title section
+                                            Row(
+                                              children: [
                                                 Container(
-                                                  padding: EdgeInsets.symmetric(
-                                                    horizontal: screenWidth * 0.03,
-                                                    vertical: screenWidth * 0.015,
-                                                  ),
+                                                  padding: EdgeInsets.all(screenWidth * 0.02),
                                                   decoration: BoxDecoration(
                                                     color: Colors.white.withOpacity(0.2),
-                                                    borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                                                    borderRadius: BorderRadius.circular(10),
                                                   ),
-                                                  child: Text(
-                                                    "$_reviewCount ${_reviewCount == 1 ? 'Review' : 'Reviews'}",
-                                                    style: GoogleFonts.poppins(
-                                                      fontSize: screenWidth * 0.03,
-                                                      fontWeight: FontWeight.w500,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            SizedBox(height: verticalSpacing * 0.7),
-                                            // Rating display
-                                            Row(
-                                              crossAxisAlignment: CrossAxisAlignment.center,
-                                              children: [
-                                                // Rating number
-                                                Text(
-                                                  _overallRating.toStringAsFixed(1),
-                                                  style: GoogleFonts.poppins(
-                                                    fontSize: screenWidth * 0.09,
-                                                    fontWeight: FontWeight.bold,
+                                                  child: Icon(
+                                                    LucideIcons.star,
                                                     color: Colors.white,
+                                                    size: screenWidth * 0.05,
                                                   ),
                                                 ),
                                                 SizedBox(width: screenWidth * 0.03),
-                                                // Rating stars
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    children: [
-                                                      Row(
-                                                        children: [
-                                                          for (int i = 1; i <= 5; i++)
-                                                            Icon(
-                                                              i <= _overallRating
-                                                                  ? Icons.star
-                                                                  : i <= _overallRating + 0.5
-                                                                      ? Icons.star_half
-                                                                      : Icons.star_border,
-                                                              color: Colors.amber,
-                                                              size: screenWidth * 0.05,
-                                                            ),
-                                                        ],
-                                                      ),
-                                                      SizedBox(height: screenWidth * 0.02),
-                                                      // Progress indicator
-                                                      ClipRRect(
-                                                        borderRadius: BorderRadius.circular(10),
-                                                        child: LinearProgressIndicator(
-                                                          value: _overallRating / 5,
-                                                          backgroundColor: Colors.white.withOpacity(0.2),
-                                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.amber),
-                                                          minHeight: 5,
-                                                        ),
-                                                      ),
-                                                    ],
+                                                Text(
+                                                  "Doctor Rating",
+                                                  style: GoogleFonts.poppins(
+                                                    fontSize: screenWidth * 0.04,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Colors.white,
                                                   ),
                                                 ),
                                               ],
                                             ),
-                                            SizedBox(height: verticalSpacing * 0.7),
-                                            // View all reviews button
-                                            Center(
-                                              child: ElevatedButton.icon(
-                                                onPressed: () {
-                                                  Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder: (context) => DoctorReviewsScreen(
-                                                        doctorId: _auth.currentUser?.uid,
-                                                      ),
-                                                    ),
-                                                  );
-                                                },
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: Colors.white,
-                                                  foregroundColor: AppTheme.primaryTeal,
-                                                  elevation: 0,
-                                                  padding: EdgeInsets.symmetric(
-                                                    horizontal: screenWidth * 0.05,
-                                                    vertical: screenWidth * 0.025,
-                                                  ),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(screenWidth * 0.04),
-                                                  ),
-                                                ),
-                                                icon: Icon(
-                                                  LucideIcons.clipboardList,
-                                                  size: screenWidth * 0.04,
-                                                ),
-                                                label: Text(
-                                                  "View All Reviews",
-                                                  style: GoogleFonts.poppins(
-                                                    fontSize: screenWidth * 0.035,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
+                                            // Review count pill
+                                            Container(
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: screenWidth * 0.03,
+                                                vertical: screenWidth * 0.015,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withOpacity(0.2),
+                                                borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                                              ),
+                                              child: Text(
+                                                "$_reviewCount ${_reviewCount == 1 ? 'Review' : 'Reviews'}",
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: screenWidth * 0.03,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Colors.white,
                                                 ),
                                               ),
                                             ),
                                           ],
                                         ),
-                                      ),
-                                      
-                                      SizedBox(height: verticalSpacing),
-                                      
-                                      // My Appointments Section
-                                      _buildAppointmentsSection(screenWidth, screenHeight, horizontalPadding, verticalSpacing),
+                                        SizedBox(height: verticalSpacing * 0.7),
+                                        // Rating display
+                                        Row(
+                                          crossAxisAlignment: CrossAxisAlignment.center,
+                                          children: [
+                                            // Rating number
+                                            Text(
+                                              _overallRating.toStringAsFixed(1),
+                                              style: GoogleFonts.poppins(
+                                                fontSize: screenWidth * 0.09,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            SizedBox(width: screenWidth * 0.03),
+                                            // Rating stars
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      for (int i = 1; i <= 5; i++)
+                                                        Icon(
+                                                          i <= _overallRating
+                                                              ? Icons.star
+                                                              : i <= _overallRating + 0.5
+                                                                  ? Icons.star_half
+                                                                  : Icons.star_border,
+                                                          color: Colors.amber,
+                                                          size: screenWidth * 0.05,
+                                                        ),
+                                                    ],
+                                                  ),
+                                                  SizedBox(height: screenWidth * 0.02),
+                                                  // Progress indicator
+                                                  ClipRRect(
+                                                    borderRadius: BorderRadius.circular(10),
+                                                    child: LinearProgressIndicator(
+                                                      value: _overallRating / 5,
+                                                      backgroundColor: Colors.white.withOpacity(0.2),
+                                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.amber),
+                                                      minHeight: 5,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        SizedBox(height: verticalSpacing * 0.7),
+                                        // View all reviews button
+                                        Center(
+                                          child: ElevatedButton.icon(
+                                            onPressed: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) => DoctorReviewsScreen(
+                                                    doctorId: _auth.currentUser?.uid,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.white,
+                                              foregroundColor: AppTheme.primaryTeal,
+                                              elevation: 0,
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: screenWidth * 0.05,
+                                                vertical: screenWidth * 0.025,
+                                              ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(screenWidth * 0.04),
+                                              ),
+                                            ),
+                                            icon: Icon(
+                                              LucideIcons.clipboardList,
+                                              size: screenWidth * 0.04,
+                                            ),
+                                            label: Text(
+                                              "View All Reviews",
+                                              style: GoogleFonts.poppins(
+                                                fontSize: screenWidth * 0.035,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  
+                                  SizedBox(height: verticalSpacing),
+                                  
+                                  // My Appointments Section
+                                  _buildAppointmentsSection(screenWidth, screenHeight, horizontalPadding, verticalSpacing),
 
-                                      // Add extra space at the bottom
-                                      SizedBox(height: verticalSpacing),
-                                    ],
+                                  // Add extra space at the bottom
+                                  SizedBox(height: verticalSpacing),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    
+                    // Bottom refresh indicator
+                    if (_isRefreshing)
+                      Positioned(
+                        bottom: 16,
+                        left: 0,
+                        right: 0,
+                        child: Center(
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: screenWidth * 0.04, 
+                              vertical: screenHeight * 0.01
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 8,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  width: screenWidth * 0.04,
+                                  height: screenWidth * 0.04,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      AppTheme.primaryTeal,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: screenWidth * 0.02),
+                                Text(
+                                  "Refreshing...",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: screenWidth * 0.03,
+                                    color: Colors.grey.shade700,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        
-                        // Bottom refresh indicator
-                        if (_isRefreshing)
-                          Positioned(
-                            bottom: 16,
-                            left: 0,
-                            right: 0,
-                            child: Center(
-                              child: Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: screenWidth * 0.04, 
-                                  vertical: screenHeight * 0.01
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
-                                      blurRadius: 8,
-                                      offset: Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    SizedBox(
-                                      width: screenWidth * 0.04,
-                                      height: screenWidth * 0.04,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                          AppTheme.primaryTeal,
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(width: screenWidth * 0.02),
-                                    Text(
-                                      "Refreshing...",
-                                      style: GoogleFonts.poppins(
-                                        fontSize: screenWidth * 0.03,
-                                        color: Colors.grey.shade700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    );
-                  }
+                        ),
+                      ),
+                  ],
+                );
+              }
                 ),
           ),
-        ),
+            ),
       ),
     );
   }
@@ -1879,11 +1879,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
+              child: Column(
+                children: [
               // User Profile Card
-              Container(
-                decoration: BoxDecoration(
+                      Container(
+                        decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -1896,14 +1896,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     bottomLeft: Radius.circular(30),
                     bottomRight: Radius.circular(30),
                   ),
-                  boxShadow: [
-                    BoxShadow(
+                          boxShadow: [
+                            BoxShadow(
                       color: AppTheme.primaryTeal.withOpacity(0.3),
                       blurRadius: 15,
                       offset: Offset(0, 8),
-                    ),
-                  ],
-                ),
+                            ),
+                          ],
+                        ),
                 padding: EdgeInsets.symmetric(vertical: 24, horizontal: 20),
                 child: Column(
                   children: [
@@ -1915,12 +1915,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           backgroundColor: Colors.white,
                           child: CircleAvatar(
                             radius: 33,
-                            backgroundColor: Colors.white,
-                            backgroundImage: _profileImageUrl != null && _profileImageUrl!.isNotEmpty
-                                ? NetworkImage(_profileImageUrl!)
-                                : AssetImage("assets/images/User.png") as ImageProvider,
-                          ),
+                          backgroundColor: Colors.white,
+                          backgroundImage: _profileImageUrl != null && _profileImageUrl!.isNotEmpty
+                              ? NetworkImage(_profileImageUrl!)
+                              : AssetImage("assets/images/User.png") as ImageProvider,
                         ),
+                      ),
                         IconButton(
                           onPressed: () => Navigator.pop(context),
                           icon: Container(
@@ -1940,143 +1940,143 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     SizedBox(height: 15),
                     Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _userName,
-                          style: GoogleFonts.poppins(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _userName,
+                              style: GoogleFonts.poppins(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (_specialty.isNotEmpty)
-                          Text(
-                            _specialty,
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              color: Colors.white.withOpacity(0.9),
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        SizedBox(height: 5),
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            "Doctor",
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 15),
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                LucideIcons.wallet,
                                 color: Colors.white,
-                                size: 16,
                               ),
-                              SizedBox(width: 8),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (_specialty.isNotEmpty)
                               Text(
-                                "Rs ${_totalEarnings.toStringAsFixed(0)}",
+                                _specialty,
                                 style: GoogleFonts.poppins(
                                   fontSize: 14,
-                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white.withOpacity(0.9),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            SizedBox(height: 5),
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                "Doctor",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
                                   color: Colors.white,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
-                            ],
+                  ),
+                  SizedBox(height: 15),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          LucideIcons.wallet,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          "Rs ${_totalEarnings.toStringAsFixed(0)}",
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
+                        ),
+                      ],
+                  ),
+                ],
               ),
-              
+            ),
+            
               // Menu Items
-              Expanded(
-                child: ListView(
+            Expanded(
+              child: ListView(
                   padding: EdgeInsets.only(top: 10),
-                  children: [
+                children: [
                     _buildMenuSection("Main Menu"),
                     _buildMenuItem(
-                      icon: Icons.home,
-                      title: "Home",
+                    icon: Icons.home,
+                    title: "Home",
                       isActive: true,
-                      onTap: () {
-                        Navigator.pop(context);
-                      },
-                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
                     _buildMenuItem(
-                      icon: LucideIcons.stethoscope,
-                      title: "My Appointments",
-                      onTap: () {
-                        Navigator.pop(context);
+                    icon: LucideIcons.stethoscope,
+                    title: "My Appointments",
+                    onTap: () {
+                      Navigator.pop(context);
                         _navigateWithStatusBar(context, AppointmentHistoryScreen());
-                      },
-                    ),
+                    },
+                  ),
                     _buildMenuItem(
-                      icon: LucideIcons.calendarClock,
-                      title: "Set Availability",
-                      onTap: () {
-                        Navigator.pop(context);
+                    icon: LucideIcons.calendarClock,
+                    title: "Set Availability",
+                    onTap: () {
+                      Navigator.pop(context);
                         _navigateWithStatusBar(context, DoctorAvailabilityScreen());
-                      },
-                    ),
+                    },
+                  ),
                     _buildMenuItem(
-                      icon: LucideIcons.building2,
-                      title: "Add Hospital",
-                      onTap: () {
-                        Navigator.pop(context);
+                    icon: LucideIcons.building2,
+                    title: "Add Hospital",
+                    onTap: () {
+                      Navigator.pop(context);
                         _navigateWithStatusBar(
-                          context, 
+                        context,
                           HospitalSelectionScreen(selectedHospitals: []),
-                        );
-                      },
-                    ),
+                      );
+                    },
+                  ),
                     _buildMenuItem(
-                      icon: Icons.bar_chart,
-                      title: "Analytics",
-                      onTap: () {
-                        Navigator.pop(context);
-                        NavigationHelper.navigateToTab(context, 1);
-                      },
-                    ),
+                    icon: Icons.bar_chart,
+                    title: "Analytics",
+                    onTap: () {
+                      Navigator.pop(context);
+                      NavigationHelper.navigateToTab(context, 1);
+                    },
+                  ),
                     _buildMenuItem(
-                      icon: LucideIcons.wallet,
-                      title: "Finances",
-                      onTap: () {
-                        Navigator.pop(context);
-                        NavigationHelper.navigateToTab(context, 2);
-                      },
-                    ),
+                    icon: LucideIcons.wallet,
+                    title: "Finances",
+                    onTap: () {
+                      Navigator.pop(context);
+                      NavigationHelper.navigateToTab(context, 2);
+                    },
+                  ),
                     
                     _buildMenuSection("Settings & Support"),
                     _buildMenuItem(
-                      icon: Icons.help_outline,
-                      title: "Help Center",
-                      onTap: () {
-                        Navigator.pop(context);
+                    icon: Icons.help_outline,
+                    title: "Help Center",
+                    onTap: () {
+                      Navigator.pop(context);
                         _navigateWithStatusBar(context, const HelpCenterScreen());
-                      },
-                    ),
+                    },
+                  ),
                     
                     SizedBox(height: 16),
                     Padding(
@@ -2095,18 +2095,18 @@ class _HomeScreenState extends State<HomeScreen> {
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: InkWell(
-                          onTap: () async {
+                    onTap: () async {
                             Navigator.pop(context);
-                            final shouldLogout = await _showLogoutConfirmationDialog(context);
-                            if (shouldLogout) {
-                              await _authService.signOut();
+                      final shouldLogout = await _showLogoutConfirmationDialog(context);
+                      if (shouldLogout) {
+                        await _authService.signOut();
                               // Navigate to onboarding_3 screen after logout
                               Navigator.of(context).pushAndRemoveUntil(
                                 MaterialPageRoute(builder: (context) => Onboarding3()),
-                                (Route<dynamic> route) => false,
-                              );
-                            }
-                          },
+                          (Route<dynamic> route) => false,
+                        );
+                      }
+                    },
                           child: Row(
                             children: [
                               Container(
@@ -2134,24 +2134,24 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              // App Version
-              Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'Specialist Doctors • Version 1.0.0',
-                  style: GoogleFonts.poppins(
-                    color: Colors.grey.shade600,
-                    fontSize: 12,
                   ),
-                  textAlign: TextAlign.center,
-                ),
+                ],
               ),
-            ],
+            ),
+            
+              // App Version
+            Padding(
+                padding: EdgeInsets.all(16),
+              child: Text(
+                  'Specialist Doctors • Version 1.0.0',
+                style: GoogleFonts.poppins(
+                  color: Colors.grey.shade600,
+                    fontSize: 12,
+                ),
+                  textAlign: TextAlign.center,
+              ),
+            ),
+          ],
           ),
         ),
       ),
@@ -2173,7 +2173,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
+  
   // Build drawer item
   Widget _buildMenuItem({
     required IconData icon,
@@ -2207,10 +2207,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  icon,
+                icon,
                   color: isActive ? AppTheme.primaryTeal : iconColor,
-                  size: 20,
-                ),
+                size: 20,
+              ),
               ),
               SizedBox(width: 16),
               Text(

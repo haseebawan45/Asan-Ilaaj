@@ -6,6 +6,20 @@ import 'package:uuid/uuid.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+// Admin theme colors - copied from admin_dashboard.dart for consistency
+class AdminTheme {
+  static const Color primaryPurple = Color(0xFF6200EA);
+  static const Color lightPurple = Color(0xFFB388FF);
+  static const Color accentPurple = Color(0xFF9D46FF);
+  static const Color darkPurple = Color(0xFF4A148C);
+  
+  static LinearGradient primaryGradient = LinearGradient(
+    colors: [darkPurple, primaryPurple, accentPurple],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+}
+
 // Custom Phone Number Formatter
 class PhoneNumberFormatter extends TextInputFormatter {
   @override
@@ -105,10 +119,18 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
   bool _isBooking = false;
   bool _isLoadingHospitals = false;
   bool _isLoadingTimeSlots = false;
+  bool _isLoadingSpecialties = false;
+  bool _isLoadingCities = false;
   
   // Patient data
   Map<String, dynamic>? _patientData;
   String? _errorMessage;
+  
+  // Filtering data
+  List<String> _specialties = [];
+  List<String> _cities = [];
+  String? _selectedSpecialty;
+  String? _selectedCity;
   
   // Doctors data
   List<Map<String, dynamic>> _availableDoctors = [];
@@ -180,6 +202,17 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
       _isSearching = true;
       _errorMessage = null;
       _patientData = null;
+      // Reset all filters and selections
+      _specialties = [];
+      _cities = [];
+      _selectedSpecialty = null;
+      _selectedCity = null;
+      _availableDoctors = [];
+      _selectedDoctor = null;
+      _doctorHospitals = [];
+      _selectedHospitalData = null;
+      _availableTimeSlots = [];
+      _selectedTimeSlot = null;
     });
     
     try {
@@ -246,7 +279,7 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
         });
       }
       
-      // After finding the patient, load available doctors
+      // After finding the patient, load specialties and cities
       _loadDoctors();
       
     } catch (e) {
@@ -272,7 +305,99 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
     return 'N/A';
   }
   
-  // Load available doctors
+  // New method to load specialties
+  Future<void> _loadSpecialties() async {
+    setState(() {
+      _isLoadingSpecialties = true;
+      _specialties = [];
+      _selectedSpecialty = null;
+      _cities = [];
+      _selectedCity = null;
+      _availableDoctors = [];
+      _selectedDoctor = null;
+    });
+    
+    try {
+      // Use the predefined list of specialties instead of querying the database
+      final List<String> specialtiesList = [
+        "Cardiology",
+        "Neurology",
+        "Dermatology",
+        "Pediatrics",
+        "Orthopedics",
+        "ENT",
+        "Gynecology",
+        "Ophthalmology",
+        "Dentistry",
+        "Psychiatry",
+        "Pulmonology",
+        "Gastrology",
+      ];
+      
+      setState(() {
+        _specialties = specialtiesList;
+        _isLoadingSpecialties = false;
+      });
+      
+      // Load cities after specialties
+      await _loadCities();
+      
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error loading specialties: ${e.toString()}';
+        _isLoadingSpecialties = false;
+      });
+    }
+  }
+  
+  // New method to load cities
+  Future<void> _loadCities() async {
+    setState(() {
+      _isLoadingCities = true;
+      _cities = [];
+      _selectedCity = null;
+    });
+    
+    try {
+      // Use the comprehensive predefined list of Pakistani cities
+      final List<String> citiesList = [
+        "Abbottabad", "Adilpur", "Ahmadpur East", "Alipur", "Arifwala", "Attock",
+        "Badin", "Bahawalnagar", "Bahawalpur", "Bannu", "Battagram", "Bhakkar", "Bhalwal", "Bhera", "Bhimbar", "Bhit Shah", "Bhopalwala", "Burewala",
+        "Chaman", "Charsadda", "Chichawatni", "Chiniot", "Chishtian", "Chitral", "Chunian",
+        "Dadu", "Daharki", "Daska", "Dera Ghazi Khan", "Dera Ismail Khan", "Dinga", "Dipalpur", "Duki",
+        "Faisalabad", "Fateh Jang", "Fazilpur", "Fort Abbas",
+        "Gambat", "Ghotki", "Gilgit", "Gojra", "Gwadar",
+        "Hafizabad", "Hala", "Hangu", "Haripur", "Haroonabad", "Hasilpur", "Haveli Lakha", "Hazro", "Hub", "Hyderabad",
+        "Islamabad", 
+        "Jacobabad", "Jahanian", "Jalalpur Jattan", "Jampur", "Jamshoro", "Jatoi", "Jauharabad", "Jhelum",
+        "Kabirwala", "Kahror Pakka", "Kalat", "Kamalia", "Kamoke", "Kandhkot", "Karachi", "Karak", "Kasur", "Khairpur", "Khanewal", "Khanpur", "Kharian", "Khushab", "Kohat", "Kot Addu", "Kotri", "Kumbar", "Kunri",
+        "Lahore", "Laki Marwat", "Larkana", "Layyah", "Liaquatpur", "Lodhran", "Loralai",
+        "Mailsi", "Malakwal", "Mandi Bahauddin", "Mansehra", "Mardan", "Mastung", "Matiari", "Mian Channu", "Mianwali", "Mingora", "Mirpur", "Mirpur Khas", "Multan", "Muridke", "Muzaffarabad", "Muzaffargarh",
+        "Narowal", "Nawabshah", "Nowshera",
+        "Okara",
+        "Pakpattan", "Pasrur", "Pattoki", "Peshawar", "Pir Mahal",
+        "Quetta",
+        "Rahimyar Khan", "Rajanpur", "Rani Pur", "Rawalpindi", "Rohri", "Risalpur",
+        "Sadiqabad", "Sahiwal", "Saidu Sharif", "Sakrand", "Samundri", "Sanghar", "Sargodha", "Sheikhupura", "Shikarpur", "Sialkot", "Sibi", "Sukkur", "Swabi", "Swat",
+        "Talagang", "Tandlianwala", "Tando Adam", "Tando Allahyar", "Tando Muhammad Khan", "Tank", "Taunsa", "Taxila", "Toba Tek Singh", "Turbat",
+        "Vehari",
+        "Wah Cantonment", "Wazirabad"
+      ];
+      
+      setState(() {
+        _cities = citiesList;
+        _isLoadingCities = false;
+      });
+      
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error loading cities: ${e.toString()}';
+        _isLoadingCities = false;
+      });
+    }
+  }
+  
+  // Modified version of _loadDoctors to filter by specialty and city
   Future<void> _loadDoctors() async {
     setState(() {
       _isLoading = true;
@@ -284,30 +409,118 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
       _selectedTimeSlot = null;
     });
     
+    if (_patientData == null) {
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+    
     try {
-      final QuerySnapshot snapshot = await _firestore
+      // First, load specialties instead of loading doctors directly
+      await _loadSpecialties();
+      
+      // Don't load doctors here anymore - we'll load them after specialty and city selection
+      setState(() {
+        _isLoading = false;
+      });
+      
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error initializing filters: ${e.toString()}';
+        _isLoading = false;
+      });
+    }
+  }
+  
+  // New method to load doctors filtered by specialty and city
+  Future<void> _loadFilteredDoctors() async {
+    if (_selectedSpecialty == null || _selectedCity == null) {
+      return;
+    }
+    
+    setState(() {
+      _isLoading = true;
+      _availableDoctors = [];
+      _selectedDoctor = null;
+      _doctorHospitals = [];
+      _selectedHospitalData = null;
+      _availableTimeSlots = [];
+      _selectedTimeSlot = null;
+    });
+    
+    try {
+      // First, query doctors by specialty
+      final QuerySnapshot doctorSnapshot = await _firestore
           .collection('doctors')
           .where('isActive', isEqualTo: true)
+          .where('specialty', isEqualTo: _selectedSpecialty)
           .get();
       
-      // Process doctors data
-      List<Map<String, dynamic>> doctors = [];
-      for (var doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        
-        doctors.add({
-          'id': data['id'] ?? doc.id,
-          'name': data['fullName'] ?? 'Unknown',
-          'specialty': data['specialty'] ?? 'General',
-          'fee': data['fee'] ?? 0,
-          'profileImageUrl': data['profileImageUrl'],
+      if (doctorSnapshot.docs.isEmpty) {
+        setState(() {
+          _availableDoctors = [];
+          _isLoading = false;
         });
+        return;
+      }
+      
+      // Get list of doctor IDs
+      List<String> doctorIds = doctorSnapshot.docs.map<String>((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return (data['id'] ?? doc.id) as String;
+      }).toList();
+      
+      // Next, find which of these doctors work in the selected city
+      List<Map<String, dynamic>> doctors = [];
+      
+      // For each doctor ID, check if they have hospitals in the selected city
+      for (var doctorId in doctorIds) {
+        try {
+          final QuerySnapshot hospitalSnapshot = await _firestore
+              .collection('doctor_hospitals')
+              .where('doctorId', isEqualTo: doctorId)
+              .where('city', isEqualTo: _selectedCity)
+              .limit(1) // We only need to know if at least one exists
+              .get();
+          
+          // If the doctor works in this city, add them to the list
+          if (hospitalSnapshot.docs.isNotEmpty) {
+            // Get doctor details
+            final doctorDoc = doctorSnapshot.docs.firstWhere(
+              (doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                return (data['id'] ?? doc.id) == doctorId;
+              },
+              orElse: () => throw Exception('Doctor document not found'),
+            );
+            
+            final data = doctorDoc.data() as Map<String, dynamic>;
+            
+            doctors.add({
+              'id': data['id'] ?? doctorDoc.id,
+              'name': data['fullName'] ?? 'Unknown',
+              'specialty': data['specialty'] ?? 'General',
+              'fee': data['fee'] ?? 0,
+              'profileImageUrl': data['profileImageUrl'],
+            });
+          }
+        } catch (e) {
+          debugPrint('Error checking hospitals for doctor $doctorId: $e');
+          // Continue with the next doctor
+          continue;
+        }
       }
       
       setState(() {
         _availableDoctors = doctors;
         _isLoading = false;
       });
+      
+      // If no doctors found that match both specialty and city
+      if (doctors.isEmpty) {
+        debugPrint('No doctors found for specialty: $_selectedSpecialty in city: $_selectedCity');
+      }
       
     } catch (e) {
       setState(() {
@@ -693,6 +906,250 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
     return TimeOfDay(hour: hour, minute: minute);
   }
   
+  // Fallback method to load all doctors if no filtered results
+  Future<void> _loadAllDoctorsInCity() async {
+    if (_selectedCity == null) {
+      return;
+    }
+    
+    setState(() {
+      _isLoading = true;
+      _availableDoctors = [];
+      _selectedDoctor = null;
+      _doctorHospitals = [];
+      _selectedHospitalData = null;
+      _availableTimeSlots = [];
+      _selectedTimeSlot = null;
+    });
+    
+    try {
+      // First, find all hospitals in the selected city
+      final QuerySnapshot hospitalSnapshot = await _firestore
+          .collection('doctor_hospitals')
+          .where('city', isEqualTo: _selectedCity)
+          .get();
+      
+      if (hospitalSnapshot.docs.isEmpty) {
+        setState(() {
+          _availableDoctors = [];
+          _isLoading = false;
+        });
+        return;
+      }
+      
+      // Get unique doctor IDs from the hospitals
+      Set<String> doctorIdSet = Set<String>();
+      for (var doc in hospitalSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        if (data['doctorId'] != null) {
+          doctorIdSet.add(data['doctorId'] as String);
+        }
+      }
+      
+      List<String> doctorIds = doctorIdSet.toList();
+      
+      // Next, get doctor details for each ID
+      List<Map<String, dynamic>> doctors = [];
+      
+      for (var doctorId in doctorIds) {
+        try {
+          // Get doctor details from Firestore
+          final doctorDoc = await _firestore
+              .collection('doctors')
+              .where('id', isEqualTo: doctorId)
+              .where('isActive', isEqualTo: true)
+              .limit(1)
+              .get();
+          
+          if (doctorDoc.docs.isNotEmpty) {
+            final data = doctorDoc.docs.first.data() as Map<String, dynamic>;
+            
+            doctors.add({
+              'id': data['id'] ?? doctorDoc.docs.first.id,
+              'name': data['fullName'] ?? 'Unknown',
+              'specialty': data['specialty'] ?? 'General',
+              'fee': data['fee'] ?? 0,
+              'profileImageUrl': data['profileImageUrl'],
+            });
+          }
+        } catch (e) {
+          debugPrint('Error loading doctor $doctorId: $e');
+          // Continue with the next doctor
+          continue;
+        }
+      }
+      
+      setState(() {
+        _availableDoctors = doctors;
+        _isLoading = false;
+      });
+      
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error loading doctors: ${e.toString()}';
+        _isLoading = false;
+      });
+    }
+  }
+  
+  // Update the dropdown selector to show a message and option when no doctors found
+  Widget _buildNoDoctorsFoundMessage() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.orange.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orange.shade800),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'No doctors found for ${_selectedSpecialty} in ${_selectedCity}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.orange.shade800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Would you like to see all doctors available in ${_selectedCity} regardless of specialty?',
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              color: Colors.orange.shade800,
+            ),
+          ),
+          SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () {
+                  // Reset specialty selection but keep city
+                  setState(() {
+                    _selectedSpecialty = null;
+                  });
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.grey.shade700,
+                ),
+                child: Text('Cancel'),
+              ),
+              SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: () {
+                  _loadAllDoctorsInCity();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AdminTheme.primaryPurple,
+                  foregroundColor: Colors.white,
+                ),
+                child: Text('Show All Doctors'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Helper method to check if any doctors are available
+  Future<bool> _checkDoctorsAvailability() async {
+    try {
+      final QuerySnapshot snapshot = await _firestore
+          .collection('doctors')
+          .where('isActive', isEqualTo: true)
+          .limit(1)
+          .get();
+      
+      return snapshot.docs.isNotEmpty;
+    } catch (e) {
+      debugPrint('Error checking doctors availability: $e');
+      return false;
+    }
+  }
+  
+  // Helper method to get specialty name if it's not in the predefined list
+  String _getSpecialtyDisplayName(String? specialty) {
+    if (specialty == null) return 'Unknown';
+    
+    // Check if the specialty is one of our predefined ones
+    if (_specialties.contains(specialty)) {
+      return specialty;
+    }
+    
+    // If not, try to format it nicely
+    String displayName = specialty.trim();
+    if (displayName.isEmpty) return 'General';
+    
+    // Convert first letter to uppercase
+    return displayName[0].toUpperCase() + displayName.substring(1);
+  }
+  
+  // Helper UI to handle error states gracefully
+  Widget _buildErrorState(String message, {VoidCallback? onRetry}) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.red),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Error',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red.shade800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          Text(
+            message,
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: Colors.red.shade800,
+            ),
+          ),
+          if (onRetry != null) ...[
+            SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton.icon(
+                onPressed: onRetry,
+                icon: Icon(Icons.refresh),
+                label: Text('Retry'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AdminTheme.primaryPurple,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -715,7 +1172,7 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
             end: Alignment.bottomCenter,
             colors: [
               Colors.white,
-              Colors.blue.shade50,
+              AdminTheme.lightPurple.withOpacity(0.1),
             ],
           ),
         ),
@@ -727,15 +1184,11 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
               // Introduction
               Container(
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF3366CC), Color(0xFF5588EE)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  gradient: AdminTheme.primaryGradient,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Color(0xFF3366CC).withOpacity(0.3),
+                      color: AdminTheme.primaryPurple.withOpacity(0.3),
                       blurRadius: 12,
                       offset: Offset(0, 6),
                     ),
@@ -812,7 +1265,7 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
                                 color: Colors.grey.shade400,
                                 fontSize: 14,
                               ),
-                              prefixIcon: Icon(Icons.phone, color: Color(0xFF3366CC)),
+                              prefixIcon: Icon(Icons.phone, color: AdminTheme.primaryPurple),
                               filled: true,
                               fillColor: Colors.grey.shade50,
                               border: OutlineInputBorder(
@@ -825,7 +1278,7 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide(color: Color(0xFF3366CC), width: 1.5),
+                                borderSide: BorderSide(color: AdminTheme.primaryPurple, width: 1.5),
                               ),
                               contentPadding: EdgeInsets.symmetric(
                                 horizontal: 16,
@@ -847,7 +1300,7 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
                         ElevatedButton(
                           onPressed: _isSearching ? null : _searchPatient,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF3366CC),
+                            backgroundColor: AdminTheme.primaryPurple,
                             padding: EdgeInsets.symmetric(
                               horizontal: 24,
                               vertical: 16,
@@ -856,7 +1309,7 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
                               borderRadius: BorderRadius.circular(10),
                             ),
                             elevation: 3,
-                            shadowColor: Color(0xFF3366CC).withOpacity(0.5),
+                            shadowColor: AdminTheme.primaryPurple.withOpacity(0.5),
                           ),
                           child: _isSearching
                               ? SizedBox(
@@ -891,44 +1344,9 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
                     
                     if (_errorMessage != null) ...[
                       SizedBox(height: 16),
-                      Container(
-                        padding: EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade50,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.red.shade200),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
-                            SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Error',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.red.shade700,
-                                    ),
-                                  ),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    _errorMessage!,
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 14,
-                                      color: Colors.red.shade700,
-                                      height: 1.5,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                      _buildErrorState(
+                        _errorMessage!,
+                        onRetry: _searchPatient,
                       ),
                     ],
                   ],
@@ -940,7 +1358,7 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
                 SizedBox(height: 36),
                 Row(
                   children: [
-                    Icon(Icons.person, color: Color(0xFF3366CC)),
+                    Icon(Icons.person, color: AdminTheme.primaryPurple),
                     SizedBox(width: 8),
                     Text(
                       'Patient Details',
@@ -977,12 +1395,12 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
                             padding: EdgeInsets.all(3),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(color: Color(0xFF3366CC), width: 2),
+                              border: Border.all(color: AdminTheme.primaryPurple, width: 2),
                               color: Colors.white,
                             ),
                             child: CircleAvatar(
                               radius: 36,
-                              backgroundColor: Colors.blue.shade100,
+                              backgroundColor: AdminTheme.lightPurple.withOpacity(0.5),
                               backgroundImage: _patientData!['profileImageUrl'] != null
                                   ? NetworkImage(_patientData!['profileImageUrl'])
                                   : null,
@@ -992,7 +1410,7 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
                                       style: TextStyle(
                                         fontSize: 30,
                                         fontWeight: FontWeight.bold,
-                                        color: Color(0xFF3366CC),
+                                        color: AdminTheme.primaryPurple,
                                       ),
                                     )
                                   : null,
@@ -1066,7 +1484,7 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
                 SizedBox(height: 36),
                 Row(
                   children: [
-                    Icon(Icons.calendar_month, color: Color(0xFF3366CC)),
+                    Icon(Icons.calendar_month, color: AdminTheme.primaryPurple),
                     SizedBox(width: 8),
                     Text(
                       'Appointment Details',
@@ -1095,9 +1513,157 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Doctor Selection
+                      // Filter badges
+                      if (_selectedSpecialty != null || _selectedCity != null) ...[
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            if (_selectedSpecialty != null)
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: AdminTheme.lightPurple.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: AdminTheme.primaryPurple.withOpacity(0.3)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.medical_services,
+                                      size: 16,
+                                      color: AdminTheme.primaryPurple,
+                                    ),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      _selectedSpecialty!,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: AdminTheme.primaryPurple,
+                                      ),
+                                    ),
+                                    SizedBox(width: 4),
+                                    InkWell(
+                                      onTap: () {
+                                        setState(() {
+                                          _selectedSpecialty = null;
+                                          _selectedCity = null;
+                                          _availableDoctors = [];
+                                          _selectedDoctor = null;
+                                          _doctorHospitals = [];
+                                          _selectedHospitalData = null;
+                                          _availableTimeSlots = [];
+                                          _selectedTimeSlot = null;
+                                        });
+                                      },
+                                      child: Icon(
+                                        Icons.close,
+                                        size: 16,
+                                        color: AdminTheme.primaryPurple,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            if (_selectedCity != null)
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: AdminTheme.lightPurple.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: AdminTheme.primaryPurple.withOpacity(0.3)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.location_city,
+                                      size: 16,
+                                      color: AdminTheme.primaryPurple,
+                                    ),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      _selectedCity!,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: AdminTheme.primaryPurple,
+                                      ),
+                                    ),
+                                    SizedBox(width: 4),
+                                    InkWell(
+                                      onTap: () {
+                                        setState(() {
+                                          _selectedCity = null;
+                                          _availableDoctors = [];
+                                          _selectedDoctor = null;
+                                          _doctorHospitals = [];
+                                          _selectedHospitalData = null;
+                                          _availableTimeSlots = [];
+                                          _selectedTimeSlot = null;
+                                        });
+                                      },
+                                      child: Icon(
+                                        Icons.close,
+                                        size: 16,
+                                        color: AdminTheme.primaryPurple,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            // Reset all filters button
+                            InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _selectedSpecialty = null;
+                                  _selectedCity = null;
+                                  _availableDoctors = [];
+                                  _selectedDoctor = null;
+                                  _doctorHospitals = [];
+                                  _selectedHospitalData = null;
+                                  _availableTimeSlots = [];
+                                  _selectedTimeSlot = null;
+                                });
+                              },
+                              child: Container(
+                                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: Colors.grey.shade400),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.refresh,
+                                      size: 16,
+                                      color: Colors.grey.shade700,
+                                    ),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'Reset Filters',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.grey.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 20),
+                      ],
+                      
+                      // Specialty Selection
                       Text(
-                        'Select Doctor',
+                        'Select Specialty',
                         style: GoogleFonts.poppins(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
@@ -1106,13 +1672,13 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
                       ),
                       SizedBox(height: 10),
                       
-                      if (_isLoading)
+                      if (_isLoadingSpecialties)
                         Center(
                           child: CircularProgressIndicator(
-                            color: Color(0xFF3366CC),
+                            color: AdminTheme.primaryPurple,
                           ),
                         )
-                      else if (_availableDoctors.isEmpty)
+                      else if (_specialties.isEmpty)
                         Container(
                           padding: EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -1124,7 +1690,7 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
                               Icon(Icons.error_outline, color: Colors.red),
                               SizedBox(width: 12),
                               Text(
-                                'No doctors available',
+                                'No specialties available',
                                 style: GoogleFonts.poppins(
                                   fontSize: 14,
                                   color: Colors.red.shade800,
@@ -1141,66 +1707,37 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: DropdownButtonHideUnderline(
-                            child: DropdownButton<Map<String, dynamic>>(
+                            child: DropdownButton<String>(
                               isExpanded: true,
                               hint: Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 16),
                                 child: Text(
-                                  'Select a doctor',
+                                  'Select a specialty',
                                   style: GoogleFonts.poppins(
                                     color: Colors.grey.shade600,
                                   ),
                                 ),
                               ),
-                              value: _selectedDoctor,
+                              value: _selectedSpecialty,
                               padding: EdgeInsets.symmetric(horizontal: 16),
                               borderRadius: BorderRadius.circular(10),
-                              icon: Icon(Icons.keyboard_arrow_down, color: Color(0xFF3366CC)),
-                              items: _availableDoctors.map((doctor) {
-                                return DropdownMenuItem<Map<String, dynamic>>(
-                                  value: doctor,
+                              icon: Icon(Icons.keyboard_arrow_down, color: AdminTheme.primaryPurple),
+                              items: _specialties.map((specialty) {
+                                return DropdownMenuItem<String>(
+                                  value: specialty,
                                   child: Row(
                                     children: [
-                                      CircleAvatar(
-                                        radius: 20,
-                                        backgroundColor: Colors.blue.shade100,
-                                        backgroundImage: doctor['profileImageUrl'] != null
-                                            ? NetworkImage(doctor['profileImageUrl'])
-                                            : null,
-                                        child: doctor['profileImageUrl'] == null
-                                            ? Text(
-                                                doctor['name'].toString().substring(0, 1),
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Color(0xFF3366CC),
-                                                ),
-                                              )
-                                            : null,
+                                      Icon(
+                                        Icons.medical_services, 
+                                        color: AdminTheme.primaryPurple,
+                                        size: 20,
                                       ),
                                       SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              doctor['name'],
-                                              style: GoogleFonts.poppins(
-                                                fontWeight: FontWeight.w500,
-                                                fontSize: 14,
-                                                color: Color(0xFF333333),
-                                              ),
-                                            ),
-                                            SizedBox(height: 2),
-                                            Text(
-                                              '${doctor['specialty']} - Rs. ${doctor['fee']}',
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 12,
-                                                color: Colors.grey.shade600,
-                                              ),
-                                            ),
-                                          ],
+                                      Text(
+                                        specialty,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                          color: Color(0xFF333333),
                                         ),
                                       ),
                                     ],
@@ -1210,10 +1747,15 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
                               onChanged: (value) {
                                 if (value != null) {
                                   setState(() {
-                                    _selectedDoctor = value;
+                                    _selectedSpecialty = value;
+                                    // Reset city, doctor and hospital selections
+                                    _selectedCity = null;
+                                    _selectedDoctor = null;
+                                    _selectedHospitalData = null;
+                                    _availableTimeSlots = [];
+                                    _selectedTimeSlot = null;
                                   });
-                                  // Load hospitals for this doctor
-                                  _loadDoctorHospitals(value['id']);
+                                  // Don't load filtered doctors yet since we still need city
                                 }
                               },
                             ),
@@ -1221,6 +1763,221 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
                         ),
                       
                       SizedBox(height: 20),
+                      
+                      // City Selection - show only if specialty is selected
+                      if (_selectedSpecialty != null) ...[
+                        Text(
+                          'Select City',
+                          style: GoogleFonts.poppins(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF444444),
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                        
+                        if (_isLoadingCities)
+                          Center(
+                            child: CircularProgressIndicator(
+                              color: AdminTheme.primaryPurple,
+                            ),
+                          )
+                        else if (_cities.isEmpty)
+                          Container(
+                            padding: EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade50,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.error_outline, color: Colors.red),
+                                SizedBox(width: 12),
+                                Text(
+                                  'No cities available',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    color: Colors.red.shade800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade50,
+                              border: Border.all(color: Colors.grey.shade300),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                isExpanded: true,
+                                hint: Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 16),
+                                  child: Text(
+                                    'Select a city',
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ),
+                                value: _selectedCity,
+                                padding: EdgeInsets.symmetric(horizontal: 16),
+                                borderRadius: BorderRadius.circular(10),
+                                icon: Icon(Icons.keyboard_arrow_down, color: AdminTheme.primaryPurple),
+                                items: _cities.map((city) {
+                                  return DropdownMenuItem<String>(
+                                    value: city,
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.location_city, 
+                                          color: AdminTheme.primaryPurple,
+                                          size: 20,
+                                        ),
+                                        SizedBox(width: 12),
+                                        Text(
+                                          city,
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 14,
+                                            color: Color(0xFF333333),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    setState(() {
+                                      _selectedCity = value;
+                                      // Reset doctor and hospital selections
+                                      _selectedDoctor = null;
+                                      _selectedHospitalData = null;
+                                      _availableTimeSlots = [];
+                                      _selectedTimeSlot = null;
+                                    });
+                                    // Now we can load doctors filtered by specialty and city
+                                    _loadFilteredDoctors();
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+                          
+                        SizedBox(height: 20),
+                      ],
+                      
+                      // Doctor Selection - show only if specialty and city are selected
+                      if (_selectedCity != null && _selectedSpecialty != null) ...[
+                        Text(
+                          'Select Doctor',
+                          style: GoogleFonts.poppins(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF444444),
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                        
+                        if (_isLoading)
+                          Center(
+                            child: CircularProgressIndicator(
+                              color: AdminTheme.primaryPurple,
+                            ),
+                          )
+                        else if (_availableDoctors.isEmpty)
+                          _buildNoDoctorsFoundMessage()
+                        else
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade50,
+                              border: Border.all(color: Colors.grey.shade300),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<Map<String, dynamic>>(
+                                isExpanded: true,
+                                hint: Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 16),
+                                  child: Text(
+                                    'Select a doctor',
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ),
+                                value: _selectedDoctor,
+                                padding: EdgeInsets.symmetric(horizontal: 16),
+                                borderRadius: BorderRadius.circular(10),
+                                icon: Icon(Icons.keyboard_arrow_down, color: AdminTheme.primaryPurple),
+                                items: _availableDoctors.map((doctor) {
+                                  return DropdownMenuItem<Map<String, dynamic>>(
+                                    value: doctor,
+                                    child: Row(
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 20,
+                                          backgroundColor: AdminTheme.lightPurple.withOpacity(0.5),
+                                          backgroundImage: doctor['profileImageUrl'] != null
+                                              ? NetworkImage(doctor['profileImageUrl'])
+                                              : null,
+                                          child: doctor['profileImageUrl'] == null
+                                              ? Text(
+                                                  doctor['name'].toString().substring(0, 1),
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: AdminTheme.primaryPurple,
+                                                  ),
+                                                )
+                                              : null,
+                                        ),
+                                        SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                doctor['name'],
+                                                style: GoogleFonts.poppins(
+                                                  fontWeight: FontWeight.w500,
+                                                  fontSize: 14,
+                                                  color: Color(0xFF333333),
+                                                ),
+                                              ),
+                                              SizedBox(height: 2),
+                                              Text(
+                                                '${doctor['specialty']} - Rs. ${doctor['fee']}',
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 12,
+                                                  color: Colors.grey.shade600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    setState(() {
+                                      _selectedDoctor = value;
+                                    });
+                                    // Load hospitals for this doctor
+                                    _loadDoctorHospitals(value['id']);
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+                      
+                        SizedBox(height: 20),
+                      ],
                       
                       // Hospital Selection
                       if (_selectedDoctor != null) ...[
@@ -1237,7 +1994,7 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
                         if (_isLoadingHospitals)
                           Center(
                             child: CircularProgressIndicator(
-                              color: Color(0xFF3366CC),
+                              color: AdminTheme.primaryPurple,
                             ),
                           )
                         else if (_doctorHospitals.isEmpty)
@@ -1276,13 +2033,13 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
                                 value: _selectedHospitalData,
                                 padding: EdgeInsets.symmetric(horizontal: 16),
                                 borderRadius: BorderRadius.circular(10),
-                                icon: Icon(Icons.keyboard_arrow_down, color: Color(0xFF3366CC)),
+                                icon: Icon(Icons.keyboard_arrow_down, color: AdminTheme.primaryPurple),
                                 items: _doctorHospitals.map((hospital) {
                                   return DropdownMenuItem<Map<String, dynamic>>(
                                     value: hospital,
                                     child: Row(
                                       children: [
-                                        Icon(Icons.local_hospital, color: Color(0xFF3366CC)),
+                                        Icon(Icons.local_hospital, color: AdminTheme.primaryPurple),
                                         SizedBox(width: 12),
                                         Expanded(
                                           child: Text(
@@ -1335,7 +2092,7 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
                                 return Theme(
                                   data: Theme.of(context).copyWith(
                                     colorScheme: ColorScheme.light(
-                                      primary: Color(0xFF3366CC),
+                                      primary: AdminTheme.primaryPurple,
                                     ),
                                   ),
                                   child: child!,
@@ -1366,7 +2123,7 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
                               children: [
                                 Row(
                                   children: [
-                                    Icon(Icons.calendar_today, color: Color(0xFF3366CC), size: 20),
+                                    Icon(Icons.calendar_today, color: AdminTheme.primaryPurple, size: 20),
                                     SizedBox(width: 12),
                                     Text(
                                       DateFormat('EEEE, MMM d, yyyy').format(_selectedDate),
@@ -1377,7 +2134,7 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
                                     ),
                                   ],
                                 ),
-                                Icon(Icons.keyboard_arrow_down, color: Color(0xFF3366CC)),
+                                Icon(Icons.keyboard_arrow_down, color: AdminTheme.primaryPurple),
                               ],
                             ),
                           ),
@@ -1401,7 +2158,7 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
                         if (_isLoadingTimeSlots)
                           Center(
                             child: CircularProgressIndicator(
-                              color: Color(0xFF3366CC),
+                              color: AdminTheme.primaryPurple,
                             ),
                           )
                         else if (_availableTimeSlots.isEmpty)
@@ -1511,20 +2268,20 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
                                         color: !isAvailable 
                                             ? Colors.grey.shade200
                                             : isSelected
-                                                ? Color(0xFF3366CC)
+                                                ? AdminTheme.primaryPurple
                                                 : Colors.white,
                                         borderRadius: BorderRadius.circular(10),
                                         border: Border.all(
                                           color: !isAvailable
                                               ? Colors.grey.shade300
                                               : isSelected
-                                                  ? Color(0xFF3366CC)
+                                                  ? AdminTheme.primaryPurple
                                                   : Colors.grey.shade200,
                                         ),
                                         boxShadow: isSelected && isAvailable
                                             ? [
                                                 BoxShadow(
-                                                  color: Color(0xFF3366CC).withOpacity(0.2),
+                                                  color: AdminTheme.primaryPurple.withOpacity(0.2),
                                                   blurRadius: 8,
                                                   offset: Offset(0, 2),
                                                 ),
@@ -1587,7 +2344,7 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
                                 color: Colors.grey.shade400,
                                 fontSize: 14,
                               ),
-                              prefixIcon: Icon(Icons.edit, color: Color(0xFF3366CC)),
+                              prefixIcon: Icon(Icons.edit, color: AdminTheme.primaryPurple),
                               border: InputBorder.none,
                               contentPadding: EdgeInsets.symmetric(
                                 horizontal: 16,
@@ -1610,15 +2367,15 @@ class _BookViaCallScreenState extends State<BookViaCallScreen> {
                           child: ElevatedButton(
                             onPressed: (_isBooking || _availableTimeSlots.isEmpty) ? null : _createAppointment,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFF3366CC),
+                              backgroundColor: AdminTheme.primaryPurple,
                               foregroundColor: Colors.white,
                               padding: EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               elevation: 3,
-                              shadowColor: Color(0xFF3366CC).withOpacity(0.5),
-                              disabledBackgroundColor: Color(0xFF3366CC).withOpacity(0.6),
+                              shadowColor: AdminTheme.primaryPurple.withOpacity(0.5),
+                              disabledBackgroundColor: AdminTheme.primaryPurple.withOpacity(0.6),
                             ),
                             child: _isBooking
                                 ? Row(

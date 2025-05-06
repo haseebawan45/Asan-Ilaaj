@@ -217,11 +217,11 @@ class _HospitalSelectionScreenState extends State<HospitalSelectionScreen> with 
           return true;
         },
         child: Scaffold(
-          backgroundColor: Color(0xFFF8FAFF),
-          extendBodyBehindAppBar: true,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
+      backgroundColor: Color(0xFFF8FAFF),
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
             leading: IconButton(
               icon: Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () {
@@ -229,166 +229,131 @@ class _HospitalSelectionScreenState extends State<HospitalSelectionScreen> with 
                 UIHelper.applyPinkStatusBar(withPostFrameCallback: true);
                 Navigator.pop(context);
               },
-            ),
-            title: Text(
-              "Hospital Selection",
-              style: GoogleFonts.poppins(
-                fontSize: 20,
+        ),
+        title: Text(
+          "Hospital Selection",
+          style: GoogleFonts.poppins(
+            fontSize: 20,
                 fontWeight: FontWeight.w600,
-                color: Colors.white,
+            color: Colors.white,
               ),
-            ),
-            centerTitle: true,
           ),
-          body: Stack(
-            children: [
-              // Background gradient and design elements
-              Container(
-                height: MediaQuery.of(context).size.height * 0.25,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppTheme.primaryPink,
-                      AppTheme.primaryPink.withOpacity(0.8),
-                    ],
-                  ),
+            centerTitle: true,
+      ),
+      body: Stack(
+        children: [
+          // Background gradient and design elements
+          Container(
+            height: MediaQuery.of(context).size.height * 0.25,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppTheme.primaryPink,
+                  AppTheme.primaryPink.withOpacity(0.8),
+                ],
+              ),
                   borderRadius: BorderRadius.only(
                     bottomLeft: Radius.circular(20),
                     bottomRight: Radius.circular(20),
                   ),
-                ),
-                child: Stack(
-                  children: [
-                    Positioned(
-                      top: -50,
-                      right: -50,
-                      child: Container(
-                        width: 200,
-                        height: 200,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.1),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: -80,
-                      left: -80,
-                      child: Container(
-                        width: 180,
-                        height: 180,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.1),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
               ),
-              
-              SafeArea(
-                child: Column(
-                  children: [
-                    // Title and info card
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(20, 15, 20, 5),
-                      child: Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
-                              blurRadius: 15,
-                              offset: Offset(0, 10),
-                            ),
-                          ],
+            child: Stack(
+              children: [
+                Positioned(
+                  top: -50,
+                  right: -50,
+                  child: Container(
+                    width: 200,
+                    height: 200,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.1),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: -80,
+                  left: -80,
+                  child: Container(
+                    width: 180,
+                    height: 180,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.1),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          SafeArea(
+            child: Column(
+              children: [
+                // Title and info card
+                Padding(
+                  padding: EdgeInsets.fromLTRB(20, 15, 20, 5),
+                    child: Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 15,
+                          offset: Offset(0, 10),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                        Row(
                           children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        AppTheme.primaryPink,
-                                        AppTheme.primaryPink.withOpacity(0.8),
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Icon(
-                                    LucideIcons.building2,
-                                    color: Colors.white,
-                                    size: 24,
-                                  ),
-                                ),
-                                SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        "Hospital Affiliations",
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w700,
-                                          color: AppTheme.darkText,
-                                          height: 1.2,
-                                        ),
-                                      ),
-                                      SizedBox(height: 4),
-                                      Text(
-                                        "Add any hospital where you practice",
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 14,
-                                          color: Color(0xFF64748B),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 16),
                             Container(
-                              padding: EdgeInsets.all(12),
+                              padding: EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: Color(0xFFF1F5FE),
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppTheme.primaryPink,
+                                    AppTheme.primaryPink.withOpacity(0.8),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: AppTheme.primaryPink.withOpacity(0.4),
-                                  width: 1,
+                              ),
+                                      child: Icon(
+                                        LucideIcons.building2,
+                                color: Colors.white,
+                                size: 24,
                                 ),
                               ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Icon(
-                                    LucideIcons.info,
-                                    color: AppTheme.primaryPink,
-                                    size: 20,
-                                  ),
-                                  SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      "You can now enter any hospital name where you practice. First select a city, then type your hospital name, and add it to your list.",
+                              SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                    "Hospital Affiliations",
                                       style: GoogleFonts.poppins(
-                                        fontSize: 13,
-                                        color: Color(0xFF64748B),
-                                        height: 1.4,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.darkText,
+                                      height: 1.2,
                                       ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                    "Add any hospital where you practice",
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                      color: Color(0xFF64748B),
                                     ),
                                   ),
                                 ],
@@ -396,26 +361,61 @@ class _HospitalSelectionScreenState extends State<HospitalSelectionScreen> with 
                             ),
                           ],
                         ),
-                      ),
-                    ),
-                    
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(30),
-                          topRight: Radius.circular(30),
-                        ),
-                        child: Container(
-                          color: Colors.white,
-                          child: _buildMainContent(),
-                        ),
-                      ),
-                    ),
-                  ],
+                        SizedBox(height: 16),
+                        Container(
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Color(0xFFF1F5FE),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppTheme.primaryPink.withOpacity(0.4),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Icon(
+                                LucideIcons.info,
+                                color: AppTheme.primaryPink,
+                                size: 20,
+                              ),
+                              SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                  "You can now enter any hospital name where you practice. First select a city, then type your hospital name, and add it to your list.",
+                                            style: GoogleFonts.poppins(
+                                    fontSize: 13,
+                                    color: Color(0xFF64748B),
+                                    height: 1.4,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                 ),
-              ),
-            ],
-          ),
+                
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(30),
+                      topRight: Radius.circular(30),
+                    ),
+                    child: Container(
+                                        color: Colors.white,
+                      child: _buildMainContent(),
+                    ),
+                  ),
+                              ),
+                            ],
+                          ),
+                      ),
+                    ],
+                  ),
         ),
       ),
     );

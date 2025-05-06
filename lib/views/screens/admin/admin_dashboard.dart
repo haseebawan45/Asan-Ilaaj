@@ -10,6 +10,20 @@ import 'package:healthcare/services/admin_service.dart';
 import 'package:healthcare/services/auth_service.dart';
 import 'package:healthcare/views/screens/onboarding/onboarding_3.dart';
 
+// Admin theme colors
+class AdminTheme {
+  static const Color primaryPurple = Color(0xFF6200EA);
+  static const Color lightPurple = Color(0xFFB388FF);
+  static const Color accentPurple = Color(0xFF9D46FF);
+  static const Color darkPurple = Color(0xFF4A148C);
+  
+  static LinearGradient primaryGradient = LinearGradient(
+    colors: [darkPurple, primaryPurple, accentPurple],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+}
+
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({Key? key}) : super(key: key);
 
@@ -86,7 +100,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           elevation: 0,
           actions: [
             IconButton(
-              icon: Icon(Icons.logout, color: Color(0xFF3366CC)),
+              icon: Icon(Icons.logout, color: AdminTheme.primaryPurple),
               tooltip: 'Logout',
               onPressed: () {
                 _showLogoutConfirmationDialog(context);
@@ -117,7 +131,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             },
             type: BottomNavigationBarType.fixed,
             backgroundColor: Colors.white,
-            selectedItemColor: Color(0xFF3366CC),
+            selectedItemColor: AdminTheme.primaryPurple,
             unselectedItemColor: Colors.grey.shade600,
             selectedLabelStyle: GoogleFonts.poppins(
               fontSize: screenWidth * 0.03,
@@ -294,12 +308,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
               Container(
                 padding: EdgeInsets.all(screenWidth * 0.04),
                 decoration: BoxDecoration(
-                  color: Color(0xFFE3F2FD),
+                  color: AdminTheme.lightPurple.withOpacity(0.3),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.exit_to_app,
-                  color: Color(0xFF3366CC),
+                  color: AdminTheme.primaryPurple,
                   size: screenWidth * 0.075,
                 ),
               ),
@@ -349,7 +363,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     child: ElevatedButton(
                       onPressed: () => Navigator.of(dialogContext).pop(true),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF3366CC),
+                        backgroundColor: AdminTheme.primaryPurple,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(screenWidth * 0.03),
@@ -436,6 +450,7 @@ class _AdminHomeState extends State<AdminHome> {
     
     return RefreshIndicator(
       onRefresh: _fetchDashboardData,
+      color: AdminTheme.primaryPurple,
       child: SingleChildScrollView(
         padding: EdgeInsets.all(padding),
         child: Column(
@@ -446,15 +461,11 @@ class _AdminHomeState extends State<AdminHome> {
               width: double.infinity,
               padding: EdgeInsets.all(padding),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF3366CC), Color(0xFF6699FF)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                gradient: AdminTheme.primaryGradient,
                 borderRadius: BorderRadius.circular(screenWidth * 0.04),
                 boxShadow: [
                   BoxShadow(
-                    color: Color(0xFF3366CC).withOpacity(0.3),
+                    color: AdminTheme.primaryPurple.withOpacity(0.3),
                     blurRadius: 10,
                     offset: Offset(0, 4),
                   ),
@@ -509,7 +520,7 @@ class _AdminHomeState extends State<AdminHome> {
                             'Doctors', 
                             _isLoading ? '-' : _dashboardStats['doctorCount']?.toString() ?? '0', 
                             Icons.medical_services, 
-                            Color(0xFF4CAF50),
+                            Colors.lightBlue,
                             itemWidth,
                             screenWidth,
                             screenHeight
@@ -563,7 +574,7 @@ class _AdminHomeState extends State<AdminHome> {
                 _buildActionCard(
                   'View Analytics',
                   Icons.analytics,
-                  Color(0xFF3366CC),
+                  AdminTheme.primaryPurple,
                   () {
                     final adminDashboardState = context.findAncestorStateOfType<_AdminDashboardState>();
                     if (adminDashboardState != null) {
@@ -593,7 +604,7 @@ class _AdminHomeState extends State<AdminHome> {
                 _buildActionCard(
                   'Book via Call',
                   Icons.phone,
-                  Color(0xFF9C27B0),
+                  AdminTheme.accentPurple,
                   () {
                     final adminDashboardState = context.findAncestorStateOfType<_AdminDashboardState>();
                     if (adminDashboardState != null) {
@@ -692,7 +703,7 @@ class _AdminHomeState extends State<AdminHome> {
             if (_isLoading)
               Center(
                 child: CircularProgressIndicator(
-                  color: Color(0xFF3366CC),
+                  color: AdminTheme.primaryPurple,
                 ),
               )
             else if (_recentActivities.isEmpty)

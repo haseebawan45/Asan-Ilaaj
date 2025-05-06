@@ -3,6 +3,20 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:healthcare/services/admin_service.dart';
 import 'package:intl/intl.dart';
 
+// Admin theme colors - copied from admin_dashboard.dart for consistency
+class AdminTheme {
+  static const Color primaryPurple = Color(0xFF6200EA);
+  static const Color lightPurple = Color(0xFFB388FF);
+  static const Color accentPurple = Color(0xFF9D46FF);
+  static const Color darkPurple = Color(0xFF4A148C);
+  
+  static LinearGradient primaryGradient = LinearGradient(
+    colors: [darkPurple, primaryPurple, accentPurple],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+}
+
 class AnalyticsDashboard extends StatefulWidget {
   const AnalyticsDashboard({Key? key}) : super(key: key);
 
@@ -82,8 +96,11 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
       ),
       body: RefreshIndicator(
         onRefresh: _loadAnalyticsData,
+        color: AdminTheme.primaryPurple,
         child: _isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(AdminTheme.primaryPurple),
+            ))
           : _errorMessage != null
             ? Center(
                 child: Column(
@@ -99,6 +116,10 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                     SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: _loadAnalyticsData,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AdminTheme.primaryPurple,
+                        foregroundColor: Colors.white,
+                      ),
                       child: Text('Try Again'),
                     ),
                   ],
@@ -135,7 +156,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                   ),
                   DropdownButton<String>(
                     value: _selectedTimeFilter,
-                    icon: Icon(Icons.keyboard_arrow_down),
+                    icon: Icon(Icons.keyboard_arrow_down, color: AdminTheme.primaryPurple),
                     underline: SizedBox(),
                     onChanged: (String? newValue) {
                       if (newValue != null) {
@@ -184,7 +205,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                             '${_analyticsData['currentPeriodAppointments'] ?? 0}',
                             '${_analyticsData['appointmentGrowth']?.toStringAsFixed(1) ?? 0}% vs last period',
                     Icons.calendar_today,
-                    Color(0xFF3366CC),
+                    AdminTheme.primaryPurple,
                             _analyticsData['appointmentGrowth'] != null ? _analyticsData['appointmentGrowth'] >= 0 : true,
                   ),
                 ),
@@ -221,7 +242,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                             '${_analyticsData['currentPeriodDoctors'] ?? 0}',
                             '${_analyticsData['doctorGrowth']?.toStringAsFixed(1) ?? 0}% vs last period',
                     Icons.medical_services,
-                    Color(0xFFFF5722),
+                    AdminTheme.accentPurple,
                             _analyticsData['doctorGrowth'] != null ? _analyticsData['doctorGrowth'] >= 0 : true,
                   ),
                 ),
@@ -487,7 +508,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF3366CC),
+                      color: AdminTheme.primaryPurple,
                     ),
                     textAlign: TextAlign.end,
                   ),
@@ -637,13 +658,13 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
   
   Color _getColorForSpecialty(int index) {
     final List<Color> colors = [
-      Color(0xFF3366CC), // Blue
-      Color(0xFF4CAF50), // Green
-      Color(0xFFFFC107), // Yellow
-      Color(0xFFFF5722), // Orange
-      Color(0xFF9C27B0), // Purple
-      Color(0xFF607D8B), // Blue Grey
-      Color(0xFF795548), // Brown
+      AdminTheme.primaryPurple, // Purple main color
+      AdminTheme.accentPurple,  // Accent purple
+      Color(0xFF4CAF50),        // Green
+      Color(0xFFFFC107),        // Yellow
+      Color(0xFFFF5722),        // Orange
+      AdminTheme.darkPurple,    // Dark purple
+      AdminTheme.lightPurple,   // Light purple
     ];
     
     return colors[index % colors.length];
