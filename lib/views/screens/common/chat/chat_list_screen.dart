@@ -72,6 +72,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
       appBar: AppBar(
         elevation: 0,
         backgroundColor: primaryColor,
+        iconTheme: IconThemeData(color: Colors.white),
         title: Text(
           'Conversations',
           style: GoogleFonts.poppins(
@@ -321,7 +322,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                 // Return to previous screen
                 Navigator.of(context).pop();
               },
-              icon: Icon(LucideIcons.arrowLeft),
+              icon: Icon(LucideIcons.arrowLeft, color: Colors.white),
               label: Text(
                 'Return to Dashboard',
                 style: GoogleFonts.poppins(fontSize: 16),
