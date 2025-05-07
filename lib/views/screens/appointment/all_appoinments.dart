@@ -778,10 +778,16 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: Offset(0, 6),
+            color: AppTheme.primaryTeal.withOpacity(0.08),
+            blurRadius: 10,
+            offset: Offset(0, 4),
             spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.09),
+            blurRadius: 20,
+            offset: Offset(0, 8),
+            spreadRadius: 2,
           ),
         ],
         border: Border.all(
@@ -794,7 +800,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
           Container(
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.05),
+              color: AppTheme.primaryTeal,
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(18),
                 topRight: Radius.circular(18),
@@ -818,7 +824,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
                     backgroundColor: Colors.grey.shade200,
                     child: Icon(
                       LucideIcons.user,
-                      color: Colors.grey.shade600,
+                      color: Colors.white,
                       size: 22,
                     ),
                     foregroundImage: null,
@@ -834,18 +840,22 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          color: Colors.white,
                           letterSpacing: 0.2,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       SizedBox(height: 2),
                       Text(
                         specialty,
                         style: GoogleFonts.poppins(
                           fontSize: 14,
-                          color: Colors.grey.shade600,
+                          color: Colors.white.withOpacity(0.9),
                           fontWeight: FontWeight.w500,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -853,10 +863,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
+                    color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: statusColor.withOpacity(0.2),
+                      color: Colors.white,
                       width: 1,
                     ),
                   ),
@@ -865,7 +875,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: statusColor,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -893,11 +903,13 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
                 ),
                 SizedBox(height: 18),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildAppointmentDetail(
                       LucideIcons.building2,
                       "Hospital",
                       hospitalName,
+                      maxLines: 3,
                     ),
                     SizedBox(width: 15),
                     _buildAppointmentDetail(
@@ -1049,7 +1061,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
     );
   }
   
-  Widget _buildAppointmentDetail(IconData icon, String label, String value) {
+  Widget _buildAppointmentDetail(IconData icon, String label, String value, {int maxLines = 1}) {
     return Expanded(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -1086,6 +1098,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
                     color: Colors.black87,
                   ),
                   overflow: TextOverflow.ellipsis,
+                  maxLines: maxLines,
                 ),
               ],
             ),
