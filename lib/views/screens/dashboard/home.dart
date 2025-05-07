@@ -1546,13 +1546,11 @@ class _HomeScreenState extends State<HomeScreen> {
     
     return GestureDetector(
       onTap: () {
-        // Navigate to appointment details
-        Navigator.push(
+        // Navigate to appointment details using the helper method for status bar preservation
+        _navigateWithStatusBar(
           context,
-          MaterialPageRoute(
-            builder: (context) => AppointmentDetailsScreen(
-              appointmentId: appointment['id'],
-            ),
+          AppointmentDetailsScreen(
+            appointmentId: appointment['id'],
           ),
         );
       },
@@ -1736,13 +1734,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () {
-                            // Navigate to appointment details
-                            Navigator.push(
+                            // Navigate to appointment details using the helper method for status bar preservation
+                            _navigateWithStatusBar(
                               context,
-                              MaterialPageRoute(
-                                builder: (context) => AppointmentDetailsScreen(
-                                  appointmentId: appointment['id'],
-                                ),
+                              AppointmentDetailsScreen(
+                                appointmentId: appointment['id'],
                               ),
                             );
                           },

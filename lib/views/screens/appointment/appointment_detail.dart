@@ -567,9 +567,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
   Widget _buildDateTimeHeader() {
     final Color statusColor = _isCancelled
         ? AppTheme.error // Red for cancelled
-        : _isUpcoming
-            ? AppTheme.primaryTeal // Blue for upcoming
-            : AppTheme.success; // Green for completed
+        : AppTheme.primaryTeal; // Teal for all other statuses (both upcoming and completed)
     
     final String statusText = _appointmentStatus;
     
@@ -581,9 +579,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
           end: Alignment.bottomRight,
           colors: _isCancelled 
               ? [AppTheme.error.withOpacity(0.8), AppTheme.error]
-              : _isUpcoming 
-                  ? [AppTheme.primaryTeal, AppTheme.primaryTeal]
-                  : [AppTheme.success.withOpacity(0.8), AppTheme.success],
+              : [AppTheme.primaryTeal.withOpacity(0.9), AppTheme.primaryTeal],
         ),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(30),
@@ -930,7 +926,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
                                           content: Text('Patient information updated'),
-                                          backgroundColor: Colors.green,
+                                          backgroundColor: AppTheme.primaryTeal,
                                         ),
                                       );
                                     } else {
@@ -1153,7 +1149,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
     // Determine payment status color
     Color statusColor;
     if (_paymentStatus.toLowerCase() == 'paid' || _paymentStatus.toLowerCase() == 'completed') {
-      statusColor = Colors.green;
+      statusColor = AppTheme.primaryTeal;
     } else if (_paymentStatus.toLowerCase() == 'pending') {
       statusColor = Colors.orange;
     } else {
@@ -1228,14 +1224,14 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                     child: ElevatedButton.icon(
                       onPressed: _updatePaymentStatus,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green.shade600,
+                        backgroundColor: AppTheme.primaryTeal,
                         foregroundColor: Colors.white,
                         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         elevation: 3,
-                        shadowColor: Colors.green.withOpacity(0.4),
+                        shadowColor: AppTheme.primaryTeal.withOpacity(0.4),
                       ),
                       icon: Container(
                         padding: EdgeInsets.all(4),
@@ -1403,14 +1399,14 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                 _markAppointmentAsCompleted();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF4CAF50),
+                backgroundColor: AppTheme.primaryTeal,
                 foregroundColor: Colors.white,
                 padding: EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 elevation: 2,
-                shadowColor: Color(0xFF4CAF50).withOpacity(0.3),
+                shadowColor: AppTheme.primaryTeal.withOpacity(0.3),
               ),
               icon: Icon(LucideIcons.check, size: 18),
               label: Text(
@@ -1575,14 +1571,14 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
             );
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: Color(0xFF4CAF50),
+            backgroundColor: AppTheme.primaryTeal,
             foregroundColor: Colors.white,
             padding: EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
             elevation: 2,
-            shadowColor: Color(0xFF4CAF50).withOpacity(0.3),
+            shadowColor: AppTheme.primaryTeal.withOpacity(0.3),
           ),
           icon: Icon(LucideIcons.refreshCw, size: 18),
           label: Text(
@@ -2151,7 +2147,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Appointment cancelled successfully'),
-          backgroundColor: Colors.green,
+          backgroundColor: AppTheme.primaryTeal,
         ),
       );
     } catch (e) {
@@ -2196,7 +2192,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Appointment marked as completed'),
-          backgroundColor: Colors.green,
+          backgroundColor: AppTheme.primaryTeal,
         ),
       );
     } catch (e) {
@@ -2397,7 +2393,7 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Payment status updated to Completed and transaction recorded'),
-          backgroundColor: Colors.green,
+          backgroundColor: AppTheme.primaryTeal,
         ),
       );
     } catch (e) {
