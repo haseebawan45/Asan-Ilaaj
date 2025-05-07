@@ -670,8 +670,10 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: _isLoading
             ? Center(
-                child: CircularProgressIndicator(
+                child: LinearProgressIndicator(
                   color: AppTheme.primaryPink,
+                  backgroundColor: Colors.transparent,
+                  minHeight: 4,
                 ),
               )
             : LayoutBuilder(
@@ -985,7 +987,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                                       value: _overallRating / 5,
                                                       backgroundColor: Colors.white.withOpacity(0.2),
                                                       valueColor: AlwaysStoppedAnimation<Color>(Colors.amber),
-                                                      minHeight: 5,
                                                     ),
                                                   ),
                                                 ],
@@ -1053,49 +1054,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     // Bottom refresh indicator
                     if (_isRefreshing)
                       Positioned(
-                        bottom: 16,
+                        bottom: 0,
                         left: 0,
                         right: 0,
-                        child: Center(
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: screenWidth * 0.04, 
-                              vertical: screenHeight * 0.01
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 8,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                SizedBox(
-                                  width: screenWidth * 0.04,
-                                  height: screenWidth * 0.04,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      AppTheme.primaryTeal,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(width: screenWidth * 0.02),
-                                Text(
-                                  "Refreshing...",
-                                  style: GoogleFonts.poppins(
-                                    fontSize: screenWidth * 0.03,
-                                    color: Colors.grey.shade700,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        child: Container(
+                          height: 2,
+                          child: LinearProgressIndicator(
+                            backgroundColor: Colors.transparent,
+                            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryTeal),
                           ),
                         ),
                       ),

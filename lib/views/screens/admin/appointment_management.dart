@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:healthcare/services/admin_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 
 // Admin theme colors - copied from admin_dashboard.dart for consistency
 class AdminTheme {
@@ -1088,22 +1090,19 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: 12),
-                    _buildDetailRow(
-                      icon: Icons.event,
-                      label: 'Date',
-                      value: appointment['date'],
+                    _buildDetailItem(
+                      'Date',
+                      appointment['date'],
                     ),
                     SizedBox(height: 4),
-                    _buildDetailRow(
-                      icon: Icons.access_time,
-                      label: 'Time',
-                      value: appointment['time'],
+                    _buildDetailItem(
+                      'Time',
+                      appointment['time'],
                     ),
                     SizedBox(height: 4),
-                    _buildDetailRow(
-                      icon: Icons.local_hospital,
-                      label: 'Hospital',
-                      value: appointment['hospital'],
+                    _buildDetailItem(
+                      'Hospital',
+                      appointment['hospital'],
                     ),
                   ],
                 ),
@@ -1171,22 +1170,19 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
               SizedBox(height: 12),
               
               // Additional details
-              _buildDetailRow(
-                icon: Icons.payment,
-                label: 'Fee',
-                value: appointment['displayAmount'] ?? 'Not specified',
+              _buildDetailItem(
+                'Fee',
+                appointment['displayAmount'] ?? 'Not specified',
               ),
               SizedBox(height: 4),
-              _buildDetailRow(
-                icon: Icons.category,
-                label: 'Type',
-                value: appointment['type'] ?? 'In-person',
+              _buildDetailItem(
+                'Type',
+                appointment['type'] ?? 'In-person',
               ),
               SizedBox(height: 4),
-              _buildDetailRow(
-                icon: Icons.description,
-                label: 'Reason',
-                value: appointment['reason'],
+              _buildDetailItem(
+                'Reason',
+                appointment['reason'],
               ),
             ],
           ),
@@ -1403,7 +1399,32 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
   // Improved dialog UI
   void _showAppointmentDetails(Map<String, dynamic> appointment) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final dialogWidth = screenWidth < 600 ? screenWidth * 0.9 : 500.0;
+    final dialogWidth = screenWidth < 600 ? screenWidth * 0.98 : 700.0;
+    
+    // Determine status color
+    Color statusColor;
+    IconData statusIcon;
+    switch (appointment['status']) {
+      case 'Confirmed':
+        statusColor = Color(0xFF4CAF50);
+        statusIcon = Icons.check_circle;
+        break;
+      case 'Pending':
+        statusColor = Color(0xFFFFC107);
+        statusIcon = Icons.pending;
+        break;
+      case 'Completed':
+        statusColor = AdminTheme.primaryPurple;
+        statusIcon = Icons.task_alt;
+        break;
+      case 'Cancelled':
+        statusColor = Color(0xFFFF5722);
+        statusIcon = Icons.cancel;
+        break;
+      default:
+        statusColor = Colors.grey;
+        statusIcon = Icons.question_mark;
+    }
     
     showDialog(
       context: context,
@@ -1411,73 +1432,379 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
+        elevation: 5,
         child: Container(
           width: dialogWidth,
-          padding: EdgeInsets.all(24),
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Appointment Details',
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+              // Header with status
+              Container(
+                width: double.infinity,
+                color: statusColor.withOpacity(0.1),
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                child: Row(
+                  children: [
+                    Icon(
+                      statusIcon,
+                      color: statusColor,
+                      size: 24,
                     ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                    splashRadius: 24,
-                    tooltip: 'Close',
-                  ),
-                ],
-              ),
-              SizedBox(height: 16),
-              
-              // Scrollable content for small screens
-              Flexible(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildDetailItem('Appointment ID', appointment['id']),
-                      Divider(),
-                      _buildDetailItem('Patient', appointment['patientName']),
-                      _buildDetailItem('Doctor', appointment['doctorName']),
-                      _buildDetailItem('Specialty', appointment['specialty'] ?? 'Not specified'),
-                      Divider(),
-                      _buildDetailItem('Date', appointment['date']),
-                      _buildDetailItem('Time', appointment['time']),
-                      _buildDetailItem('Hospital', appointment['hospital']),
-                      _buildDetailItem('Type', appointment['type'] ?? 'In-person'),
-                      Divider(),
-                      _buildDetailItem('Reason', appointment['reason']),
-                      _buildDetailItem('Fee', appointment['displayAmount'] ?? 'Not specified'),
-                      _buildDetailItem('Status', appointment['status']),
-                      _buildDetailItem('Payment Status', appointment['paymentStatus'] ?? 'Not specified'),
-                    ],
-                  ),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Appointment Details',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          SizedBox(height: 3),
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: statusColor.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: statusColor, width: 1),
+                            ),
+                            child: Text(
+                              appointment['status'],
+                              style: GoogleFonts.poppins(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: statusColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close, size: 18),
+                      onPressed: () => Navigator.pop(context),
+                      splashRadius: 18,
+                      tooltip: 'Close',
+                      color: Colors.black54,
+                      padding: EdgeInsets.all(6),
+                      constraints: BoxConstraints(),
+                    ),
+                  ],
                 ),
               ),
               
-              SizedBox(height: 24),
-              Center(
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AdminTheme.primaryPurple,
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+              // Content
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // ID section
+                        _buildInfoSection(
+                          title: 'Appointment ID',
+                          content: Text(
+                            appointment['id'],
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          padding: EdgeInsets.all(12),
+                        ),
+                        
+                        SizedBox(height: 12),
+                        
+                        // People section
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildLabeledInfo(
+                                'Doctor',
+                                appointment['doctorName'],
+                                subtitle: appointment['specialty'] ?? 'Not specified',
+                                icon: Icons.medical_services,
+                                iconColor: AdminTheme.primaryPurple,
+                                iconSize: 14,
+                                labelFontSize: 11,
+                                valueFontSize: 13,
+                                subtitleFontSize: 11,
+                              ),
+                              SizedBox(height: 12),
+                              _buildLabeledInfo(
+                                'Patient',
+                                appointment['patientName'],
+                                icon: Icons.person,
+                                iconColor: Colors.blue.shade700,
+                                iconSize: 14,
+                                labelFontSize: 11,
+                                valueFontSize: 13,
+                              ),
+                            ],
+                          ),
+                        ),
+                        
+                        SizedBox(height: 12),
+                        
+                        // Date and Time section
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: _buildLabeledInfo(
+                                  'Date',
+                                  appointment['date'],
+                                  icon: Icons.calendar_today,
+                                  iconColor: Colors.green.shade700,
+                                  iconSize: 14,
+                                  labelFontSize: 11,
+                                  valueFontSize: 13,
+                                ),
+                              ),
+                              Container(
+                                height: 35,
+                                width: 1,
+                                color: Colors.grey.shade300,
+                              ),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: _buildLabeledInfo(
+                                  'Time',
+                                  appointment['time'],
+                                  icon: Icons.access_time,
+                                  iconColor: Colors.orange.shade700,
+                                  iconSize: 14,
+                                  labelFontSize: 11,
+                                  valueFontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        
+                        SizedBox(height: 12),
+                        
+                        // Location section
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildLabeledInfo(
+                                'Hospital',
+                                appointment['hospital'],
+                                icon: Icons.local_hospital,
+                                iconColor: Colors.red.shade700,
+                                iconSize: 14,
+                                labelFontSize: 11,
+                                valueFontSize: 13,
+                              ),
+                              SizedBox(height: 12),
+                              _buildLabeledInfo(
+                                'Type',
+                                appointment['type'] ?? 'In-person',
+                                icon: appointment['type'] == 'Video Consultation' 
+                                    ? Icons.videocam 
+                                    : Icons.person,
+                                iconColor: Colors.purple.shade700,
+                                iconSize: 14,
+                                labelFontSize: 11,
+                                valueFontSize: 13,
+                              ),
+                            ],
+                          ),
+                        ),
+                        
+                        SizedBox(height: 12),
+                        
+                        // Details section
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildLabeledInfo(
+                                'Reason',
+                                appointment['reason'],
+                                icon: Icons.description,
+                                iconColor: Colors.teal.shade700,
+                                iconSize: 14,
+                                labelFontSize: 11,
+                                valueFontSize: 13,
+                              ),
+                              SizedBox(height: 12),
+                              _buildLabeledInfo(
+                                'Fee',
+                                appointment['displayAmount'] ?? 'Not specified',
+                                icon: Icons.payments,
+                                iconColor: Colors.green.shade700,
+                                iconSize: 14,
+                                labelFontSize: 11,
+                                valueFontSize: 13,
+                              ),
+                              SizedBox(height: 12),
+                              _buildLabeledInfo(
+                                'Payment Status',
+                                appointment['paymentStatus'] ?? 'Not specified',
+                                icon: Icons.payment,
+                                iconColor: appointment['paymentStatus'] == 'Paid'
+                                    ? Colors.green
+                                    : appointment['paymentStatus'] == 'Pending'
+                                        ? Colors.orange
+                                        : Colors.grey.shade700,
+                                iconSize: 14,
+                                labelFontSize: 11,
+                                valueFontSize: 13,
+                              ),
+                            ],
+                          ),
+                        ),
+                        
+                        SizedBox(height: 16),
+                        
+                        // Action buttons
+                        Row(
+                          children: [
+                            if (appointment['status'] == 'Pending')
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  icon: Icon(Icons.check_circle, size: 16),
+                                  label: Text('Confirm', style: TextStyle(fontSize: 13)),
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    _showConfirmationDialog(
+                                      appointment['id'],
+                                      'Are you sure you want to confirm this appointment?',
+                                      'confirmed',
+                                    );
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Color(0xFF4CAF50),
+                                    foregroundColor: Colors.white,
+                                    padding: EdgeInsets.symmetric(vertical: 10),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                ),
+                              )
+                            else if (appointment['status'] == 'Confirmed')
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  icon: Icon(Icons.done_all, size: 16),
+                                  label: Text('Complete', style: TextStyle(fontSize: 13)),
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    _showConfirmationDialog(
+                                      appointment['id'],
+                                      'Are you sure you want to mark this appointment as completed?',
+                                      'completed',
+                                    );
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AdminTheme.primaryPurple,
+                                    foregroundColor: Colors.white,
+                                    padding: EdgeInsets.symmetric(vertical: 10),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                ),
+                              )
+                            else
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AdminTheme.primaryPurple,
+                                    foregroundColor: Colors.white,
+                                    padding: EdgeInsets.symmetric(vertical: 10),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  child: Text('Close', style: TextStyle(fontSize: 13)),
+                                ),
+                              ),
+                              
+                            if (appointment['status'] == 'Pending' || appointment['status'] == 'Confirmed') ...[
+                              SizedBox(width: 12),
+                              if (appointment['status'] == 'Pending' || appointment['status'] == 'Confirmed')
+                                Expanded(
+                                  child: appointment['status'] == 'Pending' || appointment['status'] == 'Confirmed'
+                                    ? OutlinedButton.icon(
+                                        icon: Icon(Icons.cancel, size: 16),
+                                        label: Text('Cancel', style: TextStyle(fontSize: 13)),
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                          _showConfirmationDialog(
+                                            appointment['id'],
+                                            'Are you sure you want to cancel this appointment?',
+                                            'cancelled',
+                                          );
+                                        },
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: Color(0xFFFF5722),
+                                          side: BorderSide(color: Color(0xFFFF5722)),
+                                          padding: EdgeInsets.symmetric(vertical: 10),
+                                        ),
+                                      )
+                                    : ElevatedButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AdminTheme.primaryPurple,
+                                          foregroundColor: Colors.white,
+                                          padding: EdgeInsets.symmetric(vertical: 10),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                        child: Text('Close', style: TextStyle(fontSize: 13)),
+                                      ),
+                                ),
+                            ],
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  child: Text('Close'),
                 ),
               ),
             ],
@@ -1487,75 +1814,99 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
     );
   }
   
-  Widget _buildDetailItem(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
+  // Helper widgets for appointment details dialog
+  Widget _buildInfoSection({
+    required String title,
+    required Widget content,
+    EdgeInsetsGeometry padding = const EdgeInsets.all(16),
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: padding,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 120,
-            child: Text(
-              label,
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey.shade700,
-              ),
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey.shade600,
             ),
           ),
-          SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              value,
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                color: Colors.black87,
-              ),
-            ),
-          ),
+          SizedBox(height: 6),
+          content,
         ],
       ),
     );
   }
   
-  Widget _buildDetailRow({
-    required IconData icon,
-    required String label,
-    required String value,
+  Widget _buildLabeledInfo(
+    String label, 
+    String value, {
+    IconData? icon, 
+    Color? iconColor,
+    String? subtitle,
+    double iconSize = 16,
+    double labelFontSize = 12,
+    double valueFontSize = 15,
+    double subtitleFontSize = 13,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          icon,
-          size: 16,
-          color: Colors.grey.shade600,
-        ),
-        SizedBox(width: 8),
+        if (icon != null) ...[
+          Container(
+            padding: EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: (iconColor ?? Colors.grey).withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              size: iconSize,
+              color: iconColor ?? Colors.grey.shade700,
+            ),
+          ),
+          SizedBox(width: 8),
+        ],
         Expanded(
-          child: RichText(
-            overflow: TextOverflow.ellipsis,
-            maxLines: 2,
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: '$label: ',
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey.shade700,
-                  ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: labelFontSize,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade600,
                 ),
-                TextSpan(
-                  text: value,
+              ),
+              SizedBox(height: 2),
+              Text(
+                value,
+                style: GoogleFonts.poppins(
+                  fontSize: valueFontSize,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+              ),
+              if (subtitle != null) ...[
+                SizedBox(height: 1),
+                Text(
+                  subtitle,
                   style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    color: Colors.black87,
+                    fontSize: subtitleFontSize,
+                    color: Colors.grey.shade600,
                   ),
                 ),
               ],
-            ),
+            ],
           ),
         ),
       ],
@@ -1590,6 +1941,38 @@ class _AppointmentManagementState extends State<AppointmentManagement> {
               foregroundColor: Colors.white,
             ),
             child: Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailItem(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 120,
+            child: Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ),
+          SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              value,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: Colors.black87,
+              ),
+            ),
           ),
         ],
       ),

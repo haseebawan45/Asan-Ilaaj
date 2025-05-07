@@ -374,9 +374,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with WidgetsBindingOb
                           ? Center(
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(vertical: 20.0),
-                                child: CircularProgressIndicator(
+                                child: LinearProgressIndicator(
                                   color: Colors.white,
-                                  strokeWidth: 2,
+                                  backgroundColor: Colors.white.withOpacity(0.3),
+                                  minHeight: 4,
                                 ),
                               ),
                             )
@@ -508,46 +509,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with WidgetsBindingOb
             // Bottom refresh indicator
             if (_isRefreshing)
               Positioned(
-                bottom: 16,
+                bottom: 0,
                 left: 0,
                 right: 0,
-                child: Center(
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              AppTheme.primaryTeal,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          "Refreshing analytics...",
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            color: AppTheme.mediumText,
-                          ),
-                        ),
-                      ],
-                    ),
+                child: Container(
+                  height: 2,
+                  child: LinearProgressIndicator(
+                    backgroundColor: Colors.transparent,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryTeal),
                   ),
                 ),
               ),

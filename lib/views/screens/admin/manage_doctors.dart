@@ -189,8 +189,15 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final double screenWidth = size.width;
+    
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Color(0xFF407CE2),
+        foregroundColor: Colors.white,
         title: Text(
           'Doctor Profile',
           style: GoogleFonts.poppins(
@@ -203,221 +210,618 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    color: Color(0xFF407CE2),
+                  ),
+                  SizedBox(height: 16),
+                  Text('Loading doctor profile...'),
+                ],
+              ),
+            )
           : _doctorData == null
               ? Center(
-                  child: Text(
-                    'Doctor profile not found',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Doctor profile header
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CircleAvatar(
-                            radius: 40,
-                            backgroundImage: _doctorData!['profilePicture'] != null
-                                ? NetworkImage(_doctorData!['profilePicture'])
-                                : _doctorData!['profileImageUrl'] != null
-                                    ? NetworkImage(_doctorData!['profileImageUrl'])
-                                    : null,
-                            child: (_doctorData!['profilePicture'] == null && _doctorData!['profileImageUrl'] == null)
-                                ? const Icon(Icons.person, size: 40)
-                                : null,
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Dr. ${_doctorData!['name'] ?? _doctorData!['fullName'] ?? 'Unknown'}',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Text(
-                                  _doctorData!['specialization'] ?? _doctorData!['specialty'] ?? 'Specialization not specified',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 16,
-                                    color: Colors.blue[700],
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  _doctorData!['status'] ?? (_doctorData!['isActive'] == true ? 'Active' : 'Inactive'),
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: _doctorData!['status'] == 'Active' || _doctorData!['isActive'] == true
-                                        ? Colors.green
-                                        : Colors.red,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                      Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: Colors.red[300],
                       ),
-                      
-                      const SizedBox(height: 24),
-                      
-                      // Doctor info sections
-                      _buildInfoSection('Contact Information', [
-                        _buildInfoItem(Icons.email, 'Email', _doctorData!['email'] ?? 'Not provided'),
-                        _buildInfoItem(Icons.phone, 'Phone', _doctorData!['phoneNumber'] ?? 'Not provided'),
-                      ]),
-                      
                       const SizedBox(height: 16),
-                      
-                      _buildInfoSection('Professional Details', [
-                        _buildInfoItem(Icons.work, 'Experience', '${_doctorData!['experience'] ?? 'Not specified'} years'),
-                        _buildInfoItem(Icons.attach_money, 'Fee', 'Rs. ${_doctorData!['fee'] ?? 'Not specified'}'),
-                        _buildInfoItem(Icons.star, 'Rating', '${_overallRating.toStringAsFixed(1)}/5.0'),
-                      ]),
-                      
-                      const SizedBox(height: 16),
-                      
-                      _buildInfoSection('About', [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: Text(
-                            _doctorData!['bio'] ?? 'No biography provided.',
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                            ),
-                          ),
+                      Text(
+                        'Doctor profile not found',
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
                         ),
-                      ]),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // Reviews Section
-                      _buildInfoSection(
-                        'Patient Reviews (${_reviewCount})', 
-                        [
-                          if (_loadingReviews)
-                            const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(16.0),
-                                child: CircularProgressIndicator(),
-                              ),
-                            )
-                          else if (_reviews.isEmpty)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 16.0),
-                              child: Center(
-                                child: Text(
-                                  'No reviews available',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ),
-                            )
-                          else
-                            Column(
-                              children: [
-                                // Rating summary card
-                                Container(
-                                  padding: const EdgeInsets.all(16),
-                                  margin: const EdgeInsets.only(bottom: 16),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[50],
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.grey[200]!),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Text(
-                                        _overallRating.toStringAsFixed(1),
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 30,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color.fromRGBO(64, 124, 226, 1),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: List.generate(5, (index) {
-                                              return Icon(
-                                                index < _overallRating
-                                                    ? Icons.star
-                                                    : index < _overallRating + 0.5
-                                                        ? Icons.star_half
-                                                        : Icons.star_border,
-                                                color: Colors.amber,
-                                                size: 20,
-                                              );
-                                            }),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            "Based on $_reviewCount reviews",
-                                            style: GoogleFonts.poppins(
-                                              color: Colors.grey[600],
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                // Individual reviews
-                                ...(_reviews.map((review) => _buildReviewItem(review)).toList()),
-                              ],
-                            ),
-                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('Go Back'),
                       ),
                     ],
                   ),
+                )
+              : CustomScrollView(
+                  slivers: [
+                    // Profile Header with gradient background
+                    SliverToBoxAdapter(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Color(0xFF407CE2),
+                              Color(0xFF407CE2).withOpacity(0.8),
+                              Color(0xFF407CE2).withOpacity(0.0),
+                            ],
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                          child: Column(
+                            children: [
+                              // Doctor profile avatar
+                              Hero(
+                                tag: 'doctor-avatar-${widget.doctorId}',
+                                child: Container(
+                                  width: 120,
+                                  height: 120,
+                                  margin: const EdgeInsets.only(bottom: 16),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 20,
+                                        spreadRadius: 5,
+                                      ),
+                                    ],
+                                    image: _doctorData!['profilePicture'] != null
+                                        ? DecorationImage(
+                                            image: NetworkImage(_doctorData!['profilePicture']),
+                                            fit: BoxFit.cover,
+                                          )
+                                        : _doctorData!['profileImageUrl'] != null
+                                            ? DecorationImage(
+                                                image: NetworkImage(_doctorData!['profileImageUrl']),
+                                                fit: BoxFit.cover,
+                                              )
+                                            : null,
+                                  ),
+                                  child: (_doctorData!['profilePicture'] == null && _doctorData!['profileImageUrl'] == null)
+                                      ? Icon(Icons.person, size: 60, color: Colors.grey[400])
+                                      : null,
+                                ),
+                              ),
+                              
+                              // Doctor name
+                              Text(
+                                'Dr. ${_doctorData!['name'] ?? _doctorData!['fullName'] ?? 'Unknown'}',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              
+                              // Specialization
+                              Text(
+                                _doctorData!['specialization'] ?? _doctorData!['specialty'] ?? 'Specialization not specified',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  color: Colors.white.withOpacity(0.9),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              
+                              const SizedBox(height: 16),
+                              
+                              // Status badge
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: _doctorData!['status'] == 'Active' || _doctorData!['isActive'] == true
+                                      ? Colors.green.withOpacity(0.2)
+                                      : Colors.red.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: _doctorData!['status'] == 'Active' || _doctorData!['isActive'] == true
+                                        ? Colors.green
+                                        : Colors.red,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      _doctorData!['status'] == 'Active' || _doctorData!['isActive'] == true
+                                          ? Icons.check_circle
+                                          : Icons.cancel,
+                                      size: 18,
+                                      color: _doctorData!['status'] == 'Active' || _doctorData!['isActive'] == true
+                                          ? Colors.green
+                                          : Colors.red,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _doctorData!['status'] ?? (_doctorData!['isActive'] == true ? 'Active' : 'Inactive'),
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: _doctorData!['status'] == 'Active' || _doctorData!['isActive'] == true
+                                            ? Colors.green
+                                            : Colors.red,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              
+                              // Quick stats row
+                              Container(
+                                margin: const EdgeInsets.only(top: 24),
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 10,
+                                      spreadRadius: 0,
+                                      offset: const Offset(0, 5),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    _buildQuickStat(
+                                      Icons.star,
+                                      '${_overallRating.toStringAsFixed(1)}',
+                                      'Rating',
+                                      Colors.amber,
+                                    ),
+                                    _buildDivider(),
+                                    _buildQuickStat(
+                                      Icons.work,
+                                      '${_doctorData!['experience'] ?? 'N/A'}',
+                                      'Years',
+                                      Colors.blue[700]!,
+                                    ),
+                                    _buildDivider(),
+                                    _buildQuickStat(
+                                      Icons.people,
+                                      '$_reviewCount',
+                                      'Reviews',
+                                      Colors.green,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    // Info Sections
+                    SliverList(
+                      delegate: SliverChildListDelegate([
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Doctor info sections with enhanced UI
+                              _buildInfoSection(
+                                'Contact Information',
+                                icon: Icons.contact_phone,
+                                iconColor: Color(0xFF407CE2),
+                                children: [
+                                  _buildInfoItem(Icons.email, 'Email', _doctorData!['email'] ?? 'Not provided'),
+                                  _buildInfoItem(Icons.phone, 'Phone', _doctorData!['phoneNumber'] ?? 'Not provided'),
+                                ],
+                              ),
+                              
+                              const SizedBox(height: 16),
+                              
+                              _buildInfoSection(
+                                'Professional Details',
+                                icon: Icons.badge,
+                                iconColor: Color(0xFF00897B),
+                                children: [
+                                  _buildInfoItem(Icons.work, 'Experience', '${_doctorData!['experience'] ?? 'Not specified'} years'),
+                                  _buildInfoItem(Icons.attach_money, 'Fee', 'Rs. ${_doctorData!['fee'] ?? 'Not specified'}'),
+                                  _buildInfoItem(Icons.star, 'Rating', '${_overallRating.toStringAsFixed(1)}/5.0'),
+                                ],
+                              ),
+                              
+                              const SizedBox(height: 16),
+                              
+                              _buildInfoSection(
+                                'About',
+                                icon: Icons.person,
+                                iconColor: Color(0xFF5E35B1),
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[50],
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.grey[100]!),
+                                    ),
+                                    child: Text(
+                                      _doctorData!['bio'] ?? 'No biography provided.',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        color: Colors.grey[800],
+                                        height: 1.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              
+                              const SizedBox(height: 24),
+                              
+                              // Reviews Section with improved UI
+                              _buildInfoSection(
+                                'Patient Reviews (${_reviewCount})',
+                                icon: Icons.rate_review,
+                                iconColor: Color(0xFFEF6C00),
+                                children: [
+                                  if (_loadingReviews)
+                                    const Center(
+                                      child: Padding(
+                                        padding: EdgeInsets.all(16.0),
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    )
+                                  else if (_reviews.isEmpty)
+                                    Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.all(24),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[50],
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: Colors.grey[200]!),
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          Icon(
+                                            Icons.rate_review_outlined,
+                                            size: 48,
+                                            color: Colors.grey[400],
+                                          ),
+                                          const SizedBox(height: 16),
+                                          Text(
+                                            'No reviews available yet',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.grey[600],
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                          Text(
+                                            'This doctor has not received any reviews',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 14,
+                                              color: Colors.grey[500],
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  else
+                                    Column(
+                                      children: [
+                                        // Rating summary card
+                                        Container(
+                                          padding: const EdgeInsets.all(16),
+                                          margin: const EdgeInsets.only(bottom: 16),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(12),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.grey.withOpacity(0.1),
+                                                spreadRadius: 0,
+                                                blurRadius: 10,
+                                                offset: const Offset(0, 4),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Column(
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Container(
+                                                    width: 70,
+                                                    height: 70,
+                                                    decoration: BoxDecoration(
+                                                      color: Color(0xFF407CE2).withOpacity(0.1),
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                    child: Center(
+                                                      child: Text(
+                                                        _overallRating.toStringAsFixed(1),
+                                                        style: GoogleFonts.poppins(
+                                                          fontSize: 30,
+                                                          fontWeight: FontWeight.bold,
+                                                          color: Color(0xFF407CE2),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 16),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        Row(
+                                                          children: List.generate(5, (index) {
+                                                            return Icon(
+                                                              index < _overallRating
+                                                                  ? Icons.star
+                                                                  : index < _overallRating + 0.5
+                                                                      ? Icons.star_half
+                                                                      : Icons.star_border,
+                                                              color: Colors.amber,
+                                                              size: 24,
+                                                            );
+                                                          }),
+                                                        ),
+                                                        const SizedBox(height: 8),
+                                                        Text(
+                                                          "Based on $_reviewCount reviews",
+                                                          style: GoogleFonts.poppins(
+                                                            color: Colors.grey[600],
+                                                            fontSize: 14,
+                                                            fontWeight: FontWeight.w500,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              
+                                              // Animated rating bars visualization
+                                              if (_reviewCount > 0) ...[
+                                                const SizedBox(height: 16),
+                                                Divider(),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  "Rating Distribution",
+                                                  style: GoogleFonts.poppins(
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 8),
+                                                for (int i = 5; i >= 1; i--)
+                                                  _buildRatingBar(i, _getRatingPercentage(i)),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
+                                        
+                                        // Individual reviews
+                                        ...(_reviews.map((review) => _buildReviewItem(review)).toList()),
+                                      ],
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ]),
+                    ),
+                  ],
                 ),
     );
   }
+
+  Widget _buildQuickStat(IconData icon, String value, String label, Color color) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            color: color,
+            size: 20,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey[800],
+          ),
+        ),
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDivider() {
+    return Container(
+      height: 40,
+      width: 1,
+      color: Colors.grey[300],
+    );
+  }
+
+  double _getRatingPercentage(int rating) {
+    if (_reviewCount == 0) return 0;
+    int count = _reviews.where((review) {
+      final reviewRating = review['rating'] is double 
+          ? (review['rating'] as double).round()
+          : (review['rating'] is int) 
+              ? (review['rating'] as int) 
+              : 0;
+      return reviewRating == rating;
+    }).length;
+    return count / _reviewCount;
+  }
+
+  Widget _buildRatingBar(int rating, double percentage) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 30,
+            child: Row(
+              children: [
+                Text(
+                  '$rating',
+                  style: GoogleFonts.poppins(
+                    color: Colors.grey[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Icon(
+                  Icons.star,
+                  size: 14,
+                  color: Colors.amber,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Stack(
+              children: [
+                // Background bar
+                Container(
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                // Foreground bar
+                Container(
+                  height: 8,
+                  width: MediaQuery.of(context).size.width * 0.5 * percentage,
+                  decoration: BoxDecoration(
+                    color: rating >= 4 
+                        ? Colors.green 
+                        : rating >= 3 
+                            ? Colors.amber 
+                            : Colors.red,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 40,
+            child: Text(
+              '${(percentage * 100).toInt()}%',
+              textAlign: TextAlign.right,
+              style: GoogleFonts.poppins(
+                color: Colors.grey[600],
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
   
-  Widget _buildInfoSection(String title, List<Widget> children) {
+  Widget _buildInfoSection(String title, {required IconData icon, required Color iconColor, required List<Widget> children}) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 1),
+            spreadRadius: 0,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
+          // Section header with icon
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.grey[200]!,
+                  width: 1,
+                ),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: iconColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: iconColor, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 12),
-          ...children,
+          // Section content
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: children,
+            ),
+          ),
         ],
       ),
     );
@@ -437,25 +841,43 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
             child: Icon(icon, color: Colors.blue[700], size: 20),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: Colors.grey[600],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
                 ),
-              ),
-              Text(
-                value,
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                Text(
+                  value,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+          if (label == 'Email' || label == 'Phone')
+            IconButton(
+              icon: Icon(
+                label == 'Email' ? Icons.email : Icons.call,
+                color: Color(0xFF407CE2),
+                size: 20,
+              ),
+              onPressed: () async {
+                final Uri uri = Uri.parse(
+                  label == 'Email' ? 'mailto:$value' : 'tel:$value',
+                );
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri);
+                }
+              },
+            ),
         ],
       ),
     );
@@ -473,7 +895,6 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
     
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -484,99 +905,145 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
             offset: const Offset(0, 2),
           ),
         ],
-        border: Border.all(color: Colors.grey[100]!),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 18,
-                      backgroundColor: Colors.blue.withOpacity(0.1),
-                      child: Text(
-                        review['patientName'].toString().substring(0, 1).toUpperCase(),
-                        style: GoogleFonts.poppins(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.w600,
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xFF407CE2),
+                              Color(0xFF5E35B1),
+                            ],
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            review['patientName'].toString().substring(0, 1).toUpperCase(),
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 18,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            review['patientName'],
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              review['patientName'],
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            formattedDate,
-                            style: GoogleFonts.poppins(
-                              color: Colors.grey[500],
-                              fontSize: 12,
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.calendar_today,
+                                  size: 12,
+                                  color: Colors.grey[500],
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  formattedDate,
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.grey[500],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.amber.withOpacity(0.3),
+                    ],
                   ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.star,
-                      color: Colors.amber,
-                      size: 16,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: rating >= 4 
+                        ? Colors.green.withOpacity(0.1)
+                        : rating >= 3
+                            ? Colors.amber.withOpacity(0.1)
+                            : Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: rating >= 4 
+                          ? Colors.green.withOpacity(0.3)
+                          : rating >= 3
+                              ? Colors.amber.withOpacity(0.3)
+                              : Colors.red.withOpacity(0.3),
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      rating.toStringAsFixed(1),
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                        color: Colors.amber[800],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.star,
+                        color: rating >= 4 
+                            ? Colors.green
+                            : rating >= 3
+                                ? Colors.amber
+                                : Colors.red,
+                        size: 16,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 4),
+                      Text(
+                        rating.toStringAsFixed(1),
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                          color: rating >= 4 
+                              ? Colors.green[800]
+                              : rating >= 3
+                                  ? Colors.amber[800]
+                                  : Colors.red[800],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(8),
+              ],
             ),
-            child: Text(
-              review['comment'],
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                color: Colors.grey[800],
-                height: 1.5,
+          ),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey[100]!),
+              ),
+              child: Text(
+                review['comment'],
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: Colors.grey[800],
+                  height: 1.5,
+                ),
               ),
             ),
           ),
@@ -675,53 +1142,131 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
     String title = '';
     String content = '';
     Color confirmColor = Colors.red;
+    IconData actionIcon = Icons.help_outline;
     
     switch (action) {
       case 'approve':
         title = 'Approve Doctor';
         content = 'Are you sure you want to approve this doctor? They will be able to accept appointments from patients.';
-        confirmColor = Color(0xFF4CAF50);
+        confirmColor = Color(0xFF43A047);
+        actionIcon = Icons.check_circle;
         break;
       case 'reject':
         title = 'Reject Doctor';
         content = 'Are you sure you want to reject this doctor\'s application?';
         confirmColor = Color(0xFFFF5722);
+        actionIcon = Icons.cancel;
         break;
       case 'block':
         title = 'Block Doctor';
         content = 'Are you sure you want to block this doctor? They will not be able to access the platform until unblocked.';
         confirmColor = Color(0xFFFF5722);
+        actionIcon = Icons.block;
         break;
       case 'unblock':
         title = 'Unblock Doctor';
         content = 'Are you sure you want to unblock this doctor? They will regain access to the platform.';
-        confirmColor = Color(0xFF4CAF50);
+        confirmColor = Color(0xFF43A047);
+        actionIcon = Icons.check_circle;
         break;
       case 'delete':
         title = 'Delete Doctor';
         content = 'Are you sure you want to permanently delete this doctor? This action cannot be undone.';
         confirmColor = Colors.red.shade700;
+        actionIcon = Icons.delete_forever;
         break;
     }
     
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(content),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              actionIcon,
+              color: confirmColor,
+            ),
+            SizedBox(width: 10),
+            Text(
+              title,
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              content,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: Colors.grey[800],
+              ),
+            ),
+            SizedBox(height: 16),
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundImage: doctor['profileImageUrl'] != null && doctor['profileImageUrl'].toString().isNotEmpty
+                      ? NetworkImage(doctor['profileImageUrl']) as ImageProvider
+                      : null,
+                  child: doctor['profileImageUrl'] == null || doctor['profileImageUrl'].toString().isEmpty
+                      ? Icon(Icons.person, size: 16, color: Colors.grey[600])
+                      : null,
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Dr. ${doctor['name'] ?? 'Unknown'}',
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.grey[700],
+            ),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               _performAction(action, doctor);
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: confirmColor,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             child: Text(
               action.substring(0, 1).toUpperCase() + action.substring(1),
-              style: TextStyle(color: confirmColor),
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
@@ -965,82 +1510,213 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(20.0),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundImage: doctor['profileImageUrl'] != null
+                      ? NetworkImage(doctor['profileImageUrl'])
+                      : null,
+                  child: doctor['profileImageUrl'] == null
+                      ? Icon(Icons.person, color: Colors.white)
+                      : null,
+                  backgroundColor: Color(0xFF407CE2),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Contact Dr. ${doctor['name']}',
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        doctor['specialty'] ?? 'Specialist',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
+            Divider(),
+            SizedBox(height: 8),
             Text(
-              'Contact Dr. ${doctor['name']}',
+              'Contact Options',
               style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[700],
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 16),
             if (email.isNotEmpty)
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () async {
+                    // Launch email client
+                    final Uri emailUri = Uri.parse('mailto:$email');
+                    if (await canLaunchUrl(emailUri)) {
+                      await launchUrl(emailUri);
+                      Navigator.pop(context);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Could not launch email client')),
+                      );
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withOpacity(0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.email, color: Colors.blue),
+                          ),
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Email',
+                                  style: GoogleFonts.poppins(
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                Text(
+                                  email,
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.grey[600],
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            size: 16,
+                            color: Colors.grey[600],
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  child: const Icon(Icons.email, color: Colors.blue),
                 ),
-                title: Text(
-                  'Email',
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                subtitle: Text(email),
-                onTap: () async {
-                  // Launch email client
-                  final Uri emailUri = Uri.parse('mailto:$email');
-                  if (await canLaunchUrl(emailUri)) {
-                    await launchUrl(emailUri);
-                    Navigator.pop(context);
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Could not launch email client')),
-                    );
-                  }
-                },
               ),
+            if (email.isNotEmpty && phone.isNotEmpty)
+              SizedBox(height: 16),
             if (phone.isNotEmpty)
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () async {
+                    // Launch phone dialer
+                    final Uri phoneUri = Uri.parse('tel:$phone');
+                    if (await canLaunchUrl(phoneUri)) {
+                      await launchUrl(phoneUri);
+                      Navigator.pop(context);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Could not launch phone dialer')),
+                      );
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.phone, color: Colors.green),
+                          ),
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Phone',
+                                  style: GoogleFonts.poppins(
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                Text(
+                                  phone,
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.grey[600],
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            size: 16,
+                            color: Colors.grey[600],
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  child: const Icon(Icons.phone, color: Colors.green),
                 ),
-                title: Text(
-                  'Phone',
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                subtitle: Text(phone),
-                onTap: () async {
-                  // Launch phone dialer
-                  final Uri phoneUri = Uri.parse('tel:$phone');
-                  if (await canLaunchUrl(phoneUri)) {
-                    await launchUrl(phoneUri);
-                    Navigator.pop(context);
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Could not launch phone dialer')),
-                    );
-                  }
-                },
               ),
+            SizedBox(height: 24),
           ],
         ),
       ),
@@ -1057,14 +1733,35 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
   }
   
   void _showBlockDoctorDialog(Map<String, dynamic> doctor) {
+    final TextEditingController reasonController = TextEditingController();
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
-          'Block Doctor',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w600,
-          ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.block,
+                color: Colors.red[400],
+              ),
+            ),
+            SizedBox(width: 12),
+            Text(
+              'Block Doctor',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1074,19 +1771,34 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
               'Are you sure you want to block Dr. ${doctor['name']}?',
               style: GoogleFonts.poppins(),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              decoration: InputDecoration(
-                hintText: 'Reason for blocking (optional)',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 12,
-                ),
+            const SizedBox(height: 8),
+            Text(
+              'This action will prevent the doctor from accessing the platform.',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                color: Colors.grey[600],
               ),
-              maxLines: 3,
+            ),
+            const SizedBox(height: 16),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: TextField(
+                controller: reasonController,
+                decoration: InputDecoration(
+                  hintText: 'Reason for blocking (optional)',
+                  hintStyle: GoogleFonts.poppins(
+                    color: Colors.grey[400],
+                    fontSize: 14,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.all(16),
+                ),
+                maxLines: 3,
+              ),
             ),
           ],
         ),
@@ -1100,7 +1812,7 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
               ),
             ),
           ),
-          ElevatedButton(
+          ElevatedButton.icon(
             onPressed: () {
               Navigator.pop(context);
               _blockDoctor(doctor);
@@ -1108,8 +1820,13 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red[400],
               foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
-            child: Text(
+            icon: Icon(Icons.block, size: 18),
+            label: Text(
               'Block',
               style: GoogleFonts.poppins(),
             ),
@@ -1201,28 +1918,103 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
         return false; // Prevent default back button behavior
       },
       child: Scaffold(
+        backgroundColor: Colors.grey[50],
         appBar: AppBar(
-          title: Text('Manage Doctors'),
-          bottom: TabBar(
-            controller: _tabController,
-            tabs: [
-              Tab(text: 'Available'),
-              Tab(text: 'Blocked'),
-            ],
+          elevation: 0,
+          backgroundColor: Color(0xFF407CE2),
+          foregroundColor: Colors.white,
+          title: Text(
+            'Manage Doctors',
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600,
+              fontSize: 20,
+            ),
+          ),
+          actions: [
+            IconButton(
+              icon: Icon(Icons.refresh),
+              onPressed: _loadDoctors,
+              tooltip: 'Refresh',
+            ),
+            SizedBox(width: 8),
+          ],
+          bottom: PreferredSize(
+            preferredSize: Size.fromHeight(48),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Color(0xFF407CE2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: TabBar(
+                controller: _tabController,
+                indicatorColor: Colors.white,
+                indicatorWeight: 3,
+                labelStyle: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+                unselectedLabelStyle: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 16,
+                ),
+                tabs: [
+                  Tab(text: 'Available'),
+                  Tab(text: 'Blocked'),
+                ],
+              ),
+            ),
           ),
         ),
         body: SafeArea(
           child: Column(
             children: [
-              Padding(
+              Container(
                 padding: EdgeInsets.all(padding),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 6,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
+                ),
                 child: TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'Search doctors...',
-                    prefixIcon: Icon(Icons.search),
+                    hintText: 'Search doctors by name, specialty...',
+                    hintStyle: GoogleFonts.poppins(
+                      color: Colors.grey[400],
+                      fontSize: 14,
+                    ),
+                    prefixIcon: Icon(Icons.search, color: Color(0xFF407CE2)),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(Icons.clear, color: Colors.grey[600]),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {
+                                _searchQuery = '';
+                              });
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: Colors.grey[100],
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16,
                     ),
                   ),
                   onChanged: (value) {
@@ -1235,7 +2027,24 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
               
               Expanded(
                 child: _isLoading
-                    ? Center(child: CircularProgressIndicator())
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(
+                              color: Color(0xFF407CE2),
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'Loading doctors...',
+                              style: GoogleFonts.poppins(
+                                color: Colors.grey[600],
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
                     : TabBarView(
                         controller: _tabController,
                         children: [
@@ -1261,13 +2070,17 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.person_off,
+              status == 'blocked' ? Icons.person_off : Icons.person_search,
               size: screenWidth * 0.2,
               color: Colors.grey.shade400,
             ),
             SizedBox(height: screenHeight * 0.02),
             Text(
-              'No doctors found',
+              _searchQuery.isNotEmpty 
+                 ? 'No matching doctors found'
+                 : status == 'blocked' 
+                    ? 'No blocked doctors'
+                    : 'No available doctors',
               style: GoogleFonts.poppins(
                 fontSize: screenWidth * 0.045,
                 fontWeight: FontWeight.w600,
@@ -1276,9 +2089,14 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
             ),
             if (_searchQuery.isNotEmpty)
               Padding(
-                padding: EdgeInsets.only(top: screenHeight * 0.01),
+                padding: EdgeInsets.only(
+                  top: screenHeight * 0.01,
+                  left: screenWidth * 0.1,
+                  right: screenWidth * 0.1,
+                ),
                 child: Text(
-                  'Try a different search query',
+                  'Try a different search query or check the other tab',
+                  textAlign: TextAlign.center,
                   style: GoogleFonts.poppins(
                     fontSize: screenWidth * 0.035,
                     color: Colors.grey.shade600,
@@ -1319,31 +2137,43 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
         borderRadius: BorderRadius.circular(screenWidth * 0.03),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 6,
-            offset: const Offset(0, 3),
+            color: Colors.grey.withOpacity(0.08),
+            spreadRadius: 0,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-        child: Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+        children: [
           Padding(
             padding: EdgeInsets.all(cardPadding),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Doctor Avatar
-                CircleAvatar(
-                  radius: avatarRadius,
-                  backgroundColor: Colors.grey[200],
-                  backgroundImage: doctor['profileImageUrl'] != null && doctor['profileImageUrl'].toString().isNotEmpty
-                      ? NetworkImage(doctor['profileImageUrl']) as ImageProvider
-                      : null,
-                  child: doctor['profileImageUrl'] == null || doctor['profileImageUrl'].toString().isEmpty
-                      ? Icon(Icons.person, size: avatarRadius, color: Colors.grey[600])
-                      : null,
+                // Doctor Avatar with animated border for active doctors
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blue.withOpacity(0.2),
+                        blurRadius: 8,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: CircleAvatar(
+                    radius: avatarRadius,
+                    backgroundColor: Colors.grey[200],
+                    backgroundImage: doctor['profileImageUrl'] != null && doctor['profileImageUrl'].toString().isNotEmpty
+                        ? NetworkImage(doctor['profileImageUrl']) as ImageProvider
+                        : null,
+                    child: doctor['profileImageUrl'] == null || doctor['profileImageUrl'].toString().isEmpty
+                        ? Icon(Icons.person, size: avatarRadius, color: Colors.grey[600])
+                        : null,
+                  ),
                 ),
                 SizedBox(width: screenWidth * 0.04),
                 
@@ -1362,6 +2192,7 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
                               style: GoogleFonts.poppins(
                                 fontSize: isSmallScreen ? screenWidth * 0.04 : screenWidth * 0.045,
                                 fontWeight: FontWeight.w600,
+                                color: Colors.grey[800],
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -1377,26 +2208,52 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
                               borderRadius: BorderRadius.circular(screenWidth * 0.075),
                               border: Border.all(color: statusColor, width: 1),
                             ),
-                            child: Text(
-                              status,
-                              style: GoogleFonts.poppins(
-                                fontSize: isSmallScreen ? screenWidth * 0.03 : screenWidth * 0.035,
-                                color: statusColor,
-                                fontWeight: FontWeight.w500,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isActive ? Icons.check_circle : Icons.cancel,
+                                  size: screenWidth * 0.03,
+                                  color: statusColor,
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  status,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: isSmallScreen ? screenWidth * 0.03 : screenWidth * 0.035,
+                                    color: statusColor,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                       SizedBox(height: textSpacing),
                       
-                      // Specialty
-                      Text(
-                        doctor['specialty'] ?? 'General',
-                        style: GoogleFonts.poppins(
-                          fontSize: screenWidth * 0.035,
-                          color: Colors.grey[700],
-                        ),
+                      // Specialty with icon
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.local_hospital,
+                            size: iconSize,
+                            color: Color(0xFF407CE2),
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              doctor['specialty'] ?? 'General',
+                              style: GoogleFonts.poppins(
+                                fontSize: screenWidth * 0.035,
+                                color: Colors.grey[700],
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                       SizedBox(height: textSpacing),
                       
@@ -1404,33 +2261,72 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
                       Row(
                         children: [
                           // Rating
-                          Icon(
-                            Icons.star,
-                            color: Colors.amber,
-                            size: iconSize,
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.star,
+                                  color: Colors.amber,
+                                  size: iconSize,
+                                ),
+                                SizedBox(width: screenWidth * 0.01),
+                                Text(
+                                  '${doctor['rating'] ?? '0.0'}',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: screenWidth * 0.03,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.amber[800],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          SizedBox(width: screenWidth * 0.01),
                           Text(
-                            '${doctor['rating'] ?? '0.0'} (${doctor['reviewCount'] ?? 0})',
+                            ' (${doctor['reviewCount'] ?? 0})',
                             style: GoogleFonts.poppins(
                               fontSize: screenWidth * 0.03,
-                              color: Colors.grey[800],
+                              color: Colors.grey[600],
                             ),
                           ),
                           SizedBox(width: screenWidth * 0.04),
                           
                           // Experience
-                          Icon(
-                            Icons.work,
-                            color: Colors.blue[700],
-                            size: iconSize,
-                          ),
-                          SizedBox(width: screenWidth * 0.01),
-                          Text(
-                            '${doctor['experience'] ?? 'N/A'} experience',
-                            style: GoogleFonts.poppins(
-                              fontSize: screenWidth * 0.03,
-                              color: Colors.grey[800],
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.work,
+                                  color: Colors.blue[700],
+                                  size: iconSize,
+                                ),
+                                SizedBox(width: screenWidth * 0.01),
+                                Text(
+                                  '${doctor['experience'] ?? 'N/A'} yrs',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: screenWidth * 0.03,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.blue[700],
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -1468,13 +2364,21 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
             ),
           ),
           
-          // Doctor Stats
-          Padding(
-            padding: EdgeInsets.fromLTRB(
+          // Doctor Stats - Enhanced with visual indicators
+          Container(
+            margin: EdgeInsets.fromLTRB(
               cardPadding, 
               0, 
               cardPadding, 
               screenHeight * 0.01
+            ),
+            padding: EdgeInsets.symmetric(
+              vertical: 12,
+              horizontal: 16,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -1484,6 +2388,7 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
                   '${doctor['appointmentCount'] ?? 0}',
                   'Appointments',
                   screenWidth,
+                  color: Color(0xFF5E35B1),
                 ),
                 if (doctor['fee'] != null && doctor['fee'] != 0)
                   _buildStatItem(
@@ -1491,6 +2396,7 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
                     'Rs. ${doctor['fee']}',
                     'Fee',
                     screenWidth,
+                    color: Color(0xFF00897B),
                   ),
                 if (doctor['profileComplete'] == true)
                   _buildStatItem(
@@ -1498,7 +2404,7 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
                     'Complete',
                     'Profile',
                     screenWidth,
-                    color: Colors.green,
+                    color: Color(0xFF43A047),
                   )
                 else
                   _buildStatItem(
@@ -1506,23 +2412,29 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
                     'Incomplete',
                     'Profile',
                     screenWidth,
-                    color: Colors.orange,
+                    color: Color(0xFFEF6C00),
                   ),
               ],
             ),
           ),
           
-          // Action Buttons
+          // Action Buttons with improved layout and visual style
           Container(
             padding: EdgeInsets.symmetric(
               horizontal: cardPadding, 
               vertical: screenHeight * 0.015
             ),
             decoration: BoxDecoration(
-              color: Colors.grey[50],
+              color: Colors.white,
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(screenWidth * 0.03),
                 bottomRight: Radius.circular(screenWidth * 0.03),
+              ),
+              border: Border(
+                top: BorderSide(
+                  color: Colors.grey[200]!,
+                  width: 1,
+                ),
               ),
             ),
             child: LayoutBuilder(
@@ -1541,8 +2453,8 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
                           _contactDoctor(doctor);
                         },
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Theme.of(context).primaryColor,
-                          side: BorderSide(color: Theme.of(context).primaryColor),
+                          foregroundColor: Color(0xFF407CE2),
+                          side: BorderSide(color: Color(0xFF407CE2)),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(screenWidth * 0.02),
                           ),
@@ -1563,6 +2475,7 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
                                   'Contact',
                                   style: GoogleFonts.poppins(
                                     fontSize: screenWidth * 0.03,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                             ],
@@ -1580,8 +2493,9 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
                           _viewDoctorProfile(doctor);
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).primaryColor,
+                          backgroundColor: Color(0xFF407CE2),
                           foregroundColor: Colors.white,
+                          elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(screenWidth * 0.02),
                           ),
@@ -1602,6 +2516,7 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
                                   'View',
                                   style: GoogleFonts.poppins(
                                     fontSize: screenWidth * 0.03,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                             ],
@@ -1621,6 +2536,7 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.red[400],
                                 foregroundColor: Colors.white,
+                                elevation: 0,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(screenWidth * 0.02),
                                 ),
@@ -1641,6 +2557,7 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
                                         'Block',
                                         style: GoogleFonts.poppins(
                                           fontSize: screenWidth * 0.03,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                   ],
@@ -1654,6 +2571,7 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.green[400],
                                 foregroundColor: Colors.white,
+                                elevation: 0,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(screenWidth * 0.02),
                                 ),
@@ -1674,6 +2592,7 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
                                         'Activate',
                                         style: GoogleFonts.poppins(
                                           fontSize: screenWidth * 0.03,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                   ],
@@ -1702,35 +2621,45 @@ class _ManageDoctorsState extends State<ManageDoctors> with SingleTickerProvider
     final double fontSize = screenWidth * 0.035;
     final double smallFontSize = screenWidth * 0.03;
     
-    return Column(
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: iconSize,
-              color: color,
-            ),
-            SizedBox(width: screenWidth * 0.01),
-            Text(
-              value,
-              style: GoogleFonts.poppins(
-                fontSize: fontSize,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[800],
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 6,
+      ),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: iconSize,
+                color: color,
               ),
-            ),
-          ],
-        ),
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: smallFontSize,
-            color: Colors.grey[600],
+              SizedBox(width: screenWidth * 0.01),
+              Text(
+                value,
+                style: GoogleFonts.poppins(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: smallFontSize,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
