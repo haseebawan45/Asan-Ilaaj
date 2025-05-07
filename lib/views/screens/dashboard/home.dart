@@ -1057,7 +1057,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         bottom: 0,
                         left: 0,
                         right: 0,
-                        child: Container(
+                          child: Container(
                           height: 2,
                           child: LinearProgressIndicator(
                             backgroundColor: Colors.transparent,
@@ -1564,10 +1564,16 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(screenWidth * 0.04),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 12,
-              offset: Offset(0, 6),
+              color: AppTheme.primaryPink.withOpacity(0.08),
+              blurRadius: 10,
+              offset: Offset(0, 4),
               spreadRadius: 0,
+            ),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.09),
+              blurRadius: 20,
+              offset: Offset(0, 8),
+              spreadRadius: 2,
             ),
           ],
           border: Border.all(
@@ -1581,7 +1587,7 @@ class _HomeScreenState extends State<HomeScreen> {
               width: double.infinity,
               padding: EdgeInsets.all(horizontalPadding * 0.6),
               decoration: BoxDecoration(
-                color: AppTheme.veryLightTeal,
+                color: AppTheme.primaryTeal,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(screenWidth * 0.04),
                   topRight: Radius.circular(screenWidth * 0.04),
@@ -1619,7 +1625,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: GoogleFonts.poppins(
                             fontSize: screenWidth * textSizeMultiplier,
                             fontWeight: FontWeight.w600,
-                            color: Colors.black87,
+                            color: Colors.white,
                             letterSpacing: 0.2,
                           ),
                           maxLines: 1,
@@ -1632,7 +1638,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             fontSize: isSmallScreen 
                                 ? screenWidth * (textSizeMultiplier - 0.01)
                                 : screenWidth * (textSizeMultiplier - 0.005),
-                            color: Colors.grey.shade600,
+                            color: Colors.white.withOpacity(0.9),
                             fontWeight: FontWeight.w500,
                           ),
                           maxLines: 1,
@@ -1648,10 +1654,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       vertical: verticalSpacing * 0.3
                     ),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
+                      color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(screenWidth * 0.05),
                       border: Border.all(
-                        color: statusColor.withOpacity(0.2),
+                        color: Colors.white,
                         width: 1,
                       ),
                     ),
@@ -1662,7 +1668,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ? screenWidth * 0.025
                             : screenWidth * 0.03,
                         fontWeight: FontWeight.w600,
-                        color: statusColor,
+                        color: Colors.white,
                       ),
                     ),
                   ),

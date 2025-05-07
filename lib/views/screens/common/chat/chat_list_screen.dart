@@ -76,6 +76,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
           'Conversations',
           style: GoogleFonts.poppins(
             fontSize: 20,
+            color: Colors.white,
             fontWeight: FontWeight.w600,
           ),
         ),

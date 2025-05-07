@@ -512,7 +512,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with WidgetsBindingOb
                 bottom: 0,
                 left: 0,
                 right: 0,
-                child: Container(
+                  child: Container(
                   height: 2,
                   child: LinearProgressIndicator(
                     backgroundColor: Colors.transparent,

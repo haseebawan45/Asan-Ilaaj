@@ -305,7 +305,7 @@ class _MenuScreenState extends State<MenuScreen> {
                   height: 4,
                   width: 200,
                   child: LinearProgressIndicator(
-                    color: AppTheme.primaryPink,
+                  color: AppTheme.primaryPink,
                     backgroundColor: AppTheme.primaryPink.withOpacity(0.2),
                   ),
                 ),
@@ -569,7 +569,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 bottom: 0,
                 left: 0,
                 right: 0,
-                child: Container(
+                  child: Container(
                   height: 2,
                   child: LinearProgressIndicator(
                     backgroundColor: Colors.transparent,
@@ -895,7 +895,7 @@ class _MenuScreenState extends State<MenuScreen> {
                             height: 4,
                             width: 200,
                             child: LinearProgressIndicator(
-                              color: AppTheme.primaryPink,
+                            color: AppTheme.primaryPink,
                               backgroundColor: AppTheme.primaryPink.withOpacity(0.2),
                             ),
                           ),
