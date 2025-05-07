@@ -2236,72 +2236,39 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> with SingleTicker
           SizedBox(height: verticalPadding),
           Container(
             height: screenSize.height * 0.05,
-            child: Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedCategoryIndex = 0;
-                      });
-                    },
-                    child: Container(
-                      margin: EdgeInsets.only(right: horizontalPadding / 2),
-                      decoration: BoxDecoration(
-                        color: _selectedCategoryIndex == 0
-                            ? AppTheme.primaryTeal
-                            : Color(0xFFF5F7FF),
-                        borderRadius: BorderRadius.circular(screenSize.width * 0.05),
-                      ),
-                      alignment: Alignment.center,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                      child: Text(
-                        "Upcoming",
-                        style: GoogleFonts.poppins(
-                            fontSize: screenSize.width * 0.035,
-                          fontWeight: FontWeight.w500,
-                          color: _selectedCategoryIndex == 0
-                              ? Colors.white
-                              : Colors.grey.shade600,
-                          ),
-                        ),
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: 2, // Only "Upcoming" and "Completed" tabs
+              itemBuilder: (context, index) {
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedCategoryIndex = index;
+                    });
+                  },
+                  child: Container(
+                    margin: EdgeInsets.only(right: horizontalPadding * 0.5),
+                    padding: EdgeInsets.symmetric(horizontal: horizontalPadding * 0.7),
+                    decoration: BoxDecoration(
+                      color: _selectedCategoryIndex == index
+                          ? AppTheme.primaryPink
+                          : AppTheme.lightTeal,
+                      borderRadius: BorderRadius.circular(screenSize.width * 0.05),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      index == 0 ? "Upcoming" : "Completed",
+                      style: GoogleFonts.poppins(
+                        fontSize: screenSize.width * 0.035,
+                        fontWeight: FontWeight.w500,
+                        color: _selectedCategoryIndex == index
+                            ? Colors.white
+                            : AppTheme.darkTeal,
                       ),
                     ),
                   ),
-                ),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedCategoryIndex = 1;
-                      });
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: _selectedCategoryIndex == 1
-                            ? AppTheme.primaryTeal
-                            : Color(0xFFF5F7FF),
-                        borderRadius: BorderRadius.circular(screenSize.width * 0.05),
-                      ),
-                      alignment: Alignment.center,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                      child: Text(
-                        "Completed",
-                        style: GoogleFonts.poppins(
-                            fontSize: screenSize.width * 0.035,
-                          fontWeight: FontWeight.w500,
-                          color: _selectedCategoryIndex == 1
-                              ? Colors.white
-                              : Colors.grey.shade600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+                );
+              },
             ),
           ),
           SizedBox(height: verticalPadding),
@@ -2589,27 +2556,24 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> with SingleTicker
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
+                Text(
                   label,
                   style: GoogleFonts.poppins(
-                      fontSize: screenSize.width * 0.03,
+                    fontSize: screenSize.width * 0.03,
                     color: Colors.grey.shade600,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                ),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
+                Text(
                   value,
                   style: GoogleFonts.poppins(
-                      fontSize: screenSize.width * 0.035,
+                    fontSize: screenSize.width * 0.035,
                     fontWeight: FontWeight.w500,
                     color: Colors.black87,
                   ),
+                  maxLines: 3,
                   overflow: TextOverflow.ellipsis,
-                  ),
                 ),
               ],
             ),
