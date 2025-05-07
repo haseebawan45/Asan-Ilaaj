@@ -627,13 +627,12 @@ class _FinancesScreenState extends State<FinancesScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    SizedBox(
-                      width: 50,
-                      height: 50,
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          AppTheme.primaryPink,
-                        ),
+                    Container(
+                      width: 200,
+                      height: 4,
+                      child: LinearProgressIndicator(
+                        color: AppTheme.primaryPink,
+                        backgroundColor: AppTheme.primaryPink.withOpacity(0.2),
                       ),
                     ),
                     SizedBox(height: 20),
@@ -977,11 +976,11 @@ class _FinancesScreenState extends State<FinancesScreen> {
                                               color: AppTheme.lightPink,
                                               shape: BoxShape.circle,
                                             ),
-                                            child: SizedBox(
-                                              height: 20,
-                                              width: 20,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
+                                            child: Container(
+                                              height: 3,
+                                              width: 40,
+                                              child: LinearProgressIndicator(
+                                                backgroundColor: AppTheme.lightPink,
                                                 color: AppTheme.primaryPink,
                                               ),
                                             ),
@@ -1003,47 +1002,14 @@ class _FinancesScreenState extends State<FinancesScreen> {
                     // Bottom loading indicator
                   if (_isRefreshing)
                       Positioned(
-                        bottom: 16,
+                        bottom: 0,
                         left: 0,
                         right: 0,
-                        child: Center(
-                          child: Container(
-                            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(30),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 10,
-                                  offset: Offset(0, 5),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      AppTheme.primaryTeal,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(width: 10),
-                                Text(
-                                  "Updating your finances...",
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: AppTheme.darkText,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        child: Container(
+                          height: 2,
+                          child: LinearProgressIndicator(
+                            backgroundColor: Colors.transparent,
+                            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryTeal),
                           ),
                         ),
                       ),
