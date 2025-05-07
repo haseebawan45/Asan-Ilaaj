@@ -2348,9 +2348,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> with SingleTicker
     
     final bool isCompleted = appointment['completed'] == true;
     
-    final Color statusColor = isCompleted
-        ? Color(0xFF4CAF50)  // Green for completed
-        : Color.fromRGBO(64, 124, 226, 1);  // Blue for upcoming
+    final Color statusColor =  Color(0xFFFFFFFF);  // Blue for upcoming
             
     final String displayStatus = isCompleted ? "Completed" : "Upcoming";
     
@@ -2372,10 +2370,16 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> with SingleTicker
           borderRadius: BorderRadius.circular(screenSize.width * 0.045),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 12,
-              offset: Offset(0, 6),
+              color: AppTheme.primaryTeal.withOpacity(0.08),
+              blurRadius: 10,
+              offset: Offset(0, 4),
               spreadRadius: 0,
+            ),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.09),
+              blurRadius: 20,
+              offset: Offset(0, 8),
+              spreadRadius: 2,
             ),
           ],
           border: Border.all(
@@ -2388,7 +2392,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> with SingleTicker
             Container(
               padding: EdgeInsets.all(horizontalPadding * 0.8),
               decoration: BoxDecoration(
-                color: AppTheme.primaryTeal.withOpacity(0.05),
+                color: AppTheme.primaryTeal,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(screenSize.width * 0.045),
                   topRight: Radius.circular(screenSize.width * 0.045),
@@ -2426,7 +2430,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> with SingleTicker
                           style: GoogleFonts.poppins(
                               fontSize: screenSize.width * 0.04,
                             fontWeight: FontWeight.w600,
-                            color: Colors.black87,
+                            color: Colors.white,
                             letterSpacing: 0.2,
                           ),
                         ),
@@ -2438,7 +2442,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> with SingleTicker
                           appointment['specialty'],
                           style: GoogleFonts.poppins(
                               fontSize: screenSize.width * 0.035,
-                            color: Colors.grey.shade600,
+                            color: Colors.white.withOpacity(0.9),
                             fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -2452,10 +2456,10 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> with SingleTicker
                       vertical: verticalPadding * 0.3
                     ),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryTeal.withOpacity(0.1),
+                      color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(screenSize.width * 0.05),
                       border: Border.all(
-                        color: AppTheme.primaryTeal.withOpacity(0.2),
+                        color: Colors.white,
                         width: 1,
                       ),
                     ),
@@ -2526,14 +2530,14 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> with SingleTicker
                             );
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF3366CC),
+                            backgroundColor: AppTheme.primaryTeal,
                             foregroundColor: Colors.white,
                             padding: EdgeInsets.symmetric(vertical: verticalPadding * 0.6),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(screenSize.width * 0.03),
                             ),
                             elevation: 3,
-                            shadowColor: Color(0xFF3366CC).withOpacity(0.3),
+                            shadowColor: AppTheme.primaryTeal.withOpacity(0.3),
                           ),
                           icon: Icon(LucideIcons.building2, size: screenSize.width * 0.045),
                           label: Text(
