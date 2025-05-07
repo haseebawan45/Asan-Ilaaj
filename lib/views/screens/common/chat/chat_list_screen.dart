@@ -82,7 +82,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
         ),
         actions: [
           IconButton(
-            icon: Icon(LucideIcons.search),
+            icon: Icon(LucideIcons.search, color: Colors.white),
             onPressed: () {
               // Implement search functionality
               ScaffoldMessenger.of(context).showSnackBar(

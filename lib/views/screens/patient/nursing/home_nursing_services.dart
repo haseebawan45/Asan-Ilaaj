@@ -298,9 +298,9 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
         child: Container(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: SizeConfig.getProportionateScreenWidth(24),
-            right: SizeConfig.getProportionateScreenWidth(24),
-            top: SizeConfig.getProportionateScreenWidth(24),
+            left: SizeConfig.getProportionateScreenWidth(20),
+            right: SizeConfig.getProportionateScreenWidth(20),
+            top: SizeConfig.getProportionateScreenWidth(20),
           ),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -322,19 +322,45 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  // Header
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.only(bottom: SizeConfig.getProportionateScreenHeight(16)),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Colors.grey.shade200,
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
+                        Row(
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(8)),
+                              decoration: BoxDecoration(
+                                color: _selectedService!.color.withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.receipt_long_rounded,
+                                color: _selectedService!.color,
+                                size: SizeConfig.getProportionateScreenWidth(20),
+                              ),
+                            ),
+                            SizedBox(width: SizeConfig.getProportionateScreenWidth(12)),
+                            Text(
                           'Booking Summary',
                           style: GoogleFonts.poppins(
-                            fontSize: SizeConfig.getProportionateScreenWidth(20),
+                                fontSize: SizeConfig.getProportionateScreenWidth(18),
                             fontWeight: FontWeight.w600,
                             color: _selectedService!.color,
                           ),
                         ),
+                          ],
                       ),
                       IconButton(
                         onPressed: () => Navigator.pop(context),
@@ -345,6 +371,7 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                         iconSize: SizeConfig.getProportionateScreenWidth(22),
                       ),
                     ],
+                    ),
                   ),
                   SizedBox(height: SizeConfig.getProportionateScreenHeight(20)),
                   
@@ -435,12 +462,27 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                       padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(16)),
                       decoration: BoxDecoration(
                         color: Colors.grey[50],
-                        borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(8)),
+                        borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(10)),
                         border: Border.all(color: Colors.grey[200]!),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(6)),
+                                decoration: BoxDecoration(
+                                  color: _selectedService!.color.withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  LucideIcons.clipboardList,
+                                  color: _selectedService!.color,
+                                  size: SizeConfig.getProportionateScreenWidth(16),
+                                ),
+                              ),
+                              SizedBox(width: SizeConfig.getProportionateScreenWidth(10)),
                           Text(
                             'Notes',
                             style: GoogleFonts.poppins(
@@ -448,6 +490,8 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                               fontWeight: FontWeight.w600,
                               color: Colors.grey[800],
                             ),
+                              ),
+                            ],
                           ),
                           SizedBox(height: SizeConfig.getProportionateScreenHeight(8)),
                           Text(
@@ -460,7 +504,7 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                         ],
                       ),
                     ),
-                    SizedBox(height: SizeConfig.getProportionateScreenHeight(30)),
+                    SizedBox(height: SizeConfig.getProportionateScreenHeight(24)),
                   ],
                   
                   // Payment summary
@@ -469,6 +513,10 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                     decoration: BoxDecoration(
                       color: Colors.grey[50],
                       borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(12)),
+                      border: Border.all(
+                        color: Colors.grey[200]!,
+                        width: 1,
+                      ),
                     ),
                     child: Column(
                       children: [
@@ -530,7 +578,7 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                           onPressed: () => Navigator.pop(context),
                           style: OutlinedButton.styleFrom(
                             padding: EdgeInsets.symmetric(
-                              vertical: SizeConfig.getProportionateScreenHeight(12)
+                              vertical: SizeConfig.getProportionateScreenHeight(14)
                             ),
                             side: BorderSide(color: Colors.grey[300]!),
                             shape: RoundedRectangleBorder(
@@ -556,13 +604,15 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _selectedService!.color,
+                            foregroundColor: Colors.white,
                             padding: EdgeInsets.symmetric(
-                              vertical: SizeConfig.getProportionateScreenHeight(12)
+                              vertical: SizeConfig.getProportionateScreenHeight(14)
                             ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(12)),
                             ),
                             elevation: 0,
+                            shadowColor: _selectedService!.color.withOpacity(0.3),
                           ),
                           child: Text(
                             'Confirm',
@@ -690,26 +740,50 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(20)),
         ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return Container(
-              width: constraints.maxWidth,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(16)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: Offset(0, 10),
+              ),
+            ],
+          ),
               padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(24)),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+            children: [
+              Stack(
+                alignment: Alignment.center,
                 children: [
+                  Container(
+                    width: SizeConfig.getProportionateScreenWidth(100),
+                    height: SizeConfig.getProportionateScreenWidth(100),
+                    decoration: BoxDecoration(
+                      color: _selectedService!.color.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
                   Container(
                     width: SizeConfig.getProportionateScreenWidth(80),
                     height: SizeConfig.getProportionateScreenWidth(80),
                     decoration: BoxDecoration(
-                      color: AppTheme.success.withOpacity(0.1),
+                      color: _selectedService!.color.withOpacity(0.15),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.check_circle,
-                      color: AppTheme.success,
+                      color: _selectedService!.color,
                       size: SizeConfig.getProportionateScreenWidth(60),
                     ),
+                  ),
+                ],
                   ),
                   SizedBox(height: SizeConfig.getProportionateScreenHeight(24)),
                   FittedBox(
@@ -719,7 +793,7 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: SizeConfig.getProportionateScreenWidth(20),
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.success,
+                    color: _selectedService!.color,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -751,29 +825,28 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                         Navigator.pop(context); // Return to previous screen
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _selectedService?.color ?? AppTheme.primaryTeal,
+                    backgroundColor: _selectedService!.color,
+                    foregroundColor: Colors.white,
                         padding: EdgeInsets.symmetric(
-                          vertical: SizeConfig.getProportionateScreenHeight(12)
+                      vertical: SizeConfig.getProportionateScreenHeight(14)
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(12)),
                         ),
                         elevation: 0,
+                    shadowColor: _selectedService!.color.withOpacity(0.3),
                       ),
                       child: Text(
                         'Done',
                         style: GoogleFonts.poppins(
                           fontSize: SizeConfig.getProportionateScreenWidth(16),
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
                         ),
                       ),
                     ),
                   ),
                 ],
               ),
-            );
-          }
         ),
       ),
     ).then((_) {
@@ -830,7 +903,7 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                       child: Padding(
                         padding: EdgeInsets.symmetric(
                           horizontal: SizeConfig.getProportionateScreenWidth(16.0),
-                          vertical: SizeConfig.getProportionateScreenHeight(8.0)
+                          vertical: SizeConfig.getProportionateScreenHeight(6.0)
                         ),
                         child: _buildSearchBar(),
                       ),
@@ -839,8 +912,8 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                       child: Padding(
                         padding: EdgeInsets.only(
                           left: SizeConfig.getProportionateScreenWidth(20.0), 
-                          top: SizeConfig.getProportionateScreenHeight(16.0), 
-                          bottom: SizeConfig.getProportionateScreenHeight(12.0)
+                          top: SizeConfig.getProportionateScreenHeight(12.0), 
+                          bottom: SizeConfig.getProportionateScreenHeight(8.0)
                         ),
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
@@ -848,9 +921,9 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                           child: Text(
                             'Available Services',
                             style: GoogleFonts.poppins(
-                              fontSize: SizeConfig.getProportionateScreenWidth(18),
+                              fontSize: SizeConfig.getProportionateScreenWidth(17),
                               fontWeight: FontWeight.w600,
-                              color: Colors.black87,
+                              color: _selectedService?.color ?? Colors.black87,
                             ),
                           ),
                         ),
@@ -887,7 +960,7 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
       leading: IconButton(
         icon: Icon(
           Icons.arrow_back_ios_new_rounded,
-          color: AppTheme.primaryPink,
+          color: _selectedService?.color ?? AppTheme.primaryPink,
           size: SizeConfig.getProportionateScreenWidth(22),
         ),
         onPressed: () => Navigator.pop(context),
@@ -898,7 +971,7 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
           'Home Nursing',
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
-            color: AppTheme.primaryPink,
+            color: _selectedService?.color ?? AppTheme.primaryPink,
             fontSize: SizeConfig.getProportionateScreenWidth(20),
           ),
         ),
@@ -907,7 +980,7 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
         IconButton(
           icon: Icon(
             LucideIcons.bell,
-            color: AppTheme.primaryPink,
+            color: _selectedService?.color ?? AppTheme.primaryPink,
             size: SizeConfig.getProportionateScreenWidth(22),
           ),
           padding: EdgeInsets.symmetric(
@@ -923,16 +996,16 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: SizeConfig.getProportionateScreenWidth(12), 
-        vertical: SizeConfig.getProportionateScreenHeight(6)
+        vertical: SizeConfig.getProportionateScreenHeight(4)
       ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(15)),
+        borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(12)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 10,
-            offset: Offset(0, 3),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -941,24 +1014,24 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
           Icon(
             Icons.search,
             color: AppTheme.mediumText,
-            size: SizeConfig.getProportionateScreenWidth(20),
+            size: SizeConfig.getProportionateScreenWidth(18),
           ),
-          SizedBox(width: SizeConfig.getProportionateScreenWidth(10)),
+          SizedBox(width: SizeConfig.getProportionateScreenWidth(8)),
           Expanded(
             child: TextField(
               controller: _searchController,
               style: GoogleFonts.poppins(
-                fontSize: SizeConfig.getProportionateScreenWidth(16),
+                fontSize: SizeConfig.getProportionateScreenWidth(14),
               ),
               decoration: InputDecoration(
                 hintText: 'Search nursing services...',
                 hintStyle: GoogleFonts.poppins(
                   color: AppTheme.lightText,
-                  fontSize: SizeConfig.getProportionateScreenWidth(16),
+                  fontSize: SizeConfig.getProportionateScreenWidth(14),
                 ),
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(
-                  vertical: SizeConfig.getProportionateScreenHeight(12)
+                  vertical: SizeConfig.getProportionateScreenHeight(10)
                 ),
               ),
             ),
@@ -971,7 +1044,7 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
               child: Icon(
                 Icons.close,
                 color: AppTheme.mediumText,
-                size: SizeConfig.getProportionateScreenWidth(20),
+                size: SizeConfig.getProportionateScreenWidth(18),
               ),
             ),
         ],
@@ -1028,8 +1101,23 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
         builder: (context, constraints) {
           // Determine number of grid columns based on screen width
           final double availableWidth = constraints.maxWidth;
-          final int crossAxisCount = availableWidth > 600 ? 3 : 2;
-          final double childAspectRatio = availableWidth > 600 ? 0.85 : 0.75;
+          // More responsive grid based on screen width
+          int crossAxisCount;
+          double childAspectRatio;
+          
+          if (availableWidth > 900) {
+            crossAxisCount = 4;
+            childAspectRatio = 1.2;
+          } else if (availableWidth > 600) {
+            crossAxisCount = 3;
+            childAspectRatio = 1.1;
+          } else if (availableWidth > 400) {
+            crossAxisCount = 2;
+            childAspectRatio = 0.95;
+          } else {
+            crossAxisCount = 2;
+            childAspectRatio = 0.9;
+          }
           
           return GridView.builder(
             physics: NeverScrollableScrollPhysics(),
@@ -1037,8 +1125,8 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: crossAxisCount,
               childAspectRatio: childAspectRatio,
-              crossAxisSpacing: SizeConfig.getProportionateScreenWidth(15),
-              mainAxisSpacing: SizeConfig.getProportionateScreenHeight(15),
+              crossAxisSpacing: SizeConfig.getProportionateScreenWidth(12),
+              mainAxisSpacing: SizeConfig.getProportionateScreenHeight(12),
             ),
             itemCount: _filteredServices.length,
             itemBuilder: (context, index) {
@@ -1053,12 +1141,12 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(16)),
+                    borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(12)),
                     boxShadow: [
                       BoxShadow(
                         color: service.color.withOpacity(0.1),
-                        blurRadius: 12,
-                        offset: Offset(0, 5),
+                        blurRadius: 8,
+                        offset: Offset(0, 4),
                       ),
                     ],
                   ),
@@ -1067,7 +1155,7 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                     children: [
                       // Service image area with icon
                       AspectRatio(
-                        aspectRatio: 16/9,
+                        aspectRatio: 1.8/1,
                         child: Container(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
@@ -1079,15 +1167,15 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                               ],
                             ),
                             borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(SizeConfig.getProportionateScreenWidth(16)),
-                              topRight: Radius.circular(SizeConfig.getProportionateScreenWidth(16)),
+                              topLeft: Radius.circular(SizeConfig.getProportionateScreenWidth(12)),
+                              topRight: Radius.circular(SizeConfig.getProportionateScreenWidth(12)),
                             ),
                           ),
                           child: Center(
                             child: Icon(
                               service.icon,
                               color: Colors.white,
-                              size: SizeConfig.getProportionateScreenWidth(50),
+                              size: SizeConfig.getProportionateScreenWidth(40),
                             ),
                           ),
                         ),
@@ -1096,26 +1184,26 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                       // Service details
                       Expanded(
                         child: Padding(
-                          padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(12.0)),
+                          padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(10.0)),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 service.name,
                                 style: GoogleFonts.poppins(
-                                  fontSize: SizeConfig.getProportionateScreenWidth(16),
+                                  fontSize: SizeConfig.getProportionateScreenWidth(14),
                                   fontWeight: FontWeight.w600,
                                   color: Colors.black87,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              SizedBox(height: SizeConfig.getProportionateScreenHeight(4)),
+                              SizedBox(height: SizeConfig.getProportionateScreenHeight(2)),
                               Expanded(
                                 child: Text(
                                   service.description,
                                   style: GoogleFonts.poppins(
-                                    fontSize: SizeConfig.getProportionateScreenWidth(12),
+                                    fontSize: SizeConfig.getProportionateScreenWidth(11),
                                     color: Colors.grey[600],
                                   ),
                                   maxLines: 2,
@@ -1130,14 +1218,14 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                                     child: Text(
                                       'Rs. ${service.price.toStringAsFixed(0)}',
                                       style: GoogleFonts.poppins(
-                                        fontSize: SizeConfig.getProportionateScreenWidth(16),
+                                        fontSize: SizeConfig.getProportionateScreenWidth(14),
                                         fontWeight: FontWeight.w600,
                                         color: service.color,
                                       ),
                                     ),
                                   ),
                                   Container(
-                                    padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(5)),
+                                    padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(4)),
                                     decoration: BoxDecoration(
                                       color: service.color.withOpacity(0.1),
                                       shape: BoxShape.circle,
@@ -1145,7 +1233,7 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                                     child: Icon(
                                       Icons.arrow_forward_ios_rounded,
                                       color: service.color,
-                                      size: SizeConfig.getProportionateScreenWidth(14),
+                                      size: SizeConfig.getProportionateScreenWidth(12),
                                     ),
                                   ),
                                 ],
@@ -1173,15 +1261,15 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
         SizeConfig.getProportionateScreenWidth(16), 
         SizeConfig.getProportionateScreenWidth(16)
       ),
-      padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(20)),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(16)),
+        borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(14)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: (_selectedService?.color ?? Colors.black).withOpacity(0.06),
             blurRadius: 10,
             offset: Offset(0, 4),
+            spreadRadius: 0,
           ),
         ],
       ),
@@ -1193,226 +1281,253 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Schedule Your Service',
-                  style: GoogleFonts.poppins(
-                    fontSize: SizeConfig.getProportionateScreenWidth(18),
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+              // Header with curved background
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(
+                  horizontal: SizeConfig.getProportionateScreenWidth(20),
+                  vertical: SizeConfig.getProportionateScreenHeight(16)
+                ),
+                decoration: BoxDecoration(
+                  color: (_selectedService?.color ?? AppTheme.primaryTeal).withOpacity(0.08),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(SizeConfig.getProportionateScreenWidth(14)),
+                    topRight: Radius.circular(SizeConfig.getProportionateScreenWidth(14)),
                   ),
                 ),
-              ),
-              SizedBox(height: SizeConfig.getProportionateScreenHeight(20)),
-              
-              // Date and time selection
-              Text(
-                'When do you need this service?',
-                style: GoogleFonts.poppins(
-                  fontSize: SizeConfig.getProportionateScreenWidth(15),
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.event_note_rounded,
+                      color: _selectedService?.color ?? AppTheme.primaryTeal,
+                      size: SizeConfig.getProportionateScreenWidth(22),
+                    ),
+                    SizedBox(width: SizeConfig.getProportionateScreenWidth(12)),
+                    Text(
+                  'Schedule Your Service',
+                  style: GoogleFonts.poppins(
+                        fontSize: SizeConfig.getProportionateScreenWidth(16),
+                    fontWeight: FontWeight.w600,
+                        color: _selectedService?.color ?? AppTheme.primaryTeal,
+                  ),
                 ),
+                  ],
+              ),
+              ),
+              
+              Padding(
+                padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(20)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+              // Date and time selection
+                    _buildSectionTitle(
+                'When do you need this service?',
+                      icon: LucideIcons.calendar,
               ),
               SizedBox(height: SizeConfig.getProportionateScreenHeight(12)),
               
               Container(
-                padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(16)),
                 decoration: BoxDecoration(
-                  color: Colors.grey[50],
                   borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(12)),
-                  border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: Column(
                   children: [
                     Row(
                       children: [
                         Expanded(
-                          child: InkWell(
+                                child: _buildDateTimePicker(
+                                  icon: LucideIcons.calendar,
+                                  label: 'Date',
+                                  value: DateFormat('EEE, MMM d').format(_selectedDate),
                             onTap: () => _selectDate(context),
-                            borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(8)),
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: SizeConfig.getProportionateScreenWidth(16), 
-                                vertical: SizeConfig.getProportionateScreenHeight(12)
+                                ),
                               ),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(8)),
-                                border: Border.all(color: Colors.grey.shade200),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.03),
-                                    blurRadius: 6,
-                                    offset: Offset(0, 2),
+                              SizedBox(width: SizeConfig.getProportionateScreenWidth(12)),
+                              Expanded(
+                                child: _buildDateTimePicker(
+                                  icon: LucideIcons.clock,
+                                  label: 'Time',
+                                  value: _selectedTime.format(context),
+                                  onTap: () => _selectTime(context),
+                                ),
                                   ),
                                 ],
                               ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    LucideIcons.calendar,
-                                    color: _selectedService?.color ?? AppTheme.primaryTeal,
-                                    size: SizeConfig.getProportionateScreenWidth(20),
-                                  ),
-                                  SizedBox(width: SizeConfig.getProportionateScreenWidth(10)),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Date',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: SizeConfig.getProportionateScreenWidth(12),
-                                            color: Colors.grey[600],
-                                          ),
-                                        ),
-                                        FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          alignment: Alignment.centerLeft,
-                                          child: Text(
-                                            DateFormat('EEE, MMM d').format(_selectedDate),
-                                            style: GoogleFonts.poppins(
-                                              fontSize: SizeConfig.getProportionateScreenWidth(14),
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.arrow_drop_down,
-                                    color: Colors.grey[600],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: SizeConfig.getProportionateScreenWidth(12)),
-                        Expanded(
-                          child: InkWell(
-                            onTap: () => _selectTime(context),
-                            borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(8)),
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: SizeConfig.getProportionateScreenWidth(16), 
-                                vertical: SizeConfig.getProportionateScreenHeight(12)
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(8)),
-                                border: Border.all(color: Colors.grey.shade200),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.03),
-                                    blurRadius: 6,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    LucideIcons.clock,
-                                    color: _selectedService?.color ?? AppTheme.primaryTeal,
-                                    size: SizeConfig.getProportionateScreenWidth(20),
-                                  ),
-                                  SizedBox(width: SizeConfig.getProportionateScreenWidth(10)),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Time',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: SizeConfig.getProportionateScreenWidth(12),
-                                            color: Colors.grey[600],
-                                          ),
-                                        ),
-                                        FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          alignment: Alignment.centerLeft,
-                                          child: Text(
-                                            _selectedTime.format(context),
-                                            style: GoogleFonts.poppins(
-                                              fontSize: SizeConfig.getProportionateScreenWidth(14),
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.arrow_drop_down,
-                                    color: Colors.grey[600],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ],
-                ),
-              ),
-              
-              SizedBox(height: SizeConfig.getProportionateScreenHeight(24)),
-              
-              // Address selection
-              Text(
-                'Where do you need the service?',
-                style: GoogleFonts.poppins(
-                  fontSize: SizeConfig.getProportionateScreenWidth(15),
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
-                ),
-              ),
-              SizedBox(height: SizeConfig.getProportionateScreenHeight(12)),
-              
-              if (_addresses.isEmpty)
-                Container(
-                  padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(16)),
-                  decoration: BoxDecoration(
-                    color: Color(0xFFFFF3E0),
-                    borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(8)),
-                    border: Border.all(color: Color(0xFFFFE0B2)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.warning_amber,
-                        color: Color(0xFFE65100),
-                        size: SizeConfig.getProportionateScreenWidth(20),
-                      ),
-                      SizedBox(width: SizeConfig.getProportionateScreenWidth(12)),
-                      Expanded(
-                        child: Text(
-                          'No addresses found. Please update your profile with your address.',
-                          style: GoogleFonts.poppins(
-                            color: Color(0xFFE65100),
-                            fontSize: SizeConfig.getProportionateScreenWidth(14),
+                    
+                    SizedBox(height: SizeConfig.getProportionateScreenHeight(24)),
+                    
+                    // Address selection
+                    _buildSectionTitle(
+                      'Where do you need the service?',
+                      icon: LucideIcons.mapPin,
+                    ),
+                    SizedBox(height: SizeConfig.getProportionateScreenHeight(12)),
+                    
+                    if (_addresses.isEmpty)
+                      _buildWarningCard()
+                    else
+                      _buildAddressField(),
+                    
+                    SizedBox(height: SizeConfig.getProportionateScreenHeight(24)),
+                    
+                    // Additional notes
+                    _buildSectionTitle(
+                      'Additional Notes',
+                      icon: LucideIcons.clipboardList,
+                    ),
+                    SizedBox(height: SizeConfig.getProportionateScreenHeight(12)),
+                    
+                    _buildNotesField(),
+                    
+                    SizedBox(height: SizeConfig.getProportionateScreenHeight(32)),
+                    
+                    // Book button
+                    _buildBookButton(),
+                    
+                    SizedBox(height: SizeConfig.getProportionateScreenHeight(8)),
+                    
+                    Center(
+                      child: TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _selectedService = null;
+                          });
+                        },
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.grey[700],
+                          padding: EdgeInsets.symmetric(
+                            horizontal: SizeConfig.getProportionateScreenWidth(16),
+                            vertical: SizeConfig.getProportionateScreenHeight(8)
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                )
-              else
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: SizeConfig.getProportionateScreenWidth(16), 
-                    vertical: SizeConfig.getProportionateScreenHeight(5)
-                  ),
+                                          child: Text(
+                          'Cancel',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: SizeConfig.getProportionateScreenWidth(14),
+                                              fontWeight: FontWeight.w500,
+                          ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+            ],
+          );
+        }
+      ),
+    );
+  }
+  
+  Widget _buildSectionTitle(String title, {required IconData icon}) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          color: _selectedService?.color ?? AppTheme.primaryTeal,
+          size: SizeConfig.getProportionateScreenWidth(18),
+                        ),
+        SizedBox(width: SizeConfig.getProportionateScreenWidth(8)),
+        Text(
+          title,
+          style: GoogleFonts.poppins(
+            fontSize: SizeConfig.getProportionateScreenWidth(15),
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildDateTimePicker({
+    required IconData icon,
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(10)),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: SizeConfig.getProportionateScreenWidth(16), 
+                                vertical: SizeConfig.getProportionateScreenHeight(12)
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+          borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(10)),
+                                border: Border.all(color: Colors.grey.shade200),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.03),
+                                    blurRadius: 6,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+            Container(
+              padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(6)),
+              decoration: BoxDecoration(
+                color: (_selectedService?.color ?? AppTheme.primaryTeal).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                                    color: _selectedService?.color ?? AppTheme.primaryTeal,
+                size: SizeConfig.getProportionateScreenWidth(16),
+                                  ),
+            ),
+            SizedBox(width: SizeConfig.getProportionateScreenWidth(8)),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                    label,
+                                          style: GoogleFonts.poppins(
+                                            fontSize: SizeConfig.getProportionateScreenWidth(12),
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                        FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          alignment: Alignment.centerLeft,
+                                          child: Text(
+                      value,
+                                            style: GoogleFonts.poppins(
+                                              fontSize: SizeConfig.getProportionateScreenWidth(14),
+                                              fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(
+              Icons.keyboard_arrow_down,
+                                    color: Colors.grey[600],
+              size: SizeConfig.getProportionateScreenWidth(20),
+                                  ),
+                                ],
+                              ),
+                            ),
+    );
+  }
+  
+  Widget _buildAddressField() {
+    return Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(8)),
-                    border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(10)),
+        border: Border.all(color: Colors.grey.shade200),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.03),
@@ -1425,6 +1540,7 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                     controller: _addressController,
                     style: GoogleFonts.poppins(
                       fontSize: SizeConfig.getProportionateScreenWidth(14),
+          color: Colors.black87,
                     ),
                     decoration: InputDecoration(
                       hintText: 'Enter your full address',
@@ -1438,40 +1554,40 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                         color: Colors.grey[600],
                       ),
                       border: InputBorder.none,
-                      prefixIcon: Icon(
-                        LucideIcons.mapPin,
-                        color: _selectedService?.color ?? AppTheme.primaryTeal,
-                        size: SizeConfig.getProportionateScreenWidth(20),
-                      ),
                       contentPadding: EdgeInsets.symmetric(
+            horizontal: SizeConfig.getProportionateScreenWidth(16),
                         vertical: SizeConfig.getProportionateScreenHeight(12)
                       ),
-                    ),
-                  ),
-                ),
-              
-              SizedBox(height: SizeConfig.getProportionateScreenHeight(24)),
-              
-              // Additional notes
-              Text(
-                'Additional Notes',
-                style: GoogleFonts.poppins(
-                  fontSize: SizeConfig.getProportionateScreenWidth(15),
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
-                ),
+          prefixIcon: Container(
+            padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(12)),
+            child: Container(
+              padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(6)),
+              decoration: BoxDecoration(
+                color: (_selectedService?.color ?? AppTheme.primaryTeal).withOpacity(0.1),
+                shape: BoxShape.circle,
               ),
-              SizedBox(height: SizeConfig.getProportionateScreenHeight(12)),
-              
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: SizeConfig.getProportionateScreenWidth(16), 
-                  vertical: SizeConfig.getProportionateScreenHeight(5)
+              child: Icon(
+                LucideIcons.mapPin,
+                color: _selectedService?.color ?? AppTheme.primaryTeal,
+                size: SizeConfig.getProportionateScreenWidth(16),
+              ),
+            ),
+          ),
+          prefixIconConstraints: BoxConstraints(
+            minWidth: SizeConfig.getProportionateScreenWidth(56),
+            minHeight: SizeConfig.getProportionateScreenWidth(56),
                 ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildNotesField() {
+    return Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(8)),
-                  border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(10)),
+        border: Border.all(color: Colors.grey.shade200),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.03),
@@ -1484,6 +1600,7 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                   controller: _notesController,
                   style: GoogleFonts.poppins(
                     fontSize: SizeConfig.getProportionateScreenWidth(14),
+          color: Colors.black87,
                   ),
                   decoration: InputDecoration(
                     hintText: 'Any specific requirements or conditions...',
@@ -1493,22 +1610,72 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                     ),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(
+            horizontal: SizeConfig.getProportionateScreenWidth(16),
                       vertical: SizeConfig.getProportionateScreenHeight(12)
+                    ),
+          prefixIcon: Container(
+            padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(12)),
+            child: Container(
+              padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(6)),
+              decoration: BoxDecoration(
+                color: (_selectedService?.color ?? AppTheme.primaryTeal).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                LucideIcons.clipboardList,
+                color: _selectedService?.color ?? AppTheme.primaryTeal,
+                size: SizeConfig.getProportionateScreenWidth(16),
+              ),
+            ),
+          ),
+          prefixIconConstraints: BoxConstraints(
+            minWidth: SizeConfig.getProportionateScreenWidth(56),
+            minHeight: SizeConfig.getProportionateScreenWidth(56),
                     ),
                   ),
                   maxLines: 3,
                 ),
+    );
+  }
+  
+  Widget _buildWarningCard() {
+    return Container(
+      padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(16)),
+      decoration: BoxDecoration(
+        color: Color(0xFFFFF3E0),
+        borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(10)),
+        border: Border.all(color: Color(0xFFFFE0B2)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.warning_amber,
+            color: Color(0xFFE65100),
+            size: SizeConfig.getProportionateScreenWidth(20),
+          ),
+          SizedBox(width: SizeConfig.getProportionateScreenWidth(12)),
+          Expanded(
+            child: Text(
+              'No addresses found. Please update your profile with your address.',
+              style: GoogleFonts.poppins(
+                color: Color(0xFFE65100),
+                fontSize: SizeConfig.getProportionateScreenWidth(14),
               ),
-              
-              SizedBox(height: SizeConfig.getProportionateScreenHeight(32)),
-              
-              // Book button
-              SizedBox(
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildBookButton() {
+    return SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _isBookingInProgress ? null : _bookService,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _selectedService?.color ?? AppTheme.primaryTeal,
+          foregroundColor: Colors.white,
                     padding: EdgeInsets.symmetric(
                       vertical: SizeConfig.getProportionateScreenHeight(16)
                     ),
@@ -1516,6 +1683,7 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                       borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(12)),
                     ),
                     elevation: 0,
+          shadowColor: (_selectedService?.color ?? AppTheme.primaryTeal).withOpacity(0.3),
                     disabledBackgroundColor: Colors.grey[300],
                   ),
                   child: _isBookingInProgress
@@ -1549,31 +1717,6 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                             color: Colors.white,
                           ),
                         ),
-                ),
-              ),
-              
-              SizedBox(height: SizeConfig.getProportionateScreenHeight(8)),
-              
-              Center(
-                child: TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _selectedService = null;
-                    });
-                  },
-                  child: Text(
-                    'Cancel',
-                    style: GoogleFonts.poppins(
-                      fontSize: SizeConfig.getProportionateScreenWidth(14),
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey[700],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          );
-        }
       ),
     );
   }
@@ -1582,24 +1725,29 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
     return Container(
       margin: EdgeInsets.fromLTRB(
         SizeConfig.getProportionateScreenWidth(16), 
-        SizeConfig.getProportionateScreenHeight(12), 
+        SizeConfig.getProportionateScreenHeight(10), 
         SizeConfig.getProportionateScreenWidth(16), 
-        SizeConfig.getProportionateScreenHeight(16)
+        SizeConfig.getProportionateScreenHeight(12)
       ),
-      height: SizeConfig.getProportionateScreenHeight(180),
+      height: SizeConfig.getProportionateScreenHeight(150),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(20)),
+        borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(16)),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
+          colors: _selectedService != null
+              ? [
+                  _selectedService!.color.withOpacity(0.8),
+                  _selectedService!.color,
+                ]
+              : [
             AppTheme.primaryPink,
             AppTheme.primaryTeal,
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryPink.withOpacity(0.3),
+            color: _selectedService?.color.withOpacity(0.3) ?? AppTheme.primaryPink.withOpacity(0.3),
             blurRadius: 15,
             offset: Offset(0, 5),
           ),
@@ -1656,7 +1804,7 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                                 child: Text(
                                   'Professional Care',
                                   style: GoogleFonts.poppins(
-                                    fontSize: SizeConfig.getProportionateScreenWidth(24),
+                                    fontSize: SizeConfig.getProportionateScreenWidth(22),
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
                                   ),
@@ -1667,7 +1815,7 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                                 child: Text(
                                   'At Your Doorstep',
                                   style: GoogleFonts.poppins(
-                                    fontSize: SizeConfig.getProportionateScreenWidth(20),
+                                    fontSize: SizeConfig.getProportionateScreenWidth(18),
                                     fontWeight: FontWeight.w500,
                                     color: Colors.white.withOpacity(0.9),
                                   ),
@@ -1737,15 +1885,18 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
     if (_selectedService == null) return SizedBox();
     
     return Container(
-      margin: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(16)),
+      margin: EdgeInsets.symmetric(
+        horizontal: SizeConfig.getProportionateScreenWidth(16),
+        vertical: SizeConfig.getProportionateScreenWidth(12)
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(16)),
+        borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(14)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 15,
-            offset: Offset(0, 5),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: Offset(0, 4),
           ),
         ],
       ),
@@ -1754,7 +1905,7 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
         children: [
           // Header with back button
           Padding(
-            padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(16.0)),
+            padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(14.0)),
             child: Row(
               children: [
                 InkWell(
@@ -1765,23 +1916,23 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                   },
                   borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(30)),
                   child: Container(
-                    padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(8)),
+                    padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(6)),
                     decoration: BoxDecoration(
                       color: Colors.grey[100],
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.arrow_back,
-                      size: SizeConfig.getProportionateScreenWidth(20),
+                      size: SizeConfig.getProportionateScreenWidth(18),
                       color: Colors.black87,
                     ),
                   ),
                 ),
-                SizedBox(width: SizeConfig.getProportionateScreenWidth(12)),
+                SizedBox(width: SizeConfig.getProportionateScreenWidth(10)),
                 Text(
                   'Selected Service',
                   style: GoogleFonts.poppins(
-                    fontSize: SizeConfig.getProportionateScreenWidth(18),
+                    fontSize: SizeConfig.getProportionateScreenWidth(16),
                     fontWeight: FontWeight.w600,
                     color: Colors.black87,
                   ),
@@ -1792,9 +1943,9 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
           
           // Service details
           Container(
-            padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(16)),
+            padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(14)),
             margin: EdgeInsets.symmetric(
-              horizontal: SizeConfig.getProportionateScreenWidth(16)
+              horizontal: SizeConfig.getProportionateScreenWidth(14)
             ),
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -1805,12 +1956,12 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                   _selectedService!.color,
                 ],
               ),
-              borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(16)),
+              borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(12)),
             ),
             child: Row(
               children: [
                 Container(
-                  padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(16)),
+                  padding: EdgeInsets.all(SizeConfig.getProportionateScreenWidth(14)),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
                     shape: BoxShape.circle,
@@ -1818,10 +1969,10 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                   child: Icon(
                     _selectedService!.icon,
                     color: Colors.white,
-                    size: SizeConfig.getProportionateScreenWidth(30),
+                    size: SizeConfig.getProportionateScreenWidth(26),
                   ),
                 ),
-                SizedBox(width: SizeConfig.getProportionateScreenWidth(16)),
+                SizedBox(width: SizeConfig.getProportionateScreenWidth(14)),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1829,33 +1980,35 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
                       Text(
                         _selectedService!.name,
                         style: GoogleFonts.poppins(
-                          fontSize: SizeConfig.getProportionateScreenWidth(18),
+                          fontSize: SizeConfig.getProportionateScreenWidth(16),
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
                         ),
                       ),
-                      SizedBox(height: SizeConfig.getProportionateScreenHeight(4)),
+                      SizedBox(height: SizeConfig.getProportionateScreenHeight(2)),
                       Text(
                         _selectedService!.description,
                         style: GoogleFonts.poppins(
-                          fontSize: SizeConfig.getProportionateScreenWidth(14),
+                          fontSize: SizeConfig.getProportionateScreenWidth(13),
                           color: Colors.white.withOpacity(0.9),
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      SizedBox(height: SizeConfig.getProportionateScreenHeight(8)),
+                      SizedBox(height: SizeConfig.getProportionateScreenHeight(6)),
                       Container(
                         padding: EdgeInsets.symmetric(
-                          horizontal: SizeConfig.getProportionateScreenWidth(12), 
-                          vertical: SizeConfig.getProportionateScreenHeight(6)
+                          horizontal: SizeConfig.getProportionateScreenWidth(10), 
+                          vertical: SizeConfig.getProportionateScreenHeight(4)
                         ),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(20)),
+                          borderRadius: BorderRadius.circular(SizeConfig.getProportionateScreenWidth(16)),
                         ),
                         child: Text(
                           'Rs. ${_selectedService!.price.toStringAsFixed(0)}',
                           style: GoogleFonts.poppins(
-                            fontSize: SizeConfig.getProportionateScreenWidth(14),
+                            fontSize: SizeConfig.getProportionateScreenWidth(13),
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
                           ),
@@ -1868,7 +2021,7 @@ class _HomeNursingServicesScreenState extends State<HomeNursingServicesScreen> {
             ),
           ),
           
-          SizedBox(height: SizeConfig.getProportionateScreenHeight(16)),
+          SizedBox(height: SizeConfig.getProportionateScreenHeight(10)),
         ],
       ),
     );
