@@ -10,6 +10,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
+import 'package:healthcare/utils/ui_helper.dart';
 
 class DoctorProfilePage1Screen extends StatefulWidget {
   final bool isEditing;
@@ -87,6 +88,9 @@ class _DoctorProfilePage1ScreenState extends State<DoctorProfilePage1Screen> {
   void initState() {
     super.initState();
     
+    // Apply the correct status bar style when this screen opens
+    UIHelper.applyTransparentStatusBar(withPostFrameCallback: true);
+    
     // If in editing mode, load the doctor's data
     if (widget.isEditing) {
       _loadDoctorData();
@@ -94,6 +98,13 @@ class _DoctorProfilePage1ScreenState extends State<DoctorProfilePage1Screen> {
       // If initial data is provided, use it
       _initializeWithData(widget.initialData!);
     }
+  }
+
+  @override
+  void dispose() {
+    // Ensure we restore the pink status bar style when leaving this screen
+    UIHelper.applyPinkStatusBar();
+    super.dispose();
   }
   
   // Initialize controllers with provided data
@@ -918,517 +929,527 @@ class _DoctorProfilePage1ScreenState extends State<DoctorProfilePage1Screen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          widget.isEditing ? "Edit Personal Information" : "Personal Information",
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
+    // Apply transparent status bar style on every build
+    UIHelper.applyTransparentStatusBar();
+    
+    return UIHelper.ensureStatusBarStyle(
+      style: UIHelper.transparentStatusBarStyle,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            widget.isEditing ? "Edit Personal Information" : "Personal Information",
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
           ),
+          leading: IconButton(
+            icon: Icon(LucideIcons.arrowLeft, color: AppTheme.primaryPink),
+            onPressed: () {
+              // Restore pink status bar when going back
+              UIHelper.applyPinkStatusBar();
+              Navigator.pop(context);
+            },
+          ),
+          backgroundColor: Colors.white,
+          elevation: 0,
         ),
-        leading: IconButton(
-          icon: Icon(LucideIcons.arrowLeft, color: AppTheme.primaryPink),
-          onPressed: () => Navigator.pop(context),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-      ),
-      backgroundColor: AppTheme.veryLightPink,
-      body: _isLoading 
-          ? Center(
-              child: CircularProgressIndicator(
-                color: AppTheme.primaryPink,
-              ),
-            )
-          : SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Profile Picture Section
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppTheme.primaryPink.withOpacity(0.8),
-                            AppTheme.primaryTeal.withOpacity(0.9),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.primaryPink.withOpacity(0.2),
-                            blurRadius: 15,
-                            offset: const Offset(0, 5),
+        backgroundColor: AppTheme.veryLightPink,
+        body: _isLoading 
+            ? Center(
+                child: CircularProgressIndicator(
+                  color: AppTheme.primaryPink,
+                ),
+              )
+            : SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Profile Picture Section
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AppTheme.primaryPink.withOpacity(0.8),
+                              AppTheme.primaryTeal.withOpacity(0.9),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.15),
-                                  blurRadius: 20,
-                                  spreadRadius: 2,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.primaryPink.withOpacity(0.2),
+                              blurRadius: 15,
+                              offset: const Offset(0, 5),
                             ),
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                Container(
-                                  width: 130,
-                                  height: 130,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.white,
-                                      width: 3,
-                                    ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.15),
+                                    blurRadius: 20,
+                                    spreadRadius: 2,
+                                    offset: const Offset(0, 8),
                                   ),
-                                  child: ClipOval(
-                                    child: _profileImage != null
-                                        ? Image.file(
-                                            File(_profileImage!.path),
-                                            fit: BoxFit.cover,
-                                          )
-                                        : _profileImageUrl != null
-                                            ? Image.network(
-                                                _profileImageUrl!,
-                                                fit: BoxFit.cover,
-                                                loadingBuilder: (context, child, loadingProgress) {
-                                                  if (loadingProgress == null) return child;
-                                                  return Center(
-                                                    child: CircularProgressIndicator(
-                                                      color: Colors.white,
-                                                      value: loadingProgress.expectedTotalBytes != null
-                                                          ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                                          : null,
-                                                    ),
-                                                  );
-                                                },
-                                                errorBuilder: (context, error, stackTrace) {
-                                                  return Container(
-                                                    decoration: BoxDecoration(
-                                                      gradient: LinearGradient(
-                                                        colors: [
-                                                          Colors.white.withOpacity(0.9),
-                                                          Colors.white.withOpacity(0.7),
-                                                        ],
-                                                        begin: Alignment.topCenter,
-                                                        end: Alignment.bottomCenter,
+                                ],
+                              ),
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Container(
+                                    width: 130,
+                                    height: 130,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 3,
+                                      ),
+                                    ),
+                                    child: ClipOval(
+                                      child: _profileImage != null
+                                          ? Image.file(
+                                              File(_profileImage!.path),
+                                              fit: BoxFit.cover,
+                                            )
+                                          : _profileImageUrl != null
+                                              ? Image.network(
+                                                  _profileImageUrl!,
+                                                  fit: BoxFit.cover,
+                                                  loadingBuilder: (context, child, loadingProgress) {
+                                                    if (loadingProgress == null) return child;
+                                                    return Center(
+                                                      child: CircularProgressIndicator(
+                                                        color: Colors.white,
+                                                        value: loadingProgress.expectedTotalBytes != null
+                                                            ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                                            : null,
                                                       ),
-                                                    ),
-                                                    child: Icon(
-                                                      LucideIcons.user,
-                                                      size: 60,
-                                                      color: AppTheme.primaryPink.withOpacity(0.7),
-                                                    ),
-                                                  );
-                                                },
-                                              )
-                                            : Container(
-                                                decoration: BoxDecoration(
-                                                  gradient: LinearGradient(
-                                                    colors: [
-                                                      Colors.white.withOpacity(0.9),
-                                                      Colors.white.withOpacity(0.7),
-                                                    ],
-                                                    begin: Alignment.topCenter,
-                                                    end: Alignment.bottomCenter,
-                                                  ),
-                                                ),
-                                                child: Icon(
-                                                  LucideIcons.user,
-                                                  size: 60,
-                                                  color: AppTheme.primaryPink.withOpacity(0.7),
+                                                    );
+                                                  },
+                                                  errorBuilder: (context, error, stackTrace) {
+                                                    return Container(
+                                                      decoration: BoxDecoration(
+                                                        gradient: LinearGradient(
+                                                          colors: [
+                                                            Colors.white.withOpacity(0.9),
+                                                            Colors.white.withOpacity(0.7),
+                                                          ],
+                                                          begin: Alignment.topCenter,
+                                                          end: Alignment.bottomCenter,
+                                                        ),
+                                                      ),
+                                                      child: Icon(
+                                                        LucideIcons.user,
+                                                        size: 60,
+                                                        color: AppTheme.primaryPink.withOpacity(0.7),
+                                                      ),
+                                                    );
+                                                  },
+                                                )
+                                          : Container(
+                                              decoration: BoxDecoration(
+                                                gradient: LinearGradient(
+                                                  colors: [
+                                                    Colors.white.withOpacity(0.9),
+                                                    Colors.white.withOpacity(0.7),
+                                                  ],
+                                                  begin: Alignment.topCenter,
+                                                  end: Alignment.bottomCenter,
                                                 ),
                                               ),
+                                              child: Icon(
+                                                LucideIcons.user,
+                                                size: 60,
+                                                color: AppTheme.primaryPink.withOpacity(0.7),
+                                              ),
+                                            ),
+                                    ),
                                   ),
-                                ),
-                                Positioned(
-                                  right: 4,
-                                  bottom: 4,
-                                  child: GestureDetector(
-                                    onTap: () => _pickImage(ImageSource.gallery),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        shape: BoxShape.circle,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(0.2),
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 3),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Icon(
-                                        _profileImage == null && _profileImageUrl == null 
-                                            ? LucideIcons.camera 
-                                            : LucideIcons.refreshCw,
-                                        color: AppTheme.primaryPink,
-                                        size: 22,
+                                  Positioned(
+                                    right: 4,
+                                    bottom: 4,
+                                    child: GestureDetector(
+                                      onTap: () => _pickImage(ImageSource.gallery),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(0.2),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 3),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Icon(
+                                          _profileImage == null && _profileImageUrl == null 
+                                              ? LucideIcons.camera 
+                                              : LucideIcons.refreshCw,
+                                          color: AppTheme.primaryPink,
+                                          size: 22,
+                                        ),
                                       ),
                                     ),
                                   ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    LucideIcons.imageUp,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    "Profile Picture",
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Personal Information Section
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.primaryPink.withOpacity(0.1),
+                              blurRadius: 15,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryPink.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    LucideIcons.user,
+                                    color: AppTheme.primaryPink,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  "Personal Information",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
                                 ),
                               ],
                             ),
-                          ),
-                          const SizedBox(height: 20),
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(30),
+                            const SizedBox(height: 16),
+                            _buildTextField(
+                              hint: "Full Name",
+                              icon: LucideIcons.user,
+                              controller: _nameController,
+                            ),
+                            _buildTextField(
+                              hint: "Email",
+                              icon: LucideIcons.mail,
+                              controller: _emailController,
+                              keyboardType: TextInputType.emailAddress,
+                            ),
+                            _buildGenderDropdown(),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Medical License Section
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.primaryPink.withOpacity(0.1),
+                              blurRadius: 15,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryPink.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    LucideIcons.fileText,
+                                    color: AppTheme.primaryPink,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  "Medical License",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            _buildUploadBox(
+                              title: "Front Side",
+                              subtitle: "Upload the front side of your medical license",
+                              icon: LucideIcons.fileImage,
+                              onTap: () => _pickDocument('license_front'),
+                              file: _medicalLicenseFront,
+                            ),
+                            _buildUploadBox(
+                              title: "Back Side",
+                              subtitle: "Upload the back side of your medical license",
+                              icon: LucideIcons.fileImage,
+                              onTap: () => _pickDocument('license_back'),
+                              file: _medicalLicenseBack,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // CNIC Section
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.primaryPink.withOpacity(0.1),
+                              blurRadius: 15,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryPink.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    LucideIcons.idCard,
+                                    color: AppTheme.primaryPink,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  "CNIC",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            _buildUploadBox(
+                              title: "Front Side",
+                              subtitle: "Upload the front side of your CNIC",
+                              icon: LucideIcons.fileImage,
+                              onTap: () => _pickDocument('cnic_front'),
+                              file: _cnicFront,
+                            ),
+                            _buildUploadBox(
+                              title: "Back Side",
+                              subtitle: "Upload the back side of your CNIC",
+                              icon: LucideIcons.fileImage,
+                              onTap: () => _pickDocument('cnic_back'),
+                              file: _cnicBack,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Address Section
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.primaryPink.withOpacity(0.1),
+                              blurRadius: 15,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryPink.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    LucideIcons.mapPin,
+                                    color: AppTheme.primaryPink,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  "Address Information",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            _buildTextArea(
+                              hint: "Complete Address",
+                              icon: LucideIcons.building,
+                              controller: _addressController,
+                            ),
+                            _buildCityDropdown(),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.primaryPink.withOpacity(0.2),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              if (_validateFields()) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => DoctorProfilePage2Screen(
+                                      fullName: _nameController.text,
+                                      email: _emailController.text,
+                                      address: _addressController.text,
+                                      city: _selectedCity ?? "",
+                                      gender: _selectedGender ?? "",
+                                      profileImage: _profileImage,
+                                      medicalLicenseFront: _medicalLicenseFront,
+                                      medicalLicenseBack: _medicalLicenseBack,
+                                      cnicFront: _cnicFront,
+                                      cnicBack: _cnicBack,
+                                      isEditing: widget.isEditing,
+                                      profileImageUrl: _profileImageUrl,
+                                      medicalLicenseFrontUrl: _medicalLicenseFrontUrl,
+                                      medicalLicenseBackUrl: _medicalLicenseBackUrl,
+                                      cnicFrontUrl: _cnicFrontUrl,
+                                      cnicBackUrl: _cnicBackUrl,
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.primaryPink,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              elevation: 0,
                             ),
                             child: Row(
-                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(
-                                  LucideIcons.imageUp,
-                                  color: Colors.white,
-                                  size: 16,
+                                Text(
+                                  widget.isEditing ? "Continue" : "Next",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                                 const SizedBox(width: 8),
-                                Text(
-                                  "Profile Picture",
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
+                                const Icon(LucideIcons.arrowRight, size: 20),
                               ],
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Personal Information Section
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.primaryPink.withOpacity(0.1),
-                            blurRadius: 15,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.primaryPink.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Icon(
-                                  LucideIcons.user,
-                                  color: AppTheme.primaryPink,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                "Personal Information",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          _buildTextField(
-                            hint: "Full Name",
-                            icon: LucideIcons.user,
-                            controller: _nameController,
-                          ),
-                          _buildTextField(
-                            hint: "Email",
-                            icon: LucideIcons.mail,
-                            controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
-                          ),
-                          _buildGenderDropdown(),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Medical License Section
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.primaryPink.withOpacity(0.1),
-                            blurRadius: 15,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.primaryPink.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Icon(
-                                  LucideIcons.fileText,
-                                  color: AppTheme.primaryPink,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                "Medical License",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          _buildUploadBox(
-                            title: "Front Side",
-                            subtitle: "Upload the front side of your medical license",
-                            icon: LucideIcons.fileImage,
-                            onTap: () => _pickDocument('license_front'),
-                            file: _medicalLicenseFront,
-                          ),
-                          _buildUploadBox(
-                            title: "Back Side",
-                            subtitle: "Upload the back side of your medical license",
-                            icon: LucideIcons.fileImage,
-                            onTap: () => _pickDocument('license_back'),
-                            file: _medicalLicenseBack,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // CNIC Section
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.primaryPink.withOpacity(0.1),
-                            blurRadius: 15,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.primaryPink.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Icon(
-                                  LucideIcons.idCard,
-                                  color: AppTheme.primaryPink,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                "CNIC",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          _buildUploadBox(
-                            title: "Front Side",
-                            subtitle: "Upload the front side of your CNIC",
-                            icon: LucideIcons.fileImage,
-                            onTap: () => _pickDocument('cnic_front'),
-                            file: _cnicFront,
-                          ),
-                          _buildUploadBox(
-                            title: "Back Side",
-                            subtitle: "Upload the back side of your CNIC",
-                            icon: LucideIcons.fileImage,
-                            onTap: () => _pickDocument('cnic_back'),
-                            file: _cnicBack,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Address Section
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.primaryPink.withOpacity(0.1),
-                            blurRadius: 15,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.primaryPink.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Icon(
-                                  LucideIcons.mapPin,
-                                  color: AppTheme.primaryPink,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                "Address Information",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          _buildTextArea(
-                            hint: "Complete Address",
-                            icon: LucideIcons.building,
-                            controller: _addressController,
-                          ),
-                          _buildCityDropdown(),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.primaryPink.withOpacity(0.2),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            if (_validateFields()) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => DoctorProfilePage2Screen(
-                                    fullName: _nameController.text,
-                                    email: _emailController.text,
-                                    address: _addressController.text,
-                                    city: _selectedCity ?? "",
-                                    gender: _selectedGender ?? "",
-                                    profileImage: _profileImage,
-                                    medicalLicenseFront: _medicalLicenseFront,
-                                    medicalLicenseBack: _medicalLicenseBack,
-                                    cnicFront: _cnicFront,
-                                    cnicBack: _cnicBack,
-                                    isEditing: widget.isEditing,
-                                    profileImageUrl: _profileImageUrl,
-                                    medicalLicenseFrontUrl: _medicalLicenseFrontUrl,
-                                    medicalLicenseBackUrl: _medicalLicenseBackUrl,
-                                    cnicFrontUrl: _cnicFrontUrl,
-                                    cnicBackUrl: _cnicBackUrl,
-                                  ),
-                                ),
-                              );
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.primaryPink,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                widget.isEditing ? "Continue" : "Next",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              const Icon(LucideIcons.arrowRight, size: 20),
-                            ],
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
+      ),
     );
   }
 }

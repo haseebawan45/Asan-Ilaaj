@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:healthcare/utils/app_theme.dart';
+import 'package:healthcare/utils/ui_helper.dart';
 import 'package:healthcare/views/screens/menu/appointment_history.dart';
 import 'package:healthcare/views/screens/menu/availability.dart';
 import 'package:healthcare/views/screens/menu/faqs.dart';
@@ -77,18 +78,8 @@ class _MenuScreenState extends State<MenuScreen> {
   void initState() {
     super.initState();
     
-    // Apply system UI overlay style directly with delay to ensure it happens after any other settings
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-        statusBarColor: AppTheme.primaryPink,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
-        // Adding these for completeness
-        systemNavigationBarColor: Colors.white,
-        systemNavigationBarDividerColor: Colors.transparent,
-        systemNavigationBarIconBrightness: Brightness.dark,
-      ));
-    });
+    // Use UIHelper for consistent status bar styling
+    UIHelper.applyPinkStatusBar(withPostFrameCallback: true);
     
     // Set up global error handling
     FlutterError.onError = (FlutterErrorDetails details) {
@@ -454,130 +445,123 @@ class _MenuScreenState extends State<MenuScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Reapply UI style on every build to be absolutely sure it takes effect
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-      statusBarColor: AppTheme.primaryPink,
-      statusBarIconBrightness: Brightness.light,
-      statusBarBrightness: Brightness.dark,
-    ));
+    // Use UIHelper for consistent status bar styling
+    UIHelper.applyPinkStatusBar();
     
-    return WillPopScope(
-      onWillPop: () async {
-        // Navigate to the bottom navigation bar with home tab selected
-        if (widget.userType == UserType.doctor) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => BottomNavigationBarScreen(
-                profileStatus: "complete",
-                initialIndex: 0, // Home tab index
+    return UIHelper.ensureStatusBarStyle(
+      style: UIHelper.pinkStatusBarStyle,
+      child: WillPopScope(
+        onWillPop: () async {
+          // Navigate to the bottom navigation bar with home tab selected
+          if (widget.userType == UserType.doctor) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => BottomNavigationBarScreen(
+                  profileStatus: "complete",
+                  initialIndex: 0, // Home tab index
+                ),
               ),
-            ),
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => BottomNavigationBarPatientScreen(
-                profileStatus: "complete",
-                initialIndex: 0, // Home tab index
+            );
+          } else {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => BottomNavigationBarPatientScreen(
+                  profileStatus: "complete",
+                  initialIndex: 0, // Home tab index
+                ),
               ),
-            ),
-          );
-        }
-        return false; // Prevent default back button behavior
-      },
-      // Using a real AppBar is critical for status bar coloring on many devices
-      child: Scaffold(
-        // This "invisible" AppBar is the key to reliable status bar coloring
-        appBar: PreferredSize(
-          preferredSize: Size.zero,
-          child: AppBar(
-            backgroundColor: AppTheme.primaryPink,
-            elevation: 0,
-            systemOverlayStyle: SystemUiOverlayStyle(
-              statusBarColor: AppTheme.primaryPink,
-              statusBarIconBrightness: Brightness.light,
-              statusBarBrightness: Brightness.dark,
+            );
+          }
+          return false; // Prevent default back button behavior
+        },
+        child: Scaffold(
+          // This "invisible" AppBar is wrapped in UIHelper now
+          appBar: PreferredSize(
+            preferredSize: Size.zero,
+            child: AppBar(
+              backgroundColor: AppTheme.primaryPink,
+              elevation: 0,
             ),
           ),
-        ),
-        backgroundColor: Colors.grey.shade50,
-        body: Stack(
-          children: [
-            SafeArea(
-              child: _isLoading 
-                ? Center(
-                    child: LinearProgressIndicator(
-                      color: AppTheme.primaryPink,
-                      backgroundColor: Colors.transparent,
-                      minHeight: 4,
-                    ),
-                  )
-                : Column(
-                    children: [
-                      _buildProfileHeader(),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          physics: const BouncingScrollPhysics(),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 25),
-                                ..._groupedMenuItems.entries.map((entry) => 
-                                  _buildCategorySection(entry.key, entry.value)
-                                ).toList(),
-                                _buildLogoutButton(),
-                                const SizedBox(height: 25),
-                                Center(
-                                  child: Column(
-                                    children: [
-                                      Text(
-                                        "Specialist Doctors App",
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppTheme.primaryTeal,
+          backgroundColor: Colors.grey.shade50,
+          body: Stack(
+            children: [
+              SafeArea(
+                child: _isLoading 
+                  ? Center(
+                      child: LinearProgressIndicator(
+                        color: AppTheme.primaryPink,
+                        backgroundColor: Colors.transparent,
+                        minHeight: 4,
+                      ),
+                    )
+                  : Column(
+                      children: [
+                        _buildProfileHeader(),
+                        Expanded(
+                          child: SingleChildScrollView(
+                            physics: const BouncingScrollPhysics(),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 25),
+                                  ..._groupedMenuItems.entries.map((entry) => 
+                                    _buildCategorySection(entry.key, entry.value)
+                                  ).toList(),
+                                  _buildLogoutButton(),
+                                  const SizedBox(height: 25),
+                                  Center(
+                                    child: Column(
+                                      children: [
+                                        Text(
+                                          "Specialist Doctors App",
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppTheme.primaryTeal,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        "Version 1.0.0",
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 12,
-                                          color: AppTheme.mediumText,
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          "Version 1.0.0",
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 12,
+                                            color: AppTheme.mediumText,
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 20),
-                              ],
+                                  const SizedBox(height: 20),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-            ),
-            
-            // Bottom refresh indicator
-            if (_isRefreshing)
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                  child: Container(
-                  height: 2,
-                  child: LinearProgressIndicator(
-                    backgroundColor: Colors.transparent,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryTeal),
+                      ],
+                    ),
+              ),
+              
+              // Bottom refresh indicator
+              if (_isRefreshing)
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                    child: Container(
+                    height: 2,
+                    child: LinearProgressIndicator(
+                      backgroundColor: Colors.transparent,
+                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryTeal),
+                    ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
