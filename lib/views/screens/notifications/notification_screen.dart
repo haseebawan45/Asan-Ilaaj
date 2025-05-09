@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:healthcare/utils/app_theme.dart';
+import 'package:healthcare/utils/ui_helper.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({Key? key}) : super(key: key);
@@ -12,7 +14,7 @@ class NotificationScreen extends StatefulWidget {
   State<NotificationScreen> createState() => _NotificationScreenState();
 }
 
-class _NotificationScreenState extends State<NotificationScreen> {
+class _NotificationScreenState extends State<NotificationScreen> with WidgetsBindingObserver {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   bool _isLoading = true;
@@ -21,7 +23,41 @@ class _NotificationScreenState extends State<NotificationScreen> {
   @override
   void initState() {
     super.initState();
+    // Register observer to detect app lifecycle changes
+    WidgetsBinding.instance.addObserver(this);
+    
+    // Apply status bar style immediately
+    UIHelper.applyPinkStatusBar();
+    
+    // Add post-frame callback to apply the style after the frame is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      UIHelper.applyPinkStatusBar();
+    });
+    
     _loadNotifications();
+  }
+  
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // When app resumes from background, ensure status bar is correct
+    if (state == AppLifecycleState.resumed) {
+      UIHelper.applyPinkStatusBar();
+    }
+    super.didChangeAppLifecycleState(state);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Apply status bar style when dependencies change
+    UIHelper.applyPinkStatusBar();
+  }
+
+  @override
+  void dispose() {
+    // Remove observer
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   Future<void> _loadNotifications() async {
@@ -128,174 +164,233 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.background,
-      appBar: AppBar(
-        title: Text(
-          'Notifications',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w600,
-            color: AppTheme.darkText,
-          ),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 2,
-        shadowColor: Colors.black.withOpacity(0.1),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppTheme.darkText),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh, color: AppTheme.darkText),
-            onPressed: _loadNotifications,
-          ),
-        ],
-      ),
-      body: _isLoading
-          ? Center(
-              child: CircularProgressIndicator(
-                color: AppTheme.primaryTeal,
-              ),
-            )
-          : _notifications.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.notifications_off_outlined,
-                        size: 64,
-                        color: Colors.grey[400],
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        'No notifications yet',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          color: AppTheme.mediumText,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        'You\'ll see your notifications here',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: AppTheme.lightText,
-                        ),
-                      ),
-                    ],
+    // Apply pink status bar on every build
+    UIHelper.applyPinkStatusBar();
+    
+    return UIHelper.ensureStatusBarStyle(
+      style: UIHelper.pinkStatusBarStyle,
+      child: Scaffold(
+        backgroundColor: AppTheme.background,
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Custom app bar with gradient
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryPink,
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(20),
+                    bottomRight: Radius.circular(20),
                   ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadNotifications,
-                  color: AppTheme.primaryTeal,
-                  child: ListView.builder(
-                    padding: EdgeInsets.all(16),
-                    itemCount: _notifications.length,
-                    itemBuilder: (context, index) {
-                      final notification = _notifications[index];
-                      final timestamp = notification['timestamp'] as Timestamp;
-                      final DateTime date = timestamp.toDate();
-                      final bool isToday = DateTime.now().difference(date).inDays == 0;
-                      final String formattedDate = isToday
-                          ? 'Today ${DateFormat('h:mm a').format(date)}'
-                          : DateFormat('MMM d, h:mm a').format(date);
-
-                      return Padding(
-                        padding: EdgeInsets.only(bottom: 12),
-                        child: InkWell(
-                          onTap: () => _markAsRead(notification['id']),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 8,
-                                  offset: Offset(0, 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryPink.withOpacity(0.3),
+                      spreadRadius: 0,
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.arrow_back,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    Text(
+                      "Notifications",
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Spacer(),
+                    GestureDetector(
+                      onTap: _loadNotifications,
+                      child: Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.refresh,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _isLoading
+                ? Expanded(
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: AppTheme.primaryPink,
+                      ),
+                    ),
+                  )
+                : _notifications.isEmpty
+                    ? Expanded(
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.notifications_off_outlined,
+                                size: 64,
+                                color: Colors.grey[400],
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                'No notifications yet',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  color: AppTheme.mediumText,
+                                  fontWeight: FontWeight.w500,
                                 ),
-                              ],
-                            ),
-                            child: Stack(
-                              children: [
-                                if (!notification['isRead'])
-                                  Positioned(
-                                    top: 12,
-                                    right: 12,
-                                    child: Container(
-                                      width: 8,
-                                      height: 8,
-                                      decoration: BoxDecoration(
-                                        color: AppTheme.primaryTeal,
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                  ),
-                                Padding(
-                                  padding: EdgeInsets.all(16),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        padding: EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: _getNotificationColor(notification['type'])
-                                              .withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Icon(
-                                          _getNotificationIcon(notification['type']),
-                                          color: _getNotificationColor(notification['type']),
-                                          size: 24,
-                                        ),
-                                      ),
-                                      SizedBox(width: 16),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              notification['title'],
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w600,
-                                                color: AppTheme.darkText,
-                                              ),
-                                            ),
-                                            SizedBox(height: 4),
-                                            Text(
-                                              notification['message'],
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 14,
-                                                color: AppTheme.mediumText,
-                                                height: 1.4,
-                                              ),
-                                            ),
-                                            SizedBox(height: 8),
-                                            Text(
-                                              formattedDate,
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 12,
-                                                color: AppTheme.lightText,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'You\'ll see your notifications here',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  color: AppTheme.lightText,
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
-                      );
-                    },
-                  ),
-                ),
+                      )
+                    : Expanded(
+                        child: RefreshIndicator(
+                          onRefresh: _loadNotifications,
+                          color: AppTheme.primaryPink,
+                          child: ListView.builder(
+                            padding: EdgeInsets.all(16),
+                            itemCount: _notifications.length,
+                            itemBuilder: (context, index) {
+                              final notification = _notifications[index];
+                              final timestamp = notification['timestamp'] as Timestamp;
+                              final DateTime date = timestamp.toDate();
+                              final bool isToday = DateTime.now().difference(date).inDays == 0;
+                              final String formattedDate = isToday
+                                  ? 'Today ${DateFormat('h:mm a').format(date)}'
+                                  : DateFormat('MMM d, h:mm a').format(date);
+
+                              return Padding(
+                                padding: EdgeInsets.only(bottom: 12),
+                                child: InkWell(
+                                  onTap: () => _markAsRead(notification['id']),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.05),
+                                          blurRadius: 8,
+                                          offset: Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Stack(
+                                      children: [
+                                        if (!notification['isRead'])
+                                          Positioned(
+                                            top: 12,
+                                            right: 12,
+                                            child: Container(
+                                              width: 8,
+                                              height: 8,
+                                              decoration: BoxDecoration(
+                                                color: AppTheme.primaryPink,
+                                                shape: BoxShape.circle,
+                                              ),
+                                            ),
+                                          ),
+                                        Padding(
+                                          padding: EdgeInsets.all(16),
+                                          child: Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Container(
+                                                padding: EdgeInsets.all(12),
+                                                decoration: BoxDecoration(
+                                                  color: _getNotificationColor(notification['type'])
+                                                      .withOpacity(0.1),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                                child: Icon(
+                                                  _getNotificationIcon(notification['type']),
+                                                  color: _getNotificationColor(notification['type']),
+                                                  size: 24,
+                                                ),
+                                              ),
+                                              SizedBox(width: 16),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      notification['title'],
+                                                      style: GoogleFonts.poppins(
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.w600,
+                                                        color: AppTheme.darkText,
+                                                      ),
+                                                    ),
+                                                    SizedBox(height: 4),
+                                                    Text(
+                                                      notification['message'],
+                                                      style: GoogleFonts.poppins(
+                                                        fontSize: 14,
+                                                        color: AppTheme.mediumText,
+                                                        height: 1.4,
+                                                      ),
+                                                    ),
+                                                    SizedBox(height: 8),
+                                                    Text(
+                                                      formattedDate,
+                                                      style: GoogleFonts.poppins(
+                                                        fontSize: 12,
+                                                        color: AppTheme.lightText,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 } 
