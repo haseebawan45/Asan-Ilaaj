@@ -3,6 +3,7 @@ import 'package:healthcare/views/screens/dashboard/analytics.dart';
 import 'package:healthcare/views/screens/dashboard/finances.dart';
 import 'package:healthcare/views/screens/dashboard/home.dart';
 import 'package:healthcare/views/screens/dashboard/menu.dart';
+import 'package:healthcare/utils/app_theme.dart';
 
 class BottomNavigationBarScreen extends StatefulWidget {
   final String profileStatus;
@@ -135,7 +136,7 @@ class _BottomNavigationBarScreenState extends State<BottomNavigationBarScreen> {
         currentIndex: _selectedIndex,
         unselectedItemColor: const Color.fromARGB(255, 94, 93, 93),
         unselectedLabelStyle: TextStyle(color: Colors.grey),
-        selectedItemColor: Color.fromRGBO(64, 124, 226, 1),
+        selectedItemColor: AppTheme.primaryPink,
         onTap: _onItemTapped,
           ),
         ),

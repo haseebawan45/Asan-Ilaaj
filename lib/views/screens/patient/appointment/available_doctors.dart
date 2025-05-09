@@ -815,9 +815,7 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
                   _buildHeader(context),
                   _buildSearchBar(context),
                   _buildFilterBar(context),
-                  // Only show category tabs if not viewing a specific specialty from widget
-                  if (!shouldHideCategoryTabs)
-                    _buildCategoryTabs(context),
+                  // Removed horizontal specialty tabs section
                   // Show loading indicator, error message, or doctor list
                   _isLoading 
                     ? Expanded(
@@ -1362,74 +1360,6 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryTabs(BuildContext context) {
-    // Get screen dimensions for responsive sizing
-    final Size screenSize = MediaQuery.of(context).size;
-    final double width = screenSize.width;
-    final double height = screenSize.height;
-    
-    return Container(
-      height: height * 0.06,
-      margin: EdgeInsets.only(top: height * 0.015, bottom: height * 0.01),
-              child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(horizontal: width * 0.04),
-        itemCount: _categories.length,
-                itemBuilder: (context, index) {
-          return Padding(
-            padding: EdgeInsets.symmetric(horizontal: width * 0.012),
-            child: GestureDetector(
-                    onTap: () {
-              setState(() {
-                _selectedCategoryIndex = index;
-                // Update selectedSpecialty to match category selection
-                selectedSpecialty = index == 0 ? null : _categories[index];
-              });
-                // Call the asynchronous filter method with refreshData=true to force a refresh
-                _applyFilters(refreshData: true);
-            },
-            child: Container(
-                padding: EdgeInsets.symmetric(horizontal: width * 0.05),
-              decoration: BoxDecoration(
-                  color: _selectedCategoryIndex == index
-                      ? const Color(0xFF30A9C7)
-                      : const Color(0xFFF5F7FF),
-                  borderRadius: BorderRadius.circular(width * 0.05),
-                boxShadow: _selectedCategoryIndex == index
-                    ? [
-                        BoxShadow(
-                            color: const Color(0xFF30A9C7).withOpacity(0.3),
-                            blurRadius: 5,
-                            offset: const Offset(0, 2),
-                        ),
-                      ]
-                      : [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.03),
-                            blurRadius: 3,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                _categories[index],
-                style: GoogleFonts.poppins(
-                    fontSize: width * 0.035,
-                  fontWeight: FontWeight.w500,
-                  color: _selectedCategoryIndex == index
-                      ? Colors.white
-                        : Colors.grey.shade600,
-                  ),
-                ),
-              ),
-                    ),
-                  );
-                },
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:healthcare/views/screens/patient/dashboard/finance.dart';
 import 'package:healthcare/views/screens/patient/dashboard/home.dart';
 import 'package:healthcare/views/screens/patient/dashboard/profile.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:healthcare/utils/app_theme.dart';
 
 class BottomNavigationBarPatientScreen extends StatefulWidget {
   final String profileStatus;
@@ -107,7 +108,7 @@ class _BottomNavigationBarPatientScreenState extends State<BottomNavigationBarPa
         currentIndex: _selectedIndex,
         unselectedItemColor: const Color.fromARGB(255, 94, 93, 93),
         unselectedLabelStyle: TextStyle(color: Colors.grey),
-        selectedItemColor: Color.fromRGBO(64, 124, 226, 1),
+        selectedItemColor: AppTheme.primaryPink,
         onTap: _onItemTapped,
       ),
     );
