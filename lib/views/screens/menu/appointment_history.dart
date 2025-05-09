@@ -732,19 +732,45 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> wit
             ),
           ),
           SizedBox(height: 30),
-          ElevatedButton.icon(
-            onPressed: _loadAppointmentsWithCache,
-            icon: Icon(Icons.refresh, size: 18),
-            label: Text(
-              "Try Again",
-              style: GoogleFonts.poppins(fontSize: 14),
+          Container(
+            width: MediaQuery.of(context).size.width * 0.8,
+            child: ElevatedButton(
+              onPressed: _loadAppointmentsWithCache,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryPink,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.refresh, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    "Try Again",
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryPink,
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+          ),
+          // Progress indicator for visual appeal
+          Container(
+            margin: EdgeInsets.only(top: 30),
+            width: MediaQuery.of(context).size.width * 0.5,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: 0.25,
+                backgroundColor: Colors.grey.shade200,
+                color: AppTheme.primaryPink.withOpacity(0.7),
+                minHeight: 5,
               ),
             ),
           ),
@@ -768,17 +794,39 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> wit
         style: UIHelper.pinkStatusBarStyle,
         child: Scaffold(
           backgroundColor: Colors.white,
-          body: _isLoading 
-            ? Center(
-                child: CircularProgressIndicator(
-                  color: AppTheme.primaryPink,
-                ),
-              )
-            : _errorMessage.isNotEmpty
-              ? _buildErrorView()
-              : Stack(
-                  children: [
-                    SafeArea(
+          body: Stack(
+            children: [
+              _isLoading 
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Loading appointments...",
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: AppTheme.primaryPink,
+                          ),
+                        ),
+                        SizedBox(height: 20),
+                        Container(
+                          width: MediaQuery.of(context).size.width * 0.7,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: LinearProgressIndicator(
+                              color: AppTheme.primaryPink,
+                              backgroundColor: AppTheme.primaryPink.withOpacity(0.2),
+                              minHeight: 6,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : _errorMessage.isNotEmpty
+                  ? _buildErrorView()
+                  : SafeArea(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -889,54 +937,22 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> wit
                       ),
                     ),
                     
-                    // Loading indicator when refreshing
-                    if (_isRefreshing)
-                      Positioned(
-                        top: 110, // Place below the custom app bar
-                        left: 0,
-                        right: 0,
-                        child: Center(
-                          child: Container(
-                            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 8,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      AppTheme.primaryPink,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(width: 8),
-                                Text(
-                                  "Refreshing appointments...",
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 12,
-                                    color: AppTheme.mediumText,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
+              // Bottom progress indicator when refreshing
+              if (_isRefreshing)
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: 3,
+                    child: LinearProgressIndicator(
+                      backgroundColor: Colors.transparent,
+                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryPink),
+                    ),
+                  ),
                 ),
+            ],
+          ),
         ),
       ),
     );
@@ -1068,12 +1084,15 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> wit
       child: _isLoadingMore
         ? Column(
             children: [
-              SizedBox(
-                width: 30,
-                height: 30,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryPink),
+              Container(
+                width: MediaQuery.of(context).size.width * 0.5,
+                height: 6,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: LinearProgressIndicator(
+                  backgroundColor: AppTheme.primaryPink.withOpacity(0.2),
+                  color: AppTheme.primaryPink,
                 ),
               ),
               SizedBox(height: 10),
