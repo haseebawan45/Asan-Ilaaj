@@ -424,6 +424,10 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
                             padding: EdgeInsets.symmetric(vertical: 30, horizontal: 24),
                             decoration: BoxDecoration(
                               color: AppTheme.primaryPink,
+                              borderRadius: BorderRadius.only(
+                                bottomLeft: Radius.circular(25),
+                                bottomRight: Radius.circular(25),
+                              ),
                               boxShadow: [
                                 BoxShadow(
                                   color: AppTheme.primaryPink.withOpacity(0.2),
