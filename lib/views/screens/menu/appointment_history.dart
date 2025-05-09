@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:healthcare/models/appointment_model.dart';
 import 'package:healthcare/services/appointment_service.dart';
 import 'package:healthcare/utils/app_theme.dart';
+import 'package:healthcare/views/screens/appointment/appointment_detail.dart';
 
 class AppointmentHistoryScreen extends StatefulWidget {
   const AppointmentHistoryScreen({super.key});
@@ -1096,286 +1097,297 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> wit
     // Get color based on appointment status
     Color statusColor = _getStatusColor(appointment.status);
     
-    return Container(
-      margin: EdgeInsets.only(bottom: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: statusColor.withOpacity(0.1),
-            blurRadius: 15,
-            offset: Offset(0, 8),
-            spreadRadius: 2,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AppointmentDetailsScreen(
+              appointmentId: appointment.id,
+            ),
           ),
-          BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 10,
-            offset: Offset(0, 5),
-          ),
-        ],
-        border: Border.all(color: Colors.grey.shade100),
-      ),
-      child: Column(
-        children: [
-          // Patient info header
-          Container(
-            padding: EdgeInsets.all(15),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  statusColor.withOpacity(0.8),
-                  statusColor.withOpacity(0.6),
+        );
+      },
+      child: Container(
+        margin: EdgeInsets.only(bottom: 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: statusColor.withOpacity(0.1),
+              blurRadius: 15,
+              offset: Offset(0, 8),
+              spreadRadius: 2,
+            ),
+            BoxShadow(
+              color: Colors.grey.shade200,
+              blurRadius: 10,
+              offset: Offset(0, 5),
+            ),
+          ],
+          border: Border.all(color: Colors.grey.shade100),
+        ),
+        child: Column(
+          children: [
+            // Patient info header
+            Container(
+              padding: EdgeInsets.all(15),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    statusColor.withOpacity(0.8),
+                    statusColor.withOpacity(0.6),
+                  ],
+                ),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: statusColor.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: Offset(0, 3),
+                  ),
                 ],
               ),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: statusColor.withOpacity(0.2),
-                  blurRadius: 8,
-                  offset: Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
-                        blurRadius: 8,
-                        offset: Offset(0, 3),
+              child: Row(
+                children: [
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 8,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                      color: Colors.white,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.asset(
+                        'assets/images/User.png',
+                        fit: BoxFit.cover,
                       ),
-                    ],
-                    color: Colors.white,
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.asset(
-                      'assets/images/User.png',
-                      fit: BoxFit.cover,
                     ),
                   ),
-                ),
-                SizedBox(width: 15),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        appointment.doctorName,
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        appointment.specialty,
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          color: Colors.white.withOpacity(0.9),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    // Status indicator
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.6),
-                          width: 1,
-                        ),
-                      ),
-                      child: Text(
-                        appointment.status,
-                        style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 5),
-                    // Patient profile button
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => PatientDetailProfileScreen(
-                                  name: appointment.doctorName,
-                                  age: "N/A",
-                                  bloodGroup: "Not Available",
-                                  diseases: [appointment.diagnosis ?? 'Not specified'],
-                            ),
+                  SizedBox(width: 15),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          appointment.doctorName,
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
                           ),
-                        );
-                      },
-                      child: Container(
-                        padding: EdgeInsets.all(8),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          appointment.specialty,
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            color: Colors.white.withOpacity(0.9),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      // Status indicator
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.3),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.person,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          
-          // Appointment details
-          Padding(
-            padding: EdgeInsets.all(15),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Date, time and type row
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                  children: [
-                    _buildInfoTag(
-                      Icons.calendar_today,
-                        DateFormat('MMM dd, yyyy').format(appointment.date),
-                      Colors.blue.shade700,
-                    ),
-                    SizedBox(width: 10),
-                    _buildInfoTag(
-                      Icons.access_time,
-                        DateFormat('hh:mm a').format(appointment.date),
-                      Colors.orange.shade700,
-                    ),
-                    SizedBox(width: 10),
-                    _buildInfoTag(
-                        Icons.medical_services,
-                        appointment.specialty,
-                        Colors.green.shade700,
-                    ),
-                  ],
-                  ),
-                ),
-                
-                SizedBox(height: 15),
-                
-                // Facility and reason
-                _buildDetailRow(
-                  "Facility",
-                  appointment.hospital,
-                  Icons.business,
-                ),
-                SizedBox(height: 10),
-                _buildDetailRow(
-                  "Reason",
-                  "Consultation",
-                  Icons.assignment,
-                ),
-                
-                // Only show diagnosis if available
-                if (appointment.diagnosis != null && appointment.diagnosis!.isNotEmpty)
-                  Column(
-                    children: [
-                SizedBox(height: 10),
-                _buildDetailRow(
-                  "Diagnosis",
-                        appointment.diagnosis!,
-                  Icons.medical_services,
-                ),
-                    ],
-                  ),
-                
-                // Only show prescription if available
-                if (appointment.prescription != null && appointment.prescription!.isNotEmpty)
-                  Column(
-                    children: [
-                SizedBox(height: 10),
-                _buildDetailRow(
-                  "Prescription",
-                        appointment.prescription!,
-                  Icons.medication,
-                      ),
-                    ],
-                ),
-                
-                SizedBox(height: 15),
-                
-                // Clinical notes - only show if available
-                if (appointment.notes != null && appointment.notes!.isNotEmpty)
-                  Column(
-                    children: [
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.shade200,
-                        blurRadius: 6,
-                        offset: Offset(0, 3),
-                        spreadRadius: 1,
-                      ),
-                    ],
-                    border: Border.all(color: Colors.grey.shade200),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.notes,
-                            size: 18,
-                            color: AppTheme.primaryPink,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.6),
+                            width: 1,
                           ),
-                          SizedBox(width: 8),
-                          Text(
-                            "Clinical Notes",
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.primaryPink,
+                        ),
+                        child: Text(
+                          appointment.status,
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 5),
+                      // Patient profile button
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => PatientDetailProfileScreen(
+                                    name: appointment.doctorName,
+                                    age: "N/A",
+                                    bloodGroup: "Not Available",
+                                    diseases: [appointment.diagnosis ?? 'Not specified'],
+                              ),
                             ),
+                          );
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.3),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            
+            // Appointment details
+            Padding(
+              padding: EdgeInsets.all(15),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Date, time and type row
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                    children: [
+                      _buildInfoTag(
+                        Icons.calendar_today,
+                          DateFormat('MMM dd, yyyy').format(appointment.date),
+                        Colors.blue.shade700,
+                      ),
+                      SizedBox(width: 10),
+                      _buildInfoTag(
+                        Icons.access_time,
+                          DateFormat('hh:mm a').format(appointment.date),
+                        Colors.orange.shade700,
+                      ),
+                      SizedBox(width: 10),
+                      _buildInfoTag(
+                          Icons.medical_services,
+                          appointment.specialty,
+                          Colors.green.shade700,
+                      ),
+                    ],
+                    ),
+                  ),
+                  
+                  SizedBox(height: 15),
+                  
+                  // Facility and reason
+                  _buildDetailRow(
+                    "Facility",
+                    appointment.hospital,
+                    Icons.business,
+                  ),
+                  SizedBox(height: 10),
+                  _buildDetailRow(
+                    "Reason",
+                    "Consultation",
+                    Icons.assignment,
+                  ),
+                  
+                  // Only show diagnosis if available
+                  if (appointment.diagnosis != null && appointment.diagnosis!.isNotEmpty)
+                    Column(
+                      children: [
+                    SizedBox(height: 10),
+                    _buildDetailRow(
+                      "Diagnosis",
+                          appointment.diagnosis!,
+                    Icons.medical_services,
+                    ),
+                      ],
+                    ),
+                  
+                  // Only show prescription if available
+                  if (appointment.prescription != null && appointment.prescription!.isNotEmpty)
+                    Column(
+                      children: [
+                    SizedBox(height: 10),
+                    _buildDetailRow(
+                      "Prescription",
+                          appointment.prescription!,
+                    Icons.medication,
+                        ),
+                      ],
+                  ),
+                  
+                  SizedBox(height: 15),
+                  
+                  // Clinical notes - only show if available
+                  if (appointment.notes != null && appointment.notes!.isNotEmpty)
+                    Column(
+                      children: [
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.shade200,
+                            blurRadius: 6,
+                            offset: Offset(0, 3),
+                            spreadRadius: 1,
                           ),
                         ],
+                        border: Border.all(color: Colors.grey.shade200),
                       ),
-                      Divider(height: 16),
-                      Text(
-                              appointment.notes!,
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: Colors.grey.shade800,
-                          height: 1.5,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.notes,
+                                size: 18,
+                                color: AppTheme.primaryPink,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                "Clinical Notes",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.primaryPink,
+                                ),
+                              ),
+                            ],
                           ),
-                  ],
-                ),
+                          Divider(height: 16),
+                          Text(
+                                  appointment.notes!,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade800,
+                                  height: 1.5,
+                                ),
+                                  ),
+                        ],
                       ),
+                    ),
                       SizedBox(height: 15),
                     ],
                 ),
@@ -1426,10 +1438,39 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> wit
                       ],
                     ),
                   ),
-              ],
+                  
+                // View Details Button
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.fromLTRB(0, 15, 0, 0),
+                  child: TextButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AppointmentDetailsScreen(
+                            appointmentId: appointment.id,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: Icon(Icons.visibility, size: 18),
+                    label: Text("View Appointment Details"),
+                    style: TextButton.styleFrom(
+                      backgroundColor: statusColor.withOpacity(0.1),
+                      foregroundColor: statusColor,
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
