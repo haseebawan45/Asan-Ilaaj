@@ -127,39 +127,52 @@ class _FinancesScreenState extends State<FinancesScreen> {
     }
   }
 
+  // ===== DATA LOADING STRATEGY =====
+  //
+  // The app implements a seamless data loading experience:
+  // 1. When screen opens, we immediately look for cached data
+  // 2. If cache exists and is fresh, we show it right away
+  // 3. Then we silently fetch fresh data from Firebase in the background
+  // 4. When fresh data arrives, we update both the UI and the cache
+  // 5. A subtle progress indicator at the bottom shows during refresh
+  // 6. If no cache exists, we show a loading indicator while fetching data
+  
+  // Master method that orchestrates the data loading flow
   Future<void> _loadFinancialData() async {
+    // Set initial loading state
     if (mounted) {
       setState(() {
         _isLoading = true;
       });
     }
     
-    // First load cached data
+    // Step 1: Immediately try to load and display cached data first
     bool hasCachedData = await _loadCachedData();
     
-    // Only clear and refresh if no cached data or cache is old
-    if (!hasCachedData) {
-      if (mounted) {
+    if (mounted) {
+      // If we have cached data, we can show it immediately and hide the main loading indicator
+      if (hasCachedData) {
         setState(() {
-          // Reset pagination data on fresh load
-          _lastTransactionDoc = null;
-          _hasMoreTransactions = true;
-          _transactions.clear();
+          _isLoading = false;
         });
-      }
-      // Then start background refresh
-      _refreshData();
-    } else {
-      // If we have cached data, do a background refresh after a delay
-      Future.delayed(Duration(seconds: 30), () {
-        if (mounted) {
-          _refreshData();
+        
+        // Step 2: After showing cached data, fetch latest data in the background
+        _refreshData(silent: true);
+      } else {
+        // If no cached data, continue with normal loading flow
+        if (_lastTransactionDoc == null) {
+          _transactions.clear();
+          _hasMoreTransactions = true;
         }
-      });
+        
+        // Step 3: Load fresh data (not silent since we need to show loading indicator)
+        await _refreshData(silent: false);
+      }
     }
   }
 
-  // Load cached data first
+  // Load cached data from SharedPreferences
+  // Returns true if valid cache was found and loaded
   Future<bool> _loadCachedData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -193,7 +206,7 @@ class _FinancesScreenState extends State<FinancesScreen> {
                     .toList();
               }
               
-              _isLoading = false;
+              print('Loaded ${_transactions.length} transactions from cache');
             });
           }
           return true;
@@ -205,12 +218,16 @@ class _FinancesScreenState extends State<FinancesScreen> {
     return false;
   }
 
-  // Refresh data in background
-  Future<void> _refreshData() async {
+  // Refresh data from Firebase (optionally in the background)
+  // silent = true: refresh happens in the background with just a bottom indicator
+  // silent = false: show full loading indicator during refresh
+  Future<void> _refreshData({bool silent = false}) async {
     if (!mounted) return;
     
+    // Only show refreshing indicator if not silent mode
     setState(() {
       _isRefreshing = true;
+      if (!silent) _isLoading = true;
     });
     
     try {
@@ -227,7 +244,7 @@ class _FinancesScreenState extends State<FinancesScreen> {
       
       // If repository load fails, use fallback
       if (!success) {
-        await _loadTransactions(currentUser.uid, isFirstLoad: true);
+        await _loadTransactions(currentUser.uid, isFirstLoad: !silent);
       }
       
       // Calculate financial summaries
@@ -237,25 +254,29 @@ class _FinancesScreenState extends State<FinancesScreen> {
       if (_transactions.isNotEmpty) {
         await _saveToCache();
       } else {
-        // Revert to previous transactions if new load failed
-        setState(() {
-          _transactions = previousTransactions;
-        });
+        // Revert to previous transactions if new load failed and we were in silent mode
+        if (silent) {
+          setState(() {
+            _transactions = previousTransactions;
+          });
+        }
       }
       
     } catch (e) {
       print('Error refreshing financial data: $e');
+      // If silent mode and error occurs, don't show error to user
+      // Just keep showing the cached data
     } finally {
       if (mounted) {
         setState(() {
           _isRefreshing = false;
-          _isLoading = false;
+          _isLoading = false; // Always hide the loading indicator
         });
       }
     }
   }
 
-  // Save current data to cache
+  // Save current data to cache for faster future loading
   Future<void> _saveToCache() async {
     try {
       final Map<String, dynamic> cacheData = {
@@ -622,308 +643,283 @@ class _FinancesScreenState extends State<FinancesScreen> {
       },
       child: Scaffold(
         backgroundColor: Colors.grey.shade50,
-        body: _isLoading
-            ? Center(
+        body: RefreshIndicator(
+          onRefresh: () => _refreshData(silent: false),
+          color: AppTheme.primaryTeal,
+          child: Stack(
+            children: [
+              SafeArea(
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Custom app bar with matching style to analytics.dart
                     Container(
-                      width: 200,
-                      height: 4,
-                      child: LinearProgressIndicator(
+                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                      decoration: BoxDecoration(
                         color: AppTheme.primaryPink,
-                        backgroundColor: AppTheme.primaryPink.withOpacity(0.2),
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                    Text(
-                      "Loading financial data...",
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        color: AppTheme.mediumText,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            : RefreshIndicator(
-                onRefresh: _refreshData,
-                color: AppTheme.primaryTeal,
-                child: Stack(
-                  children: [
-                  SafeArea(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Custom app bar with matching style to analytics.dart
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryPink,
-                            borderRadius: BorderRadius.only(
-                              bottomLeft: Radius.circular(20),
-                              bottomRight: Radius.circular(20),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.primaryPink.withOpacity(0.3),
-                                spreadRadius: 0,
-                                blurRadius: 10,
-                                offset: Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              // Back button
-                              GestureDetector(
-                                onTap: () {
-                                  NavigationHelper.navigateToTab(context, 0);
-                                },
-                                child: Icon(
-                                  LucideIcons.arrowLeft,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              
-                              // Title
-                              Text(
-                                "Finances",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              
-                              // Filter icon
-                              GestureDetector(
-                                onTap: () {
-                                  // Future implementation for date filters
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text("Date filtering coming soon")),
-                                  );
-                                },
-                                child: Container(
-                                  padding: EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Icon(
-                                    LucideIcons.calendarDays,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(20),
+                          bottomRight: Radius.circular(20),
                         ),
-                        
-                        // Scrollable content
-                        Expanded(
-                          child: SingleChildScrollView(
-                            controller: _scrollController,
-                            physics: AlwaysScrollableScrollPhysics(),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Main financial summary card
-                        Container(
-                          margin: EdgeInsets.fromLTRB(16, 8, 16, 24),
-                          padding: EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryPink,
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.primaryPink.withOpacity(0.3),
-                                blurRadius: 20,
-                                offset: Offset(0, 10),
-                                spreadRadius: 0,
-                              ),
-                            ],
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primaryPink.withOpacity(0.3),
+                            spreadRadius: 0,
+                            blurRadius: 10,
+                            offset: Offset(0, 4),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Top row with title and settings
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Back button
+                          GestureDetector(
+                            onTap: () {
+                              NavigationHelper.navigateToTab(context, 0);
+                            },
+                            child: Icon(
+                              LucideIcons.arrowLeft,
+                              color: Colors.white,
+                            ),
+                          ),
+                          
+                          // Title
+                          Text(
+                            "Finances",
+                            style: GoogleFonts.poppins(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                          
+                          // Filter icon
+                          GestureDetector(
+                            onTap: () {
+                              // Future implementation for date filters
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("Date filtering coming soon")),
+                              );
+                            },
+                            child: Container(
+                              padding: EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                LucideIcons.calendarDays,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    // Scrollable content
+                    Expanded(
+                      child: SingleChildScrollView(
+                        controller: _scrollController,
+                        physics: AlwaysScrollableScrollPhysics(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Main financial summary card
+                            Container(
+                              margin: EdgeInsets.fromLTRB(16, 8, 16, 24),
+                              padding: EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryPink,
+                                borderRadius: BorderRadius.circular(24),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppTheme.primaryPink.withOpacity(0.3),
+                                    blurRadius: 20,
+                                    offset: Offset(0, 10),
+                                    spreadRadius: 0,
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Card title with icon
+                                  // Top row with title and settings
                                   Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Container(
-                                        padding: EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.15),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Icon(
-                                          LucideIcons.wallet,
-                                          color: Colors.white,
-                                          size: 20,
-                                        ),
+                                      // Card title with icon
+                                      Row(
+                                        children: [
+                                          Container(
+                                            padding: EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withOpacity(0.15),
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Icon(
+                                              LucideIcons.wallet,
+                                              color: Colors.white,
+                                              size: 20,
+                                            ),
+                                          ),
+                                          SizedBox(width: 12),
+                                          Text(
+                                            "Total Earnings",
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      SizedBox(width: 12),
-                                      Text(
-                                        "Total Earnings",
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white,
+                                      
+                                      // Refresh button
+                                      InkWell(
+                                        onTap: () => _refreshData(silent: true),
+                                        borderRadius: BorderRadius.circular(30),
+                                        child: Container(
+                                          padding: EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withOpacity(0.15),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            _isRefreshing 
+                                              ? LucideIcons.loader 
+                                              : LucideIcons.refreshCw,
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
                                         ),
                                       ),
                                     ],
                                   ),
                                   
-                                  // Refresh button
-                                  InkWell(
-                                    onTap: _refreshData,
-                                    borderRadius: BorderRadius.circular(30),
-                                    child: Container(
-                                      padding: EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.15),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(
-                                        _isRefreshing 
-                                          ? LucideIcons.loader 
-                                          : LucideIcons.refreshCw,
-                                        color: Colors.white,
-                                        size: 18,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              
-                              SizedBox(height: 24),
-                              
-                              // Total balance amount
-                              Text(
-                                "Rs ${_totalIncome.toStringAsFixed(0)}",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  height: 1.1,
-                                ),
-                              ),
-                              
-                              SizedBox(height: 6),
-                              
-                              // Subtitle
-                              Row(
-                                children: [
-                                  Icon(
-                                    LucideIcons.trendingUp,
-                                    color: Colors.greenAccent,
-                                    size: 16,
-                                  ),
-                                  SizedBox(width: 6),
+                                  SizedBox(height: 24),
+                                  
+                                  // Total balance amount
                                   Text(
-                                    "All time earnings",
+                                    "Rs ${_totalIncome.toStringAsFixed(0)}",
                                     style: GoogleFonts.poppins(
-                                      fontSize: 14,
-                                      color: Colors.white.withOpacity(0.8),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              
-                              SizedBox(height: 24),
-                  
-                              // Financial metrics row
-                              Row(
-                                children: [
-                                  // Monthly earnings metric
-                                  Expanded(
-                                    child: _buildFinanceMetric(
-                                      "This Month",
-                                      "Rs ${_currentMonthIncome.toStringAsFixed(0)}",
-                                      LucideIcons.calendar,
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      height: 1.1,
                                     ),
                                   ),
                                   
-                                  Container(
-                                    height: 40,
-                                    width: 1,
-                                    color: Colors.white.withOpacity(0.2),
-                                    margin: EdgeInsets.symmetric(horizontal: 12),
+                                  SizedBox(height: 6),
+                                  
+                                  // Subtitle
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        LucideIcons.trendingUp,
+                                        color: Colors.greenAccent,
+                                        size: 16,
+                                      ),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        "All time earnings",
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                          color: Colors.white.withOpacity(0.8),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                  
-                                  // Transactions metric
-                                  Expanded(
-                                    child: _buildFinanceMetric(
-                                      "Transactions",
-                                      "${_transactions.length}",
-                                      LucideIcons.fileText,
+                                  
+                                  SizedBox(height: 24),
+                      
+                                  // Financial metrics row
+                                  Row(
+                                    children: [
+                                      // Monthly earnings metric
+                                      Expanded(
+                                        child: _buildFinanceMetric(
+                                          "This Month",
+                                          "Rs ${_currentMonthIncome.toStringAsFixed(0)}",
+                                          LucideIcons.calendar,
+                                        ),
+                                      ),
+                                      
+                                      Container(
+                                        height: 40,
+                                        width: 1,
+                                        color: Colors.white.withOpacity(0.2),
+                                        margin: EdgeInsets.symmetric(horizontal: 12),
+                                      ),
+                      
+                                      // Transactions metric
+                                      Expanded(
+                                        child: _buildFinanceMetric(
+                                          "Transactions",
+                                          "${_transactions.length}",
+                                          LucideIcons.fileText,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            
+                            // Transactions section header
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    "Recent Transactions",
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.darkText,
+                                    ),
+                                  ),
+                                  
+                                  // Filter chip - currently just decorative
+                                  Container(
+                                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.lightTeal,
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: AppTheme.primaryTeal.withOpacity(0.2),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          LucideIcons.arrowDownUp,
+                                          size: 14,
+                                          color: AppTheme.primaryTeal,
+                                        ),
+                                        SizedBox(width: 6),
+                                        Text(
+                                          "All",
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                            color: AppTheme.primaryTeal,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
                               ),
-                            ],
-                          ),
-                        ),
-                        
-                        // Transactions section header
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                "Recent Transactions",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppTheme.darkText,
-                                ),
-                              ),
-                              
-                              // Filter chip - currently just decorative
-                              Container(
-                                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.lightTeal,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: AppTheme.primaryTeal.withOpacity(0.2),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      LucideIcons.arrowDownUp,
-                                      size: 14,
-                                      color: AppTheme.primaryTeal,
-                                    ),
-                                    SizedBox(width: 6),
-                                    Text(
-                                      "All",
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: AppTheme.primaryTeal,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                  
-                        // Transactions list
-                                _transactions.isEmpty
+                            ),
+                      
+                            // Transactions list
+                            _transactions.isEmpty && !_isLoading
                               ? Center(
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -961,61 +957,66 @@ class _FinancesScreenState extends State<FinancesScreen> {
                                   ),
                                 )
                               : ListView.builder(
-                                      shrinkWrap: true,
-                                      physics: NeverScrollableScrollPhysics(),
+                                  shrinkWrap: true,
+                                  physics: NeverScrollableScrollPhysics(),
                                   padding: EdgeInsets.symmetric(horizontal: 16),
-                                  itemCount: _transactions.length + (_hasMoreTransactions ? 1 : 0),
+                                  itemCount: _isLoading && _transactions.isEmpty ? 3 : // Show 3 placeholder items while loading
+                                            _transactions.length + (_hasMoreTransactions ? 1 : 0),
                                   itemBuilder: (context, index) {
-                                    if (index == _transactions.length) {
+                                    // Show loading indicator at the end when loading more
+                                    if (_transactions.isNotEmpty && index == _transactions.length) {
                                       return Padding(
                                         padding: const EdgeInsets.symmetric(vertical: 20.0),
                                         child: Center(
                                           child: Container(
-                                            padding: EdgeInsets.all(12),
-                                            decoration: BoxDecoration(
-                                              color: AppTheme.lightPink,
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: Container(
-                                              height: 3,
-                                              width: 40,
-                                              child: LinearProgressIndicator(
-                                                backgroundColor: AppTheme.lightPink,
-                                                color: AppTheme.primaryPink,
-                                              ),
+                                            width: MediaQuery.of(context).size.width * 0.5,
+                                            height: 3,
+                                            child: LinearProgressIndicator(
+                                              backgroundColor: AppTheme.primaryPink.withOpacity(0.1),
+                                              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryPink),
                                             ),
                                           ),
                                         ),
                                       );
                                     }
+                                    
+                                    // Show placeholder while loading
+                                    if (_isLoading && _transactions.isEmpty) {
+                                      return _buildPlaceholderTransactionCard();
+                                    }
+                                    
+                                    // Show actual transaction
                                     return _buildTransactionCard(_transactions[index]);
                                   },
-                                    ),
-                              ],
-                            ),
                                 ),
-                        ),
-                      ],
-                    ),
-                    ),
-            
-                    // Bottom loading indicator
-                  if (_isRefreshing)
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          height: 2,
-                          child: LinearProgressIndicator(
-                            backgroundColor: Colors.transparent,
-                            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryTeal),
-                          ),
+                            
+                            // Add bottom padding
+                            SizedBox(height: 20),
+                          ],
                         ),
                       ),
+                    ),
                   ],
                 ),
               ),
+        
+              // Bottom loading indicator - only visible during refresh
+              if (_isRefreshing || _isLoading)
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: 2,
+                    child: LinearProgressIndicator(
+                      backgroundColor: Colors.transparent,
+                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryTeal),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1269,6 +1270,79 @@ class _FinancesScreenState extends State<FinancesScreen> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  // Placeholder for transaction card when data is still loading
+  Widget _buildPlaceholderTransactionCard() {
+    return Container(
+      margin: EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryTeal.withOpacity(0.05),
+            blurRadius: 10,
+            spreadRadius: 0,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Row(
+          children: [
+            // Placeholder icon
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            
+            SizedBox(width: 16),
+            
+            // Placeholder content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 18,
+                    width: 150,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Container(
+                    height: 12,
+                    width: 80,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Placeholder amount
+            Container(
+              height: 30,
+              width: 80,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+          ],
         ),
       ),
     );
