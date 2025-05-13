@@ -94,9 +94,26 @@ class _SignUpState extends State<SignUp> {
   // Send OTP to the provided phone number
   Future<void> _sendOTP() async {
     // Validate inputs
-    if (_nameController.text.isEmpty) {
+    if (_nameController.text.trim().isEmpty) {
       setState(() {
         _errorMessage = 'Please enter your full name';
+      });
+      return;
+    }
+
+    // Check name has at least 3 characters and is properly formatted
+    final name = _nameController.text.trim();
+    if (name.length < 3) {
+      setState(() {
+        _errorMessage = 'Name should be at least 3 characters';
+      });
+      return;
+    }
+    
+    // Check for invalid characters in name
+    if (name.contains(RegExp(r'[0-9!@#$%^&*(),.?":{}|<>]'))) {
+      setState(() {
+        _errorMessage = 'Name should not contain numbers or special characters';
       });
       return;
     }
@@ -199,6 +216,7 @@ class _SignUpState extends State<SignUp> {
       // Phone number doesn't exist, proceed with OTP sending
       final result = await _authService.sendOTP(
         phoneNumber: formattedPhoneNumber,
+        useTestMode: true, // Enable test mode for consistent testing experience
       );
       
       setState(() {
@@ -207,6 +225,22 @@ class _SignUpState extends State<SignUp> {
       
       if (result['success']) {
         print('***** OTP SENT SUCCESSFULLY FOR USER TYPE: $type *****');
+        
+        bool isTestMode = result['testMode'] == true;
+        String otpMessage = isTestMode
+            ? "A test verification code has been generated. Use code: 123456"
+            : "A verification code has been sent to $formattedPhoneNumber";
+            
+        // Show a snackbar with OTP info
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(otpMessage),
+            backgroundColor: isTestMode ? Colors.orange : Colors.green,
+            duration: Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        
         // Navigate to OTP verification screen with verification ID
         Navigator.push(
           context,
@@ -240,6 +274,18 @@ class _SignUpState extends State<SignUp> {
           setState(() {
             _errorMessage = result['message'];
           });
+          
+          // If we have a test mode fallback, show a notification
+          if (result['testMode'] == true) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Using test mode due to Firebase limitations. Use code: 123456 for verification.'),
+                backgroundColor: Colors.orange,
+                duration: Duration(seconds: 4),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
         }
       }
     } catch (e) {
@@ -247,6 +293,18 @@ class _SignUpState extends State<SignUp> {
         _isLoading = false;
         _errorMessage = 'Failed to send OTP. Please try again.';
       });
+      
+      print('***** ERROR IN _sendOTP: $e *****');
+      
+      // Show more detailed error in snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 

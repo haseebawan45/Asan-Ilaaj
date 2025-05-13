@@ -1122,14 +1122,14 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryPink.withOpacity(0.08),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 15,
             spreadRadius: 1,
             offset: const Offset(0, 5),
           ),
         ],
         border: Border.all(
-          color: AppTheme.primaryPink.withOpacity(0.2),
+          color: Colors.grey.shade200,
           width: 1.5,
         ),
       ),
@@ -1163,13 +1163,13 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
                           borderRadius: BorderRadius.circular(14),
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.primaryPink.withOpacity(0.2),
+                              color: Colors.black.withOpacity(0.1),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
                           ],
                           border: Border.all(
-                            color: AppTheme.primaryPink.withOpacity(0.5),
+                            color: AppTheme.primaryTeal.withOpacity(0.5),
                             width: 2,
                           ),
                         ),
@@ -1181,22 +1181,22 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) {
                                     return Container(
-                                      color: AppTheme.primaryPink.withOpacity(0.1),
+                                      color: AppTheme.primaryTeal.withOpacity(0.1),
                                       alignment: Alignment.center,
                                       child: Icon(
                                         Icons.person,
                                         size: 35,
-                                        color: AppTheme.primaryPink,
+                                        color: AppTheme.primaryTeal,
                                       ),
                                     );
                                   },
                                   loadingBuilder: (context, child, loadingProgress) {
                                     if (loadingProgress == null) return child;
                                     return Container(
-                                      color: AppTheme.primaryPink.withOpacity(0.1),
+                                      color: AppTheme.primaryTeal.withOpacity(0.1),
                                       alignment: Alignment.center,
                                       child: CircularProgressIndicator(
-                                        color: AppTheme.primaryPink,
+                                        color: AppTheme.primaryTeal,
                                         value: loadingProgress.expectedTotalBytes != null
                                             ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
                                             : null,
@@ -1206,12 +1206,12 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
                                   },
                                 )
                               : Container(
-                                  color: AppTheme.primaryPink.withOpacity(0.1),
+                                  color: AppTheme.primaryTeal.withOpacity(0.1),
                                   alignment: Alignment.center,
                                   child: Icon(
                                     Icons.person,
                                     size: 35,
-                                    color: AppTheme.primaryPink,
+                                    color: AppTheme.primaryTeal,
                                   ),
                                 ),
                           ),
@@ -1227,7 +1227,7 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
                             style: GoogleFonts.poppins(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: AppTheme.primaryPink,
+                              color: AppTheme.darkText,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -1236,7 +1236,7 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
                               Icon(
                                 Icons.calendar_today,
                                 size: 14,
-                                color: AppTheme.primaryPink,
+                                color: AppTheme.primaryTeal,
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -1255,11 +1255,11 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
                       height: 42,
                       width: 42,
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryPink,
+                        color: AppTheme.primaryTeal,
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.primaryPink.withOpacity(0.3),
+                            color: AppTheme.primaryTeal.withOpacity(0.3),
                             blurRadius: 8,
                             offset: Offset(0, 3),
                           ),
@@ -1273,86 +1273,129 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
                     ),
                   ],
                 ),
-                SizedBox(height: 12),
-                // Appointment details
+                SizedBox(height: 16),
+                // Appointment details with header
                 Container(
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   decoration: BoxDecoration(
-                    color: AppTheme.lightPink,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppTheme.primaryPink.withOpacity(0.3), width: 1.5),
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.primaryPink.withOpacity(0.05),
-                        blurRadius: 10,
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 8,
                         offset: Offset(0, 4),
                       ),
                     ],
                   ),
                   child: Column(
                     children: [
-                      _buildAppointmentDetailRow(
-                        Icons.calendar_today,
-                        "Date:",
-                        patient["appointment"]["date"],
-                        AppTheme.primaryPink,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Divider(
-                          color: AppTheme.primaryPink.withOpacity(0.2),
-                          thickness: 1,
+                      // Header
+                      Container(
+                        padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryTeal,
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(14),
+                            topRight: Radius.circular(14),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.event_note_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              "Appointment Details",
+                              style: GoogleFonts.poppins(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      _buildAppointmentDetailRow(
-                        Icons.access_time,
-                        "Time:",
-                        patient["appointment"]["time"],
-                        AppTheme.primaryPink,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Divider(
-                          color: AppTheme.primaryPink.withOpacity(0.2),
-                          thickness: 1,
+                      // Body
+                      Container(
+                        padding: EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(color: Colors.grey.shade200, width: 1),
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(14),
+                            bottomRight: Radius.circular(14),
+                          ),
                         ),
-                      ),
-                      _buildAppointmentDetailRow(
-                        Icons.business,
-                        "Hospital:",
-                        patient["appointment"]["hospital"],
-                        AppTheme.primaryPink,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Divider(
-                          color: AppTheme.primaryPink.withOpacity(0.2),
-                          thickness: 1,
+                        child: Column(
+                          children: [
+                            _buildAppointmentDetailRow(
+                              Icons.calendar_today,
+                              "Date:",
+                              patient["appointment"]["date"],
+                              AppTheme.primaryTeal,
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Divider(
+                                color: Colors.grey.shade200,
+                                thickness: 1,
+                              ),
+                            ),
+                            _buildAppointmentDetailRow(
+                              Icons.access_time,
+                              "Time:",
+                              patient["appointment"]["time"],
+                              AppTheme.primaryTeal,
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Divider(
+                                color: Colors.grey.shade200,
+                                thickness: 1,
+                              ),
+                            ),
+                            _buildAppointmentDetailRow(
+                              Icons.business,
+                              "Hospital:",
+                              patient["appointment"]["hospital"],
+                              AppTheme.primaryTeal,
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Divider(
+                                color: Colors.grey.shade200,
+                                thickness: 1,
+                              ),
+                            ),
+                            _buildAppointmentDetailRow(
+                              Icons.description,
+                              "Reason:",
+                              patient["appointment"]["reason"],
+                              AppTheme.primaryTeal,
+                            ),
+                          ],
                         ),
-                      ),
-                      _buildAppointmentDetailRow(
-                        Icons.description,
-                        "Reason:",
-                        patient["appointment"]["reason"],
-                        AppTheme.primaryPink,
                       ),
                     ],
                   ),
                 ),
-                SizedBox(height: 12),
+                SizedBox(height: 14),
+                // Status section
                 Container(
-                  padding: EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   decoration: BoxDecoration(
-                    color: Color(0xFFEDF5FF),
+                    gradient: LinearGradient(
+                      colors: [
+                        AppTheme.veryLightTeal,
+                        Color(0xFFEDF6F9),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.primaryPink.withOpacity(0.3), width: 1.5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primaryPink.withOpacity(0.05),
-                        blurRadius: 8,
-                        offset: Offset(0, 3),
-                      ),
-                    ],
+                    border: Border.all(color: Colors.grey.shade200, width: 1.5),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1361,56 +1404,91 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
                         flex: 2,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryPink.withOpacity(0.1),
-                              shape: BoxShape.circle,
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryTeal.withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.medical_information_outlined,
+                                size: 16,
+                                color: AppTheme.primaryTeal,
+                              ),
                             ),
-                            child: Icon(
-                              Icons.medical_information_outlined,
-                              size: 16,
-                              color: AppTheme.primaryPink,
+                            SizedBox(width: 8),
+                            Text(
+                              "Condition:",
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                color: Colors.grey.shade700,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            "Condition:",
-                            style: GoogleFonts.poppins(
-                              fontSize: 13,
-                              color: Colors.grey.shade700,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
                       ),
                       Flexible(
                         flex: 3,
                         child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryPink.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppTheme.primaryPink.withOpacity(0.3),
-                            width: 1,
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryTeal.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppTheme.primaryTeal.withOpacity(0.3),
+                              width: 1,
+                            ),
                           ),
-                        ),
-                        child: Text(
-                          patient["condition"],
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            color: AppTheme.primaryPink,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                          child: Text(
+                            patient["condition"],
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              color: AppTheme.primaryTeal,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                             maxLines: 1,
                           ),
                         ),
                       ),
                     ],
+                  ),
+                ),
+                // Add appointment status badge
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Container(
+                    margin: EdgeInsets.only(top: 12),
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isUpcoming ? AppTheme.success.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isUpcoming ? AppTheme.success.withOpacity(0.3) : Colors.orange.withOpacity(0.3),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isUpcoming ? Icons.schedule : Icons.check_circle_outline,
+                          size: 14,
+                          color: isUpcoming ? AppTheme.success : Colors.orange,
+                        ),
+                        SizedBox(width: 5),
+                        Text(
+                          isUpcoming ? "Upcoming" : "Completed",
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isUpcoming ? AppTheme.success : Colors.orange,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -1428,47 +1506,47 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
         final iconSize = screenWidth * 0.04;
         final fontSize = screenWidth * 0.032;
         
-    return Row(
-      children: [
-        Container(
+        return Row(
+          children: [
+            Container(
               padding: EdgeInsets.all(screenWidth * 0.017),
-          decoration: BoxDecoration(
-            color: AppTheme.primaryPink.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: AppTheme.primaryPink.withOpacity(0.3),
-              width: 1,
-            ),
-          ),
-          child: Icon(
-            icon,
+              decoration: BoxDecoration(
+                color: AppTheme.veryLightTeal,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppTheme.primaryTeal.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Icon(
+                icon,
                 size: iconSize,
-            color: AppTheme.primaryPink,
-          ),
-        ),
-            SizedBox(width: screenWidth * 0.02),
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-                fontSize: fontSize,
-            color: Colors.grey.shade700,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-            SizedBox(width: screenWidth * 0.02),
-        Expanded(
-          child: Text(
-            value,
-            style: GoogleFonts.poppins(
-                  fontSize: fontSize,
-              color: AppTheme.primaryPink,
-              fontWeight: FontWeight.w500,
+                color: AppTheme.primaryTeal,
+              ),
             ),
-            textAlign: TextAlign.end,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
+            SizedBox(width: screenWidth * 0.02),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: fontSize,
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            SizedBox(width: screenWidth * 0.02),
+            Expanded(
+              child: Text(
+                value,
+                style: GoogleFonts.poppins(
+                  fontSize: fontSize,
+                  color: AppTheme.darkText,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.end,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         );
       }
     );

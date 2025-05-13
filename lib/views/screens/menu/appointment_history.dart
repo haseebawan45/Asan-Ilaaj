@@ -948,7 +948,7 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> wit
                     child: LinearProgressIndicator(
                       backgroundColor: Colors.transparent,
                       valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryPink),
-                    ),
+                              ),
                               ),
                             ),
                           ],
@@ -1197,8 +1197,8 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> wit
                           color: Colors.black.withOpacity(0.15),
                           blurRadius: 8,
                           offset: Offset(0, 3),
-                        ),
-                      ],
+                      ),
+                    ],
                       color: Colors.white,
                   ),
                   child: ClipRRect(

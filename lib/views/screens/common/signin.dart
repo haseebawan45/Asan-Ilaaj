@@ -142,6 +142,8 @@ class _SignINState extends State<SignIN> with SingleTickerProviderStateMixin {
     // Ensure it starts with 3xx format and format for Firebase (+923xx...)
     final formattedPhoneNumber = '+92$cleanPhoneNumber';
     
+    print('***** SIGNIN: SENDING OTP TO $formattedPhoneNumber *****');
+    
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -159,6 +161,7 @@ class _SignINState extends State<SignIN> with SingleTickerProviderStateMixin {
         return;
       }
       
+      // Show a success message if account exists
       if (userCheck['exists'] == true) {
         final userRole = userCheck['userRole'] as UserRole;
         final isProfileComplete = userCheck['isProfileComplete'] as bool;
@@ -180,11 +183,31 @@ class _SignINState extends State<SignIN> with SingleTickerProviderStateMixin {
             duration: Duration(seconds: 2),
           ),
         );
+      } else {
+        // If the user doesn't exist, display an appropriate message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('No account found with this number. Creating a new account.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        
+        // Redirect to signup page
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => SignUp(type: "Patient")),
+        );
+        setState(() {
+          _isLoading = false;
+        });
+        return;
       }
       
       // Check if this is an admin phone number
       final isAdmin = await _authService.isAdminPhoneNumber(formattedPhoneNumber);
       if (isAdmin) {
+        print('***** ADMIN LOGIN ATTEMPT DETECTED *****');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Admin verification required'),
@@ -198,6 +221,7 @@ class _SignINState extends State<SignIN> with SingleTickerProviderStateMixin {
       _proceedWithOTP(formattedPhoneNumber);
       
     } catch (e) {
+      print('***** ERROR IN SIGNIN PROCESS: $e *****');
       setState(() {
         _isLoading = false;
         _errorMessage = 'Failed to sign in. Please try again.';
@@ -208,9 +232,11 @@ class _SignINState extends State<SignIN> with SingleTickerProviderStateMixin {
   // Continue with OTP verification
   Future<void> _proceedWithOTP(String formattedPhoneNumber) async {
     try {
-      // Send real OTP using Firebase
+      print('***** PROCEEDING WITH OTP VERIFICATION *****');
+      // Use real Firebase OTP, not test mode
       final result = await _authService.sendOTP(
         phoneNumber: formattedPhoneNumber,
+        useTestMode: false, // Disable test mode to use actual Firebase OTP
       );
       
       setState(() {
@@ -220,9 +246,15 @@ class _SignINState extends State<SignIN> with SingleTickerProviderStateMixin {
       if (result['success']) {
         // If admin verification
         bool isAdmin = result['isAdmin'] == true;
+        bool isTestMode = result['testMode'] == true;
+        
+        print('***** OTP SENT SUCCESSFULLY - ADMIN: $isAdmin, TEST MODE: $isTestMode *****');
+        
+        String title = isAdmin ? "Admin Verification" : "Welcome Back";
         
         // If auto-verified (rare, but happens on some Android devices)
         if (result['autoVerified'] == true) {
+          print('***** AUTO-VERIFICATION DETECTED *****');
           // Auto verification succeeded, navigate to home
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -233,12 +265,13 @@ class _SignINState extends State<SignIN> with SingleTickerProviderStateMixin {
           // Navigate to appropriate screen based on user role
           _navigateAfterLogin();
         } else {
+          print('***** NAVIGATING TO OTP VERIFICATION SCREEN *****');
           // Navigate to OTP verification screen with verification ID
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => OTPVerificationScreen(
-                text: isAdmin ? "Admin Verification" : "Welcome Back",
+                text: title,
                 phoneNumber: formattedPhoneNumber,
                 verificationId: result['verificationId'],
               ),
@@ -246,6 +279,8 @@ class _SignINState extends State<SignIN> with SingleTickerProviderStateMixin {
           );
         }
       } else {
+        print('***** OTP SENDING FAILED: ${result['message']} *****');
+        
         // Check if this is a billing issue
         if (result['billingIssue'] == true) {
           showDialog(
@@ -262,16 +297,46 @@ class _SignINState extends State<SignIN> with SingleTickerProviderStateMixin {
             ),
           );
         } else {
+          // Create a more user-friendly error message
+          String errorMessage = result['message'] ?? 'Failed to send OTP.';
+          
+          if (errorMessage.contains('format') || errorMessage.contains('invalid')) {
+            errorMessage = 'Please check your phone number format and try again.';
+          } else if (errorMessage.contains('network')) {
+            errorMessage = 'Network error. Please check your internet connection.';
+          } else if (errorMessage.contains('too many requests') || errorMessage.contains('blocked')) {
+            errorMessage = 'Too many attempts. Please try again later.';
+          }
+          
           setState(() {
-            _errorMessage = result['error'] ?? 'Failed to send OTP.';
+            _errorMessage = errorMessage;
           });
+          
+          // Also show a snackbar for more visibility
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
         }
       }
     } catch (e) {
+      print('***** ERROR IN _proceedWithOTP: $e *****');
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Failed to sign in. Please try again.';
+        _errorMessage = 'Failed to send verification code. Please try again.';
       });
+      
+      // Show error in snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
     }
   }
   
