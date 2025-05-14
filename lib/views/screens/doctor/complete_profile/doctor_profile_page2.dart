@@ -11,6 +11,9 @@ import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:healthcare/utils/app_theme.dart';
 import 'package:healthcare/utils/ui_helper.dart';
 import 'dart:io';
+import 'dart:async';
+import 'dart:ui';
+import 'package:healthcare/services/storage_service.dart';
 
 class DoctorProfilePage2Screen extends StatefulWidget {
   final String fullName;
@@ -457,68 +460,70 @@ class _DoctorProfilePage2ScreenState extends State<DoctorProfilePage2Screen> {
       String? cnicBackUrl = widget.cnicBackUrl;
       String? degreeImageUrl;
       
+      // Create an instance of StorageService
+      final storageService = StorageService();
+      
       // Upload profile image if available and changed
       if (widget.profileImage != null) {
-        final ref = firebase_storage.FirebaseStorage.instance
-            .ref()
-            .child('doctors')
-            .child(userId)
-            .child('profile_image.jpg');
-        await ref.putFile(File(widget.profileImage!.path));
-        profileImageUrl = await ref.getDownloadURL();
+        final XFile imageXFile = XFile(widget.profileImage!.path);
+        profileImageUrl = await storageService.uploadProfileImage(
+          file: imageXFile,
+          userId: userId,
+          isDoctor: true,
+        );
       }
       
       // Upload medical license images if available and changed
       if (widget.medicalLicenseFront != null) {
-        final ref = firebase_storage.FirebaseStorage.instance
-            .ref()
-            .child('doctors')
-            .child(userId)
-            .child('medical_license_front.jpg');
-        await ref.putFile(File(widget.medicalLicenseFront!.path));
-        medicalLicenseFrontUrl = await ref.getDownloadURL();
+        final XFile imageXFile = XFile(widget.medicalLicenseFront!.path);
+        medicalLicenseFrontUrl = await storageService.uploadDocumentImage(
+          file: imageXFile,
+          userId: userId,
+          isDoctor: true,
+          documentType: 'medical_license_front',
+        );
       }
       
       if (widget.medicalLicenseBack != null) {
-        final ref = firebase_storage.FirebaseStorage.instance
-            .ref()
-            .child('doctors')
-            .child(userId)
-            .child('medical_license_back.jpg');
-        await ref.putFile(File(widget.medicalLicenseBack!.path));
-        medicalLicenseBackUrl = await ref.getDownloadURL();
+        final XFile imageXFile = XFile(widget.medicalLicenseBack!.path);
+        medicalLicenseBackUrl = await storageService.uploadDocumentImage(
+          file: imageXFile,
+          userId: userId,
+          isDoctor: true,
+          documentType: 'medical_license_back',
+        );
       }
       
       // Upload CNIC images if available and changed
       if (widget.cnicFront != null) {
-        final ref = firebase_storage.FirebaseStorage.instance
-            .ref()
-            .child('doctors')
-            .child(userId)
-            .child('cnic_front.jpg');
-        await ref.putFile(File(widget.cnicFront!.path));
-        cnicFrontUrl = await ref.getDownloadURL();
+        final XFile imageXFile = XFile(widget.cnicFront!.path);
+        cnicFrontUrl = await storageService.uploadDocumentImage(
+          file: imageXFile,
+          userId: userId,
+          isDoctor: true,
+          documentType: 'cnic_front',
+        );
       }
       
       if (widget.cnicBack != null) {
-        final ref = firebase_storage.FirebaseStorage.instance
-            .ref()
-            .child('doctors')
-            .child(userId)
-            .child('cnic_back.jpg');
-        await ref.putFile(File(widget.cnicBack!.path));
-        cnicBackUrl = await ref.getDownloadURL();
+        final XFile imageXFile = XFile(widget.cnicBack!.path);
+        cnicBackUrl = await storageService.uploadDocumentImage(
+          file: imageXFile,
+          userId: userId,
+          isDoctor: true,
+          documentType: 'cnic_back',
+        );
       }
       
       // Upload degree image if available
       if (_degreeImage != null) {
-        final ref = firebase_storage.FirebaseStorage.instance
-            .ref()
-            .child('doctors')
-            .child(userId)
-            .child('degree_image.jpg');
-        await ref.putFile(File(_degreeImage!.path));
-        degreeImageUrl = await ref.getDownloadURL();
+        final XFile imageXFile = XFile(_degreeImage!.path);
+        degreeImageUrl = await storageService.uploadDocumentImage(
+          file: imageXFile,
+          userId: userId,
+          isDoctor: true,
+          documentType: 'degree',
+        );
       }
 
       // Create/update a complete doctor profile document

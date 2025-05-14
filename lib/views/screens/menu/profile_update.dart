@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:healthcare/services/storage_service.dart';
 
 class ProfileEditorScreen extends StatefulWidget {
   const ProfileEditorScreen({super.key});
@@ -365,7 +366,7 @@ class _ProfileEditorScreenState extends State<ProfileEditorScreen> {
                       tag: 'profileImage',
                       child: Stack(
                         alignment: Alignment.bottomRight,
-                    children: [
+                        children: [
                           Container(
                             height: 110,
                             width: 110,
@@ -410,9 +411,9 @@ class _ProfileEditorScreenState extends State<ProfileEditorScreen> {
                           ),
                         ],
                       ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
+                ),
               ),
               
               // Form fields
@@ -420,7 +421,7 @@ class _ProfileEditorScreenState extends State<ProfileEditorScreen> {
                 padding: EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                  children: [
                     Text(
                       "Personal Information",
                       style: GoogleFonts.poppins(
@@ -1125,11 +1126,11 @@ class _ProfileEditorScreenState extends State<ProfileEditorScreen> {
         return Transform.translate(
           offset: Offset(value * ((value.toInt() % 2 == 0) ? 1 : -1), 0),
           child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.poppins(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: Color(0xFF666666),
@@ -1437,14 +1438,22 @@ class _ProfileEditorScreenState extends State<ProfileEditorScreen> {
       Map<String, String> imageUrls = {};
       
       try {
-        // Make sure Firebase Storage is available
-        final storage = FirebaseStorage.instance;
+        // Create an instance of StorageService
+        final storageService = StorageService();
         
-      if (_selectedImage != null) {
+        if (_selectedImage != null) {
           try {
-            final profileImageRef = storage.ref().child('profileImages/${userId}_${DateTime.now().millisecondsSinceEpoch}.jpg');
-            await profileImageRef.putFile(_selectedImage!);
-            imageUrls['profileImageUrl'] = await profileImageRef.getDownloadURL();
+            // Convert File to XFile for the storage service
+            final XFile imageXFile = XFile(_selectedImage!.path);
+            
+            // Upload profile image
+            String downloadUrl = await storageService.uploadProfileImage(
+              file: imageXFile,
+              userId: userId,
+              isDoctor: _isDoctor,
+            );
+            
+            imageUrls['profileImageUrl'] = downloadUrl;
           } catch (e) {
             print('Error uploading profile image: $e');
             // Continue with the profile update even if image upload fails
@@ -1455,9 +1464,14 @@ class _ProfileEditorScreenState extends State<ProfileEditorScreen> {
         if (_isDoctor) {
           if (_selectedMedicalLicenseFront != null) {
             try {
-              final ref = storage.ref().child('doctorDocuments/${userId}/medicalLicenseFront_${DateTime.now().millisecondsSinceEpoch}.jpg');
-              await ref.putFile(_selectedMedicalLicenseFront!);
-              imageUrls['medicalLicenseFrontUrl'] = await ref.getDownloadURL();
+              final XFile imageXFile = XFile(_selectedMedicalLicenseFront!.path);
+              final downloadUrl = await storageService.uploadDocumentImage(
+                file: imageXFile,
+                userId: userId,
+                isDoctor: true,
+                documentType: 'medical_license_front',
+              );
+              imageUrls['medicalLicenseFrontUrl'] = downloadUrl;
             } catch (e) {
               print('Error uploading medical license front: $e');
             }
@@ -1465,9 +1479,14 @@ class _ProfileEditorScreenState extends State<ProfileEditorScreen> {
           
           if (_selectedMedicalLicenseBack != null) {
             try {
-              final ref = storage.ref().child('doctorDocuments/${userId}/medicalLicenseBack_${DateTime.now().millisecondsSinceEpoch}.jpg');
-              await ref.putFile(_selectedMedicalLicenseBack!);
-              imageUrls['medicalLicenseBackUrl'] = await ref.getDownloadURL();
+              final XFile imageXFile = XFile(_selectedMedicalLicenseBack!.path);
+              final downloadUrl = await storageService.uploadDocumentImage(
+                file: imageXFile,
+                userId: userId,
+                isDoctor: true,
+                documentType: 'medical_license_back',
+              );
+              imageUrls['medicalLicenseBackUrl'] = downloadUrl;
             } catch (e) {
               print('Error uploading medical license back: $e');
             }
@@ -1475,9 +1494,14 @@ class _ProfileEditorScreenState extends State<ProfileEditorScreen> {
           
           if (_selectedCNICFront != null) {
             try {
-              final ref = storage.ref().child('doctorDocuments/${userId}/cnicFront_${DateTime.now().millisecondsSinceEpoch}.jpg');
-              await ref.putFile(_selectedCNICFront!);
-              imageUrls['cnicFrontUrl'] = await ref.getDownloadURL();
+              final XFile imageXFile = XFile(_selectedCNICFront!.path);
+              final downloadUrl = await storageService.uploadDocumentImage(
+                file: imageXFile,
+                userId: userId,
+                isDoctor: true,
+                documentType: 'cnic_front',
+              );
+              imageUrls['cnicFrontUrl'] = downloadUrl;
             } catch (e) {
               print('Error uploading CNIC front: $e');
             }
@@ -1485,9 +1509,14 @@ class _ProfileEditorScreenState extends State<ProfileEditorScreen> {
           
           if (_selectedCNICBack != null) {
             try {
-              final ref = storage.ref().child('doctorDocuments/${userId}/cnicBack_${DateTime.now().millisecondsSinceEpoch}.jpg');
-              await ref.putFile(_selectedCNICBack!);
-              imageUrls['cnicBackUrl'] = await ref.getDownloadURL();
+              final XFile imageXFile = XFile(_selectedCNICBack!.path);
+              final downloadUrl = await storageService.uploadDocumentImage(
+                file: imageXFile,
+                userId: userId,
+                isDoctor: true,
+                documentType: 'cnic_back',
+              );
+              imageUrls['cnicBackUrl'] = downloadUrl;
             } catch (e) {
               print('Error uploading CNIC back: $e');
             }
@@ -1495,9 +1524,14 @@ class _ProfileEditorScreenState extends State<ProfileEditorScreen> {
           
           if (_selectedDegreeImage != null) {
             try {
-              final ref = storage.ref().child('doctorDocuments/${userId}/degree_${DateTime.now().millisecondsSinceEpoch}.jpg');
-              await ref.putFile(_selectedDegreeImage!);
-              imageUrls['degreeImageUrl'] = await ref.getDownloadURL();
+              final XFile imageXFile = XFile(_selectedDegreeImage!.path);
+              final downloadUrl = await storageService.uploadDocumentImage(
+                file: imageXFile,
+                userId: userId,
+                isDoctor: true,
+                documentType: 'degree',
+              );
+              imageUrls['degreeImageUrl'] = downloadUrl;
             } catch (e) {
               print('Error uploading degree image: $e');
             }

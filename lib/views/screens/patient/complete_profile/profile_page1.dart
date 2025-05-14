@@ -12,6 +12,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:healthcare/utils/app_theme.dart';
+import 'package:healthcare/services/storage_service.dart';
 
 class CompleteProfilePatient1Screen extends StatefulWidget {
   final Map<String, dynamic>? profileData;
@@ -1331,13 +1332,18 @@ class _CompleteProfilePatient1ScreenState extends State<CompleteProfilePatient1S
         
         // Upload profile image if available
         if (_image != null) {
-          final ref = firebase_storage.FirebaseStorage.instance
-              .ref()
-              .child('patients')
-              .child(userId)
-              .child('profile_image.jpg');
-          await ref.putFile(_image!);
-          String downloadUrl = await ref.getDownloadURL();
+          // Create an instance of the StorageService
+          final storageService = StorageService();
+          
+          // Convert File to XFile for the storage service
+          final XFile imageXFile = XFile(_image!.path);
+          
+          // Upload profile image using the service
+          String downloadUrl = await storageService.uploadProfileImage(
+            file: imageXFile,
+            userId: userId,
+            isDoctor: false, // This is a patient profile
+          );
           
           // Update profile with image URL
           await firestore.collection('patients').doc(userId).update({

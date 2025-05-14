@@ -59,3 +59,16 @@ Voice and video calls have been implemented in:
 - `lib/views/screens/common/calls/video_call_screen.dart` - Video call UI
 
 Calls can be initiated from the chat detail screen using the phone and video icons in the app bar.
+
+## Image Upload Functionality
+
+The app includes a centralized image upload service (`StorageService`) for handling all Firebase Storage operations:
+
+- **Location**: `lib/services/storage_service.dart`
+- **Functionality**: 
+  - Optimized image compression before upload
+  - Standardized file paths for doctors and patients
+  - Specific methods for profile images and document uploads (medical licenses, etc.)
+  - Helper utilities for working with images
+
+For detailed documentation on the StorageService, see [README_STORAGE_SERVICE.md](README_STORAGE_SERVICE.md).
