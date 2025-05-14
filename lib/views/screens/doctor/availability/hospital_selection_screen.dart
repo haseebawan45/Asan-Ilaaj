@@ -240,6 +240,21 @@ class _HospitalSelectionScreenState extends State<HospitalSelectionScreen> with 
           ),
             centerTitle: true,
       ),
+      floatingActionButton: _selectedHospitals.isNotEmpty
+          ? FloatingActionButton.extended(
+              onPressed: _isLoading ? null : _saveSelection,
+              backgroundColor: AppTheme.primaryPink,
+              elevation: 4,
+              icon: Icon(LucideIcons.save),
+              label: Text(
+                "Save",
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
+          : null,
       body: Stack(
         children: [
           // Background gradient and design elements
@@ -406,550 +421,631 @@ class _HospitalSelectionScreenState extends State<HospitalSelectionScreen> with 
                       topRight: Radius.circular(30),
                     ),
                     child: Container(
-                                        color: Colors.white,
+                      color: Colors.white,
                       child: _buildMainContent(),
                     ),
                   ),
-                              ),
-                            ],
-                          ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Loading overlay
+          if (_isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.4),
+              width: double.infinity,
+              height: double.infinity,
+              child: Center(
+                child: Container(
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        spreadRadius: 2,
                       ),
                     ],
                   ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMainContent() {
-    return SingleChildScrollView(
-      physics: BouncingScrollPhysics(),
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(20, 25, 20, 100),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // City selector
-            AnimatedContainer(
-              duration: Duration(milliseconds: 300),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 15,
-                    offset: Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Color(0xFFF1F5FE),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(
-                            LucideIcons.mapPin,
-                            color: AppTheme.primaryPink,
-                            size: 18,
-                          ),
-                        ),
-                        SizedBox(width: 12),
-                        Text(
-                          "Select City",
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.darkText,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    margin: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: _selectedCity != null 
-                            ? AppTheme.primaryPink
-                            : AppTheme.primaryPink.withOpacity(0.4),
-                        width: 1.5,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryPink),
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.primaryPink.withOpacity(0.08),
-                          blurRadius: 8,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                      gradient: _selectedCity != null 
-                          ? LinearGradient(
-                              colors: [
-                                Colors.white,
-                                AppTheme.primaryPink.withOpacity(0.05),
-                              ],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            )
-                          : null,
-                    ),
-                    child: Theme(
-                      data: Theme.of(context).copyWith(
-                        popupMenuTheme: PopupMenuThemeData(
-                          color: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        canvasColor: Colors.white,
-                        dividerColor: Colors.transparent,
-                        shadowColor: AppTheme.primaryPink.withOpacity(0.2),
-                      ),
-                      child: ButtonTheme(
-                        alignedDropdown: true,
-                        child: DropdownButtonFormField<String>(
-                          value: _selectedCity,
-                          isExpanded: true,
-                          isDense: false,
-                          icon: Container(
-                            padding: EdgeInsets.all(8),
-                            margin: EdgeInsets.only(right: 4),
-                            decoration: BoxDecoration(
-                              color: _selectedCity != null
-                                  ? AppTheme.primaryPink.withOpacity(0.15)
-                                  : AppTheme.primaryPink.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              LucideIcons.chevronDown,
-                              color: _selectedCity != null
-                                  ? AppTheme.primaryPink
-                                  : AppTheme.primaryPink.withOpacity(0.7),
-                              size: 16,
-                            ),
-                          ),
-                          dropdownColor: Colors.white,
-                          menuMaxHeight: 350,
-                          itemHeight: 50,
-                          elevation: 8,
-                          borderRadius: BorderRadius.circular(16),
-                          decoration: InputDecoration(
-                            hintText: "Select a city",
-                            hintStyle: GoogleFonts.poppins(
-                              color: Color(0xFF94A3B8),
-                              fontSize: 14,
-                            ),
-                            prefixIcon: Container(
-                              padding: EdgeInsets.all(12),
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  if (_selectedCity != null)
-                                    Container(
-                                      width: 32,
-                                      height: 32,
-                                      decoration: BoxDecoration(
-                                        color: AppTheme.primaryPink.withOpacity(0.1),
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                  Icon(
-                                    LucideIcons.mapPin,
-                                    color: AppTheme.primaryPink,
-                                    size: 20,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            suffixIcon: _selectedCity != null
-                                ? GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedCity = null;
-                                      });
-                                    },
-                                    child: Container(
-                                      margin: EdgeInsets.only(right: 46),
-                                      padding: EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey.shade200,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(
-                                        LucideIcons.x,
-                                        color: Colors.grey.shade700,
-                                        size: 12,
-                                      ),
-                                    ),
-                                  )
-                                : null,
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                          ),
-                          selectedItemBuilder: (BuildContext context) {
-                            return _pakistaniCities.map<Widget>((String city) {
-                              return Container(
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  city,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 14,
-                                    color: Colors.black87,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              );
-                            }).toList();
-                          },
-                          items: _pakistaniCities.map((String city) {
-                            // Group cities by first letter for better organization
-                            bool isFirstWithLetter = _pakistaniCities.indexOf(city) == 0 || 
-                                _pakistaniCities[_pakistaniCities.indexOf(city) - 1][0] != city[0];
-                            
-                            return DropdownMenuItem<String>(
-                              value: city,
-                              child: SizedBox(
-                                height: 40,
-                                child: Row(
-                                  children: [
-                                    // Section for the letter grouping indicator (if first letter)
-                                    if (isFirstWithLetter)
-                                      Container(
-                                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                                        margin: EdgeInsets.only(right: 8),
-                                        decoration: BoxDecoration(
-                                          color: AppTheme.primaryPink.withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                        child: Text(
-                                          city[0],
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 12,
-                                            color: AppTheme.primaryPink,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    
-                                    // Checkbox indicator
-                                    Container(
-                                      width: 16,
-                                      height: 16,
-                                      margin: EdgeInsets.only(right: 8),
-                                      decoration: BoxDecoration(
-                                        color: _selectedCity == city
-                                            ? AppTheme.primaryPink
-                                            : Colors.transparent,
-                                        border: Border.all(
-                                          color: _selectedCity == city
-                                              ? AppTheme.primaryPink
-                                              : Colors.grey.shade300,
-                                          width: 1.5,
-                                        ),
-                                        borderRadius: BorderRadius.circular(3),
-                                      ),
-                                      child: _selectedCity == city
-                                          ? Center(
-                                              child: Icon(
-                                                Icons.check,
-                                                size: 12,
-                                                color: Colors.white,
-                                              ),
-                                            )
-                                          : null,
-                                    ),
-                                    
-                                    // City name
-                                    Expanded(
-                              child: Text(
-                                city,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                          color: _selectedCity == city
-                                              ? AppTheme.primaryPink
-                                              : Colors.black87,
-                                          fontWeight: _selectedCity == city
-                                              ? FontWeight.w600
-                                              : FontWeight.normal,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              _selectedCity = newValue;
-                            });
-                          },
+                      SizedBox(height: 16),
+                      Text(
+                        "Saving hospitals...",
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
-            
-            SizedBox(height: 24),
-            
-            // Hospital selector
-            AnimatedContainer(
-              duration: Duration(milliseconds: 300),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 15,
-                    offset: Offset(0, 5),
+        ],
+      ),
+    ),
+  ));
+}
+
+Widget _buildMainContent() {
+  return SingleChildScrollView(
+    physics: BouncingScrollPhysics(),
+    child: Padding(
+      padding: EdgeInsets.fromLTRB(20, 25, 20, 100),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // City selector
+          AnimatedContainer(
+            duration: Duration(milliseconds: 300),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 15,
+                  offset: Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Color(0xFFF1F5FE),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          LucideIcons.mapPin,
+                          color: AppTheme.primaryPink,
+                          size: 18,
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Text(
+                        "Select City",
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.darkText,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
+                ),
+                Container(
+                  margin: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _selectedCity != null 
+                          ? AppTheme.primaryPink
+                          : AppTheme.primaryPink.withOpacity(0.4),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryPink.withOpacity(0.08),
+                        blurRadius: 8,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                    gradient: _selectedCity != null 
+                        ? LinearGradient(
+                            colors: [
+                              Colors.white,
+                              AppTheme.primaryPink.withOpacity(0.05),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          )
+                        : null,
+                  ),
+                  child: Theme(
+                    data: Theme.of(context).copyWith(
+                      popupMenuTheme: PopupMenuThemeData(
+                        color: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      canvasColor: Colors.white,
+                      dividerColor: Colors.transparent,
+                      shadowColor: AppTheme.primaryPink.withOpacity(0.2),
+                    ),
+                    child: ButtonTheme(
+                      alignedDropdown: true,
+                      child: DropdownButtonFormField<String>(
+                        value: _selectedCity,
+                        isExpanded: true,
+                        isDense: false,
+                        icon: Container(
                           padding: EdgeInsets.all(8),
+                          margin: EdgeInsets.only(right: 4),
                           decoration: BoxDecoration(
-                            color: Color(0xFFF1F5FE),
-                            borderRadius: BorderRadius.circular(10),
+                            color: _selectedCity != null
+                                ? AppTheme.primaryPink.withOpacity(0.15)
+                                : AppTheme.primaryPink.withOpacity(0.1),
+                            shape: BoxShape.circle,
                           ),
                           child: Icon(
-                            LucideIcons.building2,
-                            color: AppTheme.primaryPink,
-                            size: 18,
+                            LucideIcons.chevronDown,
+                            color: _selectedCity != null
+                                ? AppTheme.primaryPink
+                                : AppTheme.primaryPink.withOpacity(0.7),
+                            size: 16,
                           ),
                         ),
-                        SizedBox(width: 12),
-                        Text(
-                          "Enter Hospital Name",
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.darkText,
+                        dropdownColor: Colors.white,
+                        menuMaxHeight: 350,
+                        itemHeight: 50,
+                        elevation: 8,
+                        borderRadius: BorderRadius.circular(16),
+                        decoration: InputDecoration(
+                          hintText: "Select a city",
+                          hintStyle: GoogleFonts.poppins(
+                            color: Color(0xFF94A3B8),
+                            fontSize: 14,
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    margin: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: _hospitalName.isNotEmpty
-                            ? AppTheme.primaryPink
-                            : AppTheme.primaryPink.withOpacity(0.4),
-                        width: 1.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.primaryPink.withOpacity(0.08),
-                          blurRadius: 8,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                      gradient: _hospitalName.isNotEmpty
-                          ? LinearGradient(
-                              colors: [
-                                Colors.white,
-                                AppTheme.primaryPink.withOpacity(0.05),
-                              ],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            )
-                          : null,
-                    ),
-                    child: TextField(
-                      controller: _hospitalNameController,
-                      decoration: InputDecoration(
-                        hintText: "Enter hospital name",
-                        hintStyle: GoogleFonts.poppins(
-                                fontSize: 14,
-                                color: Color(0xFF94A3B8),
-                              ),
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                        prefixIcon: Container(
-                          padding: EdgeInsets.all(12),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              if (_hospitalName.isNotEmpty)
-                                Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.primaryPink.withOpacity(0.1),
-                                    shape: BoxShape.circle,
+                          prefixIcon: Container(
+                            padding: EdgeInsets.all(12),
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                if (_selectedCity != null)
+                                  Container(
+                                    width: 32,
+                                    height: 32,
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.primaryPink.withOpacity(0.1),
+                                      shape: BoxShape.circle,
+                                    ),
                                   ),
+                                Icon(
+                                  LucideIcons.mapPin,
+                                  color: AppTheme.primaryPink,
+                                  size: 20,
                                 ),
-                              _selectedCity == null
-                            ? Icon(
-                                Icons.error_outline,
-                                color: Color(0xFFEF4444),
-                                size: 20,
-                              )
-                            : Icon(
-                                LucideIcons.building2,
-                                    color: AppTheme.primaryPink,
-                              size: 20,
-                                  ),
-                            ],
-                          ),
+                              ],
                             ),
-                        suffixIcon: _hospitalName.isNotEmpty
-                            ? Container(
-                                margin: EdgeInsets.only(right: 12),
-                                child: IconButton(
-                                  icon: Container(
+                          ),
+                          suffixIcon: _selectedCity != null
+                              ? GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedCity = null;
+                                    });
+                                  },
+                                  child: Container(
+                                    margin: EdgeInsets.only(right: 46),
                                     padding: EdgeInsets.all(4),
                                     decoration: BoxDecoration(
                                       color: Colors.grey.shade200,
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
-                                  LucideIcons.x,
+                                      LucideIcons.x,
                                       color: Colors.grey.shade700,
                                       size: 12,
                                     ),
+                                  ),
+                                )
+                              : null,
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        ),
+                        selectedItemBuilder: (BuildContext context) {
+                          return _pakistaniCities.map<Widget>((String city) {
+                            return Container(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                city,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.w500,
                                 ),
-                                onPressed: () {
-                                  _hospitalNameController.clear();
-                                },
-                                ),
-                              )
-                            : null,
-                        enabled: _selectedCity != null,
+                              ),
+                            );
+                          }).toList();
+                        },
+                        items: _pakistaniCities.map((String city) {
+                          // Group cities by first letter for better organization
+                          bool isFirstWithLetter = _pakistaniCities.indexOf(city) == 0 || 
+                              _pakistaniCities[_pakistaniCities.indexOf(city) - 1][0] != city[0];
+                          
+                          return DropdownMenuItem<String>(
+                            value: city,
+                            child: SizedBox(
+                              height: 40,
+                              child: Row(
+                                children: [
+                                  // Section for the letter grouping indicator (if first letter)
+                                  if (isFirstWithLetter)
+                                    Container(
+                                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                      margin: EdgeInsets.only(right: 8),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.primaryPink.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        city[0],
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 12,
+                                          color: AppTheme.primaryPink,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  
+                                  // Checkbox indicator
+                                  Container(
+                                    width: 16,
+                                    height: 16,
+                                    margin: EdgeInsets.only(right: 8),
+                                    decoration: BoxDecoration(
+                                      color: _selectedCity == city
+                                          ? AppTheme.primaryPink
+                                          : Colors.transparent,
+                                      border: Border.all(
+                                        color: _selectedCity == city
+                                            ? AppTheme.primaryPink
+                                            : Colors.grey.shade300,
+                                        width: 1.5,
+                                      ),
+                                      borderRadius: BorderRadius.circular(3),
+                                    ),
+                                    child: _selectedCity == city
+                                        ? Center(
+                                            child: Icon(
+                                              Icons.check,
+                                              size: 12,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : null,
+                                  ),
+                                  
+                                  // City name
+                                  Expanded(
+                            child: Text(
+                              city,
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                        color: _selectedCity == city
+                                            ? AppTheme.primaryPink
+                                            : Colors.black87,
+                                        fontWeight: _selectedCity == city
+                                            ? FontWeight.w600
+                                            : FontWeight.normal,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            _selectedCity = newValue;
+                          });
+                        },
                       ),
                     ),
                   ),
-                  
-                  // Add helper text
-                  Container(
-                    margin: EdgeInsets.only(left: 16, right: 16, bottom: 8),
-                    child: Row(
-                      children: [
-                        Icon(
-                          LucideIcons.info,
-                          size: 14,
-                          color: Color(0xFF64748B),
+                ),
+              ],
+            ),
+          ),
+          
+          SizedBox(height: 24),
+          
+          // Hospital selector
+          AnimatedContainer(
+            duration: Duration(milliseconds: 300),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 15,
+                  offset: Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Color(0xFFF1F5FE),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            _selectedCity == null
-                                ? "Please select a city first"
-                                : "Enter any hospital name where you practice in ${_selectedCity!}",
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              fontStyle: FontStyle.italic,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
+                        child: Icon(
+                          LucideIcons.building2,
+                          color: AppTheme.primaryPink,
+                          size: 18,
                         ),
-                      ],
-                    ),
+                      ),
+                      SizedBox(width: 12),
+                      Text(
+                        "Enter Hospital Name",
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.darkText,
+                        ),
+                      ),
+                    ],
                   ),
-                  
-                  // Add Button
-                  Container(
-                    margin: EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: (_selectedCity == null || _hospitalName.isEmpty)
-                              ? Colors.transparent
-                              : AppTheme.primaryPink.withOpacity(0.25),
-                          blurRadius: 12,
-                          offset: Offset(0, 4),
-                          spreadRadius: 0,
-                        ),
-                      ],
+                ),
+                Container(
+                  margin: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _hospitalName.isNotEmpty
+                          ? AppTheme.primaryPink
+                          : AppTheme.primaryPink.withOpacity(0.4),
+                      width: 1.5,
                     ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: (_selectedCity == null || _hospitalName.isEmpty) 
-                          ? null 
-                          : _addHospital,
-                        borderRadius: BorderRadius.circular(12),
-                        splashColor: AppTheme.primaryPink.withOpacity(0.1),
-                        highlightColor: AppTheme.primaryPink.withOpacity(0.2),
-                        child: AnimatedContainer(
-                          duration: Duration(milliseconds: 200),
-                          curve: Curves.easeInOut,
-                          width: double.infinity,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            color: (_selectedCity == null || _hospitalName.isEmpty)
-                                ? Color(0xFFE2E8F0)
-                                : AppTheme.primaryPink,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: (_selectedCity == null || _hospitalName.isEmpty)
-                                  ? Colors.transparent
-                                  : AppTheme.primaryPink.withOpacity(0.5),
-                              width: 1.5,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryPink.withOpacity(0.08),
+                        blurRadius: 8,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                    gradient: _hospitalName.isNotEmpty
+                        ? LinearGradient(
+                            colors: [
+                              Colors.white,
+                              AppTheme.primaryPink.withOpacity(0.05),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          )
+                        : null,
+                  ),
+                  child: TextField(
+                    controller: _hospitalNameController,
+                    decoration: InputDecoration(
+                      hintText: "Enter hospital name",
+                      hintStyle: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: Color(0xFF94A3B8),
                             ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              AnimatedContainer(
-                                duration: Duration(milliseconds: 200),
-                                padding: EdgeInsets.all(6),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      prefixIcon: Container(
+                        padding: EdgeInsets.all(12),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            if (_hospitalName.isNotEmpty)
+                              Container(
+                                width: 32,
+                                height: 32,
                                 decoration: BoxDecoration(
-                                  color: (_selectedCity == null || _hospitalName.isEmpty)
-                                      ? Color(0xFF94A3B8).withOpacity(0.3)
-                                      : Colors.white.withOpacity(0.25),
+                                  color: AppTheme.primaryPink.withOpacity(0.1),
                                   shape: BoxShape.circle,
                                 ),
-                                child: Icon(
-                                  LucideIcons.plus, 
-                                  size: 16,
-                                  color: (_selectedCity == null || _hospitalName.isEmpty)
-                                      ? Color(0xFF94A3B8)
-                                      : Colors.white,
-                                ),
                               ),
-                              SizedBox(width: 10),
-                              Text(
-                        "Add To My Hospitals",
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
-                                  fontSize: 15,
-                                  color: (_selectedCity == null || _hospitalName.isEmpty)
-                                      ? Color(0xFF94A3B8)
-                                      : Colors.white,
-                                ),
+                            _selectedCity == null
+                          ? Icon(
+                              Icons.error_outline,
+                              color: Color(0xFFEF4444),
+                              size: 20,
+                            )
+                          : Icon(
+                              LucideIcons.building2,
+                                  color: AppTheme.primaryPink,
+                                size: 20,
+                                    ),
+                          ],
+                        ),
+                          ),
+                      suffixIcon: _hospitalName.isNotEmpty
+                          ? Container(
+                              margin: EdgeInsets.only(right: 12),
+                              child: IconButton(
+                                icon: Container(
+                                  padding: EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade200,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                LucideIcons.x,
+                                    color: Colors.grey.shade700,
+                                    size: 12,
+                                  ),
                               ),
-                            ],
+                              onPressed: () {
+                                _hospitalNameController.clear();
+                              },
+                              ),
+                            )
+                          : null,
+                      enabled: _selectedCity != null,
+                    ),
+                  ),
+                ),
+                
+                // Add helper text
+                Container(
+                  margin: EdgeInsets.only(left: 16, right: 16, bottom: 8),
+                  child: Row(
+                    children: [
+                      Icon(
+                        LucideIcons.info,
+                        size: 14,
+                        color: Color(0xFF64748B),
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _selectedCity == null
+                              ? "Please select a city first"
+                              : "Enter any hospital name where you practice in ${_selectedCity!}",
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                            color: Color(0xFF64748B),
                           ),
                         ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Add Button
+                Container(
+                  margin: EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (_selectedCity == null || _hospitalName.isEmpty)
+                            ? Colors.transparent
+                            : AppTheme.primaryPink.withOpacity(0.25),
+                        blurRadius: 12,
+                        offset: Offset(0, 4),
+                        spreadRadius: 0,
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: (_selectedCity == null || _hospitalName.isEmpty) 
+                        ? null 
+                        : _addHospital,
+                      borderRadius: BorderRadius.circular(12),
+                      splashColor: AppTheme.primaryPink.withOpacity(0.1),
+                      highlightColor: AppTheme.primaryPink.withOpacity(0.2),
+                      child: AnimatedContainer(
+                        duration: Duration(milliseconds: 200),
+                        curve: Curves.easeInOut,
+                        width: double.infinity,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: (_selectedCity == null || _hospitalName.isEmpty)
+                              ? Color(0xFFE2E8F0)
+                              : AppTheme.primaryPink,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: (_selectedCity == null || _hospitalName.isEmpty)
+                                ? Colors.transparent
+                                : AppTheme.primaryPink.withOpacity(0.5),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            AnimatedContainer(
+                              duration: Duration(milliseconds: 200),
+                              padding: EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: (_selectedCity == null || _hospitalName.isEmpty)
+                                    ? Color(0xFF94A3B8).withOpacity(0.3)
+                                    : Colors.white.withOpacity(0.25),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                LucideIcons.plus, 
+                                size: 16,
+                                color: (_selectedCity == null || _hospitalName.isEmpty)
+                                    ? Color(0xFF94A3B8)
+                                    : Colors.white,
+                              ),
+                            ),
+                            SizedBox(width: 10),
+                            Text(
+                      "Add To My Hospitals",
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                                fontSize: 15,
+                                color: (_selectedCity == null || _hospitalName.isEmpty)
+                                    ? Color(0xFF94A3B8)
+                                    : Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          SizedBox(height: 24),
+          
+          // Selected hospitals
+          if (_selectedHospitals.isNotEmpty) ...[
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 16, horizontal: 4),
+              child: Row(
+                children: [
+                  Icon(
+                    LucideIcons.listChecks,
+                    color: AppTheme.primaryPink,
+                    size: 20,
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    "Selected Hospitals",
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.darkText,
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryPink,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      "${_selectedHospitals.length}",
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -957,560 +1053,518 @@ class _HospitalSelectionScreenState extends State<HospitalSelectionScreen> with 
               ),
             ),
             
-            SizedBox(height: 24),
-            
-            // Selected hospitals
-            if (_selectedHospitals.isNotEmpty) ...[
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 16, horizontal: 4),
-                child: Row(
-                  children: [
-                    Icon(
-                      LucideIcons.listChecks,
-                      color: AppTheme.primaryPink,
-                      size: 20,
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      "Selected Hospitals",
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.darkText,
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryPink,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        "${_selectedHospitals.length}",
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
+            // List of selected hospitals
+            ...List.generate(
+              _selectedHospitals.length,
+              (index) {
+                final hospital = _selectedHospitals[index];
+                List<String> parts = hospital.split(', ');
+                String hospitalName = parts.length > 1 
+                    ? parts.sublist(0, parts.length - 1).join(', ') 
+                    : hospital;
+                String cityName = parts.length > 1 ? parts.last : "";
+                
+                return AnimatedScale(
+                  scale: 1.0,
+                  duration: Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  child: Container(
+                    margin: EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: Offset(0, 4),
                         ),
+                      ],
+                      border: Border.all(
+                        color: Color(0xFFEDF2F7),
+                        width: 1.5,
                       ),
                     ),
-                  ],
-                ),
-              ),
-              
-              // List of selected hospitals
-              ...List.generate(
-                _selectedHospitals.length,
-                (index) {
-                  final hospital = _selectedHospitals[index];
-                  List<String> parts = hospital.split(', ');
-                  String hospitalName = parts.length > 1 
-                      ? parts.sublist(0, parts.length - 1).join(', ') 
-                      : hospital;
-                  String cityName = parts.length > 1 ? parts.last : "";
-                  
-                  return AnimatedScale(
-                    scale: 1.0,
-                    duration: Duration(milliseconds: 200),
-                    curve: Curves.easeInOut,
-                    child: Container(
-                      margin: EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: Offset(0, 4),
-                          ),
-                        ],
-                        border: Border.all(
-                          color: Color(0xFFEDF2F7),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    AppTheme.primaryPink.withOpacity(0.1),
-                                    AppTheme.primaryTeal.withOpacity(0.1),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: AppTheme.primaryPink.withOpacity(0.3),
-                                  width: 1.5,
-                                ),
+                    child: Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppTheme.primaryPink.withOpacity(0.1),
+                                  AppTheme.primaryTeal.withOpacity(0.1),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
                               ),
-                              child: Icon(
-                                LucideIcons.building2,
-                                color: AppTheme.primaryPink,
-                                size: 24,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppTheme.primaryPink.withOpacity(0.3),
+                                width: 1.5,
                               ),
                             ),
-                            SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    hospitalName,
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF334155),
-                                    ),
+                            child: Icon(
+                              LucideIcons.building2,
+                              color: AppTheme.primaryPink,
+                              size: 24,
+                            ),
+                          ),
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  hospitalName,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF334155),
                                   ),
-                                  SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        LucideIcons.mapPin,
-                                        size: 14,
+                                ),
+                                SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      LucideIcons.mapPin,
+                                      size: 14,
+                                      color: Color(0xFF64748B),
+                                    ),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      cityName,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
                                         color: Color(0xFF64748B),
                                       ),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        cityName,
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 14,
-                                          color: Color(0xFF64748B),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          InkWell(
+                            onTap: () => _removeHospital(hospital),
+                            borderRadius: BorderRadius.circular(30),
+                            child: Container(
+                              padding: EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Color(0xFFFEE2E2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                LucideIcons.trash2,
+                                color: Color(0xFFEF4444),
+                                size: 20,
                               ),
                             ),
-                            InkWell(
-                              onTap: () => _removeHospital(hospital),
-                              borderRadius: BorderRadius.circular(30),
-                              child: Container(
-                                padding: EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Color(0xFFFEE2E2),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  LucideIcons.trash2,
-                                  color: Color(0xFFEF4444),
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
-                  );
-                },
-              ),
-            ] else ...[
-              // Empty state
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.all(40),
-                margin: EdgeInsets.only(top: 40),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: Color(0xFFEDF2F7),
-                    width: 2,
                   ),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Color(0xFFF1F5FE),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        LucideIcons.building2,
-                        size: 50,
-                        color: Color(0xFF64748B),
-                      ),
-                    ),
-                    SizedBox(height: 24),
-                    Text(
-                      "No Hospitals Selected",
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF334155),
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    Text(
-                      "Choose your city and hospital, then tap 'Add' to include it in your profile.",
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: Color(0xFF64748B),
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
+                );
+              },
+            ),
+          ] else ...[
+            // Empty state
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(40),
+              margin: EdgeInsets.only(top: 40),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Color(0xFFEDF2F7),
+                  width: 2,
                 ),
               ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _saveSelection() async {
-    setState(() {
-      _isLoading = true;
-    });
-    
-    try {
-      // Get current user ID
-      final String? doctorId = _auth.currentUser?.uid;
-      
-      if (doctorId == null) {
-        throw Exception('User not authenticated');
-      }
-      
-      // Get existing hospital associations
-      final existingAssociations = await _firestore
-          .collection('doctor_hospitals')
-          .where('doctorId', isEqualTo: doctorId)
-          .get();
-      
-      // Create a batch for better performance
-      final batch = _firestore.batch();
-      
-      // Keep track of which hospitals are already in the database
-      final Map<String, DocumentReference> existingHospitalRefs = {};
-      
-      // Track hospital names that already exist
-      final Set<String> existingHospitalNames = {};
-      
-      // First pass: identify existing hospitals
-      for (var doc in existingAssociations.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        final hospitalName = data['hospitalName'] as String;
-        existingHospitalRefs[hospitalName] = doc.reference;
-        existingHospitalNames.add(hospitalName);
-      }
-      
-      // Second pass: remove hospitals that are no longer selected
-      for (String hospitalName in existingHospitalNames) {
-        if (!_selectedHospitals.contains(hospitalName)) {
-          // This hospital was removed by the user, so delete it
-          batch.delete(existingHospitalRefs[hospitalName]!);
-        }
-      }
-      
-      // Third pass: add new hospital associations that don't already exist
-      for (String hospitalName in _selectedHospitals) {
-        if (!existingHospitalNames.contains(hospitalName)) {
-          // This is a new hospital selection, add it
-            final docRef = _firestore.collection('doctor_hospitals').doc();
-          
-          // Extract city from the hospital name format "Hospital Name, City"
-          List<String> parts = hospitalName.split(', ');
-          String city = "";
-          String rawHospitalName = hospitalName;
-          
-          if (parts.length > 1) {
-            city = parts.last;
-            rawHospitalName = parts.sublist(0, parts.length - 1).join(', ');
-          }
-          
-          // Create a unique ID for the hospital
-          String cityPrefix = city.isNotEmpty ? city.substring(0, math.min(3, city.length)).toUpperCase() : "HSP";
-          String hospitalId = 'custom_${cityPrefix}_${DateTime.now().millisecondsSinceEpoch}';
-            
-            batch.set(docRef, {
-              'doctorId': doctorId,
-            'hospitalId': hospitalId,
-              'hospitalName': hospitalName, // Full name with city
-            'rawHospitalName': rawHospitalName,
-            'city': city,
-              'created': FieldValue.serverTimestamp(),
-            'isCustom': true, // All entries are custom now
-            });
-        }
-      }
-      
-      // Commit the batch
-      await batch.commit();
-      
-      if (!mounted) return;
-      
-      setState(() {
-        _isLoading = false;
-      });
-      
-      // Show success dialog
-      bool? shouldReturn = await _showSuccessDialog();
-      
-      // Return to previous screen if confirmed
-      if (shouldReturn == true && mounted) {
-      Navigator.pop(context, _selectedHospitals);
-      }
-    } catch (e) {
-      print('Error saving hospital selection: $e');
-      
-      if (!mounted) return;
-      
-      setState(() {
-        _isLoading = false;
-      });
-      
-      // Show error dialog
-      _showErrorDialog(e.toString());
-    }
-  }
-  
-  Future<bool?> _showSuccessDialog() {
-    return showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-          child: Container(
-            padding: EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.rectangle,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 20,
-                  offset: Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Stack(
-                  clipBehavior: Clip.none,
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Color(0xFF10B981).withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Color(0xFFF1F5FE),
+                      shape: BoxShape.circle,
                     ),
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: Color(0xFF10B981),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.check_rounded,
-                        color: Colors.white,
-                        size: 36,
-                      ),
-                    ),
-                    Positioned(
-                      top: -10,
-                      right: -10,
-                      child: Container(
-                        width: 30,
-                        height: 30,
-                        decoration: BoxDecoration(
-                          color: Color(0xFF1E74FD),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white,
-                            width: 3,
-                          ),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            LucideIcons.building2,
-                            color: Colors.white,
-                            size: 14,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 24),
-                Text(
-                  'Hospitals Updated',
-                  style: GoogleFonts.poppins(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1E3A8A),
-                  ),
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'Your hospital selections have been saved successfully.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    fontSize: 15,
-                    color: Color(0xFF64748B),
-                    height: 1.5,
-                  ),
-                ),
-                SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(dialogContext).pop(true);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF1E74FD),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: Text(
-                      'Done',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-  
-  void _showErrorDialog(String errorMessage) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-          child: Container(
-            padding: EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.rectangle,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 20,
-                  offset: Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 70,
-                  height: 70,
-                  decoration: BoxDecoration(
-                    color: Color(0xFFFEE2E2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.error_rounded,
-                    color: Color(0xFFEF4444),
-                    size: 40,
-                  ),
-                ),
-                SizedBox(height: 24),
-                Text(
-                  'Oops! Something went wrong',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1E3A8A),
-                  ),
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'Failed to save hospital selections. Please try again.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
-                SizedBox(height: 8),
-                Container(
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Color(0xFFF8FAFF),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    errorMessage,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
+                    child: Icon(
+                      LucideIcons.building2,
+                      size: 50,
                       color: Color(0xFF64748B),
                     ),
                   ),
-                ),
-                SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF1E74FD),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
+                  SizedBox(height: 24),
+                  Text(
+                    "No Hospitals Selected",
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF334155),
                     ),
-                    child: Text(
-                      'OK',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    "Choose your city and hospital, then tap 'Add' to include it in your profile.",
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Color(0xFF64748B),
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    ),
+  );
+}
+
+void _saveSelection() async {
+  setState(() {
+    _isLoading = true;
+  });
+  
+  try {
+    // Get current user ID
+    final String? doctorId = _auth.currentUser?.uid;
+    
+    if (doctorId == null) {
+      throw Exception('User not authenticated');
+    }
+    
+    // Get existing hospital associations
+    final existingAssociations = await _firestore
+        .collection('doctor_hospitals')
+        .where('doctorId', isEqualTo: doctorId)
+        .get();
+    
+    // Create a batch for better performance
+    final batch = _firestore.batch();
+    
+    // Keep track of which hospitals are already in the database
+    final Map<String, DocumentReference> existingHospitalRefs = {};
+    
+    // Track hospital names that already exist
+    final Set<String> existingHospitalNames = {};
+    
+    // First pass: identify existing hospitals
+    for (var doc in existingAssociations.docs) {
+      final data = doc.data() as Map<String, dynamic>;
+      final hospitalName = data['hospitalName'] as String;
+      existingHospitalRefs[hospitalName] = doc.reference;
+      existingHospitalNames.add(hospitalName);
+    }
+    
+    // Second pass: remove hospitals that are no longer selected
+    for (String hospitalName in existingHospitalNames) {
+      if (!_selectedHospitals.contains(hospitalName)) {
+        // This hospital was removed by the user, so delete it
+        batch.delete(existingHospitalRefs[hospitalName]!);
+      }
+    }
+    
+    // Third pass: add new hospital associations that don't already exist
+    for (String hospitalName in _selectedHospitals) {
+      if (!existingHospitalNames.contains(hospitalName)) {
+        // This is a new hospital selection, add it
+          final docRef = _firestore.collection('doctor_hospitals').doc();
+        
+        // Extract city from the hospital name format "Hospital Name, City"
+        List<String> parts = hospitalName.split(', ');
+        String city = "";
+        String rawHospitalName = hospitalName;
+        
+        if (parts.length > 1) {
+          city = parts.last;
+          rawHospitalName = parts.sublist(0, parts.length - 1).join(', ');
+        }
+        
+        // Create a unique ID for the hospital
+        String cityPrefix = city.isNotEmpty ? city.substring(0, math.min(3, city.length)).toUpperCase() : "HSP";
+        String hospitalId = 'custom_${cityPrefix}_${DateTime.now().millisecondsSinceEpoch}';
+          
+          batch.set(docRef, {
+            'doctorId': doctorId,
+          'hospitalId': hospitalId,
+            'hospitalName': hospitalName, // Full name with city
+          'rawHospitalName': rawHospitalName,
+          'city': city,
+            'created': FieldValue.serverTimestamp(),
+          'isCustom': true, // All entries are custom now
+          });
+      }
+    }
+    
+    // Commit the batch
+    await batch.commit();
+    
+    if (!mounted) return;
+    
+    setState(() {
+      _isLoading = false;
+    });
+    
+    // Show success dialog
+    bool? shouldReturn = await _showSuccessDialog();
+    
+    // Return to previous screen if confirmed
+    if (shouldReturn == true && mounted) {
+    Navigator.pop(context, _selectedHospitals);
+    }
+  } catch (e) {
+    print('Error saving hospital selection: $e');
+    
+    if (!mounted) return;
+    
+    setState(() {
+      _isLoading = false;
+    });
+    
+    // Show error dialog
+    _showErrorDialog(e.toString());
+  }
+}
+
+Future<bool?> _showSuccessDialog() {
+  return showDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (BuildContext dialogContext) {
+      return Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.rectangle,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: Color(0xFF10B981).withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: Color(0xFF10B981),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.check_rounded,
+                      color: Colors.white,
+                      size: 36,
+                    ),
+                  ),
+                  Positioned(
+                    top: -10,
+                    right: -10,
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: Color(0xFF1E74FD),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white,
+                          width: 3,
+                        ),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          LucideIcons.building2,
+                          color: Colors.white,
+                          size: 14,
+                        ),
                       ),
                     ),
                   ),
+                ],
+              ),
+              SizedBox(height: 24),
+              Text(
+                'Hospitals Updated',
+                style: GoogleFonts.poppins(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E3A8A),
                 ),
-              ],
-            ),
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Your hospital selections have been saved successfully.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  color: Color(0xFF64748B),
+                  height: 1.5,
+                ),
+              ),
+              SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop(true);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF1E74FD),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Text(
+                    'Done',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
+
+void _showErrorDialog(String errorMessage) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.rectangle,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  color: Color(0xFFFEE2E2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.error_rounded,
+                  color: Color(0xFFEF4444),
+                  size: 40,
+                ),
+              ),
+              SizedBox(height: 24),
+              Text(
+                'Oops! Something went wrong',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E3A8A),
+                ),
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Failed to save hospital selections. Please try again.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Color(0xFF64748B),
+                ),
+              ),
+              SizedBox(height: 8),
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Color(0xFFF8FAFF),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  errorMessage,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+              ),
+              SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF1E74FD),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Text(
+                    'OK',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
 } 
