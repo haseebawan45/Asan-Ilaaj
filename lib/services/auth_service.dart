@@ -282,7 +282,6 @@ class AuthService {
   // Send OTP for signin or signup
   Future<Map<String, dynamic>> sendOTP({
     required String phoneNumber,
-    bool useTestMode = false, // Add test mode option
   }) async {
     try {
       print('***** SENDING OTP TO $phoneNumber *****');
@@ -299,97 +298,77 @@ class AuthService {
         };
       }
 
-      // If test mode is enabled, bypass Firebase verification
-      if (useTestMode) {
-        print('***** TEST MODE ENABLED - BYPASSING FIREBASE VERIFICATION *****');
-        return {
-          'success': true,
-          'verificationId': 'test-verification-${DateTime.now().millisecondsSinceEpoch}',
-          'message': 'Test verification code: 123456',
-          'testMode': true
-        };
-      }
-
       final completer = Completer<Map<String, dynamic>>();
-
+      
       print('***** CALLING FIREBASE VERIFY PHONE NUMBER *****');
       try {
-      await _auth.verifyPhoneNumber(
-        phoneNumber: phoneNumber,
+        await _auth.verifyPhoneNumber(
+          phoneNumber: phoneNumber,
           timeout: const Duration(seconds: 60),
-        verificationCompleted: (PhoneAuthCredential credential) async {
-          // Auto-verification on Android
-          try {
+          verificationCompleted: (PhoneAuthCredential credential) async {
+            // Auto-verification on Android
+            try {
               print('***** AUTO VERIFICATION COMPLETED *****');
-            await _auth.signInWithCredential(credential);
-            completer.complete({
-              'success': true,
-              'message': 'Auto-verification successful',
-              'autoVerified': true
-            });
-          } catch (e) {
+              await _auth.signInWithCredential(credential);
+              completer.complete({
+                'success': true,
+                'message': 'Auto-verification successful',
+                'autoVerified': true
+              });
+            } catch (e) {
               print('***** AUTO VERIFICATION FAILED: $e *****');
+              completer.complete({
+                'success': false,
+                'message': 'Auto-verification failed: ${e.toString()}',
+                'autoVerified': false
+              });
+            }
+          },
+          verificationFailed: (FirebaseAuthException e) {
+            print('***** VERIFICATION FAILED: ${e.code} - ${e.message} *****');
             completer.complete({
               'success': false,
-              'message': 'Auto-verification failed: ${e.toString()}',
-              'autoVerified': false
+              'message': _getReadableAuthError(e),
+              'error': e
             });
-          }
-        },
-        verificationFailed: (FirebaseAuthException e) {
-            print('***** VERIFICATION FAILED: ${e.code} - ${e.message} *****');
-            // If verification fails, suggest using test mode
-            print('***** FIREBASE VERIFICATION FAILED - FALLING BACK TO TEST MODE *****');
-            completer.complete({
-              'success': true,
-              'verificationId': 'test-fallback-${DateTime.now().millisecondsSinceEpoch}',
-              'message': 'Verification failed but test mode is available. Use code: 123456',
-              'testMode': true,
-              'originalError': e.message
-            });
-        },
-        codeSent: (String verificationId, int? resendToken) {
+          },
+          codeSent: (String verificationId, int? resendToken) {
             print('***** OTP CODE SENT SUCCESSFULLY, VERIFICATION ID: $verificationId *****');
-          completer.complete({
-            'success': true,
-            'verificationId': verificationId,
-            'resendToken': resendToken,
-            'message': 'OTP sent successfully'
-          });
-        },
-        codeAutoRetrievalTimeout: (String verificationId) {
-            print('***** CODE AUTO RETRIEVAL TIMEOUT *****');
-          // Only complete if not already completed
-          if (!completer.isCompleted) {
             completer.complete({
               'success': true,
               'verificationId': verificationId,
-              'message': 'Auto-retrieval timeout'
+              'resendToken': resendToken,
+              'message': 'OTP sent successfully'
             });
-          }
+          },
+          codeAutoRetrievalTimeout: (String verificationId) {
+            print('***** CODE AUTO RETRIEVAL TIMEOUT *****');
+            // Only complete if not already completed
+            if (!completer.isCompleted) {
+              completer.complete({
+                'success': true,
+                'verificationId': verificationId,
+                'message': 'Auto-retrieval timeout'
+              });
+            }
           }
         );
       } catch (firebaseError) {
-        print('***** FIREBASE VERIFICATION ERROR - FALLING BACK TO TEST MODE: $firebaseError *****');
+        print('***** FIREBASE VERIFICATION ERROR: $firebaseError *****');
         return {
-          'success': true,
-          'verificationId': 'test-error-fallback-${DateTime.now().millisecondsSinceEpoch}',
-          'message': 'Failed to verify with Firebase but you can use test mode with code: 123456',
-          'testMode': true,
-          'originalError': firebaseError.toString()
+          'success': false,
+          'message': 'Failed to send verification code: ${firebaseError.toString()}',
+          'error': firebaseError.toString()
         };
       }
 
       return completer.future;
     } catch (e) {
       print('***** ERROR SENDING OTP: $e *****');
-      // Even in case of unexpected errors, offer test mode
       return {
-        'success': true,
-        'verificationId': 'test-emergency-fallback-${DateTime.now().millisecondsSinceEpoch}',
-        'message': 'Error in verification process. You can use test mode with code: 123456',
-        'testMode': true,
-        'originalError': e.toString()
+        'success': false,
+        'message': 'Error sending verification code: ${e.toString()}',
+        'error': e.toString()
       };
     }
   }
@@ -401,30 +380,11 @@ class AuthService {
   }) async {
     print('***** VERIFYING OTP CODE: $smsCode with VERIFICATION ID: $verificationId *****');
     try {
-      // Check if this is a test verification ID
-      bool isTestMode = verificationId.startsWith('test-');
-      
-      if (isTestMode) {
-        print('***** TEST MODE VERIFICATION *****');
-        // For test mode, check that the code is 123456
-        if (smsCode == "123456") {
-          return {
-            'success': true,
-            'testMode': true,
-            'message': 'Test OTP verified successfully'
-          };
-        } else {
-          return {
-            'success': false,
-            'testMode': true,
-            'message': 'Invalid test OTP. Use 123456 for testing.'
-          };
-        }
-      }
+      // Check if this is an admin verification
+      final bool isAdminVerification = verificationId.startsWith('admin-verification-id-');
 
       // Clear any existing admin session data when a new verification is attempted
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final bool isAdminVerification = verificationId.startsWith('admin-verification-id-');
       
       // If this is not an admin verification, clear any existing admin session
       if (!isAdminVerification) {
@@ -507,6 +467,9 @@ class AuthService {
                 'createdAt': FieldValue.serverTimestamp(),
                 'lastLogin': FieldValue.serverTimestamp(),
                 'adminCredentialId': adminId,
+                'active': true,
+                'profileType': 'admin',
+                'updatedAt': FieldValue.serverTimestamp(),
               });
             }
             
@@ -550,46 +513,15 @@ class AuthService {
         }
       }
       
-      // For testing purposes, accept "123456" as a valid OTP
-      if (smsCode == "123456") {
-        print('***** TEST OTP CODE DETECTED: 123456 *****');
-        
-        // Get user info from phone number if possible
-        final userQuery = await _firestore.collection('users')
-            .where('phoneNumber', isEqualTo: currentUser?.phoneNumber)
-            .limit(1)
-            .get();
-            
-        if (userQuery.docs.isNotEmpty) {
-          print('***** TEST OTP: FOUND EXISTING USER *****');
-          return {
-            'success': true,
-            'user': currentUser,
-            'isNewUser': false,
-            'message': 'Test OTP verified successfully',
-            'testMode': true
-          };
-        } else {
-          print('***** TEST OTP: NEW USER *****');
-          return {
-            'success': true,
-            'user': currentUser,
-            'isNewUser': true,
-            'message': 'Test OTP verified successfully',
-            'testMode': true
-          };
-        }
-      }
-      
       print('***** ATTEMPTING NORMAL FIREBASE AUTH VERIFICATION *****');
       
       try {
-      // Normal verification flow
-      final AuthCredential credential = PhoneAuthProvider.credential(
-        verificationId: verificationId,
-        smsCode: smsCode,
-      );
-      
+        // Normal verification flow
+        final AuthCredential credential = PhoneAuthProvider.credential(
+          verificationId: verificationId,
+          smsCode: smsCode,
+        );
+        
         // Try to sign in
         UserCredential? userCredential;
         try {
@@ -628,21 +560,21 @@ class AuthService {
         
         if (userCredential != null && userCredential.user != null) {
           print('***** VERIFICATION SUCCESSFUL: ${userCredential.user?.uid} *****');
-      
-      // Check if user exists in Firestore
-      final bool userExists = await this.userExists(userCredential.user!.uid);
-      
-      return {
-        'success': true,
-        'user': userCredential.user,
-        'isNewUser': !userExists,
-        'message': 'OTP verified successfully'
-      };
+          
+          // Check if user exists in Firestore
+          final bool userExists = await this.userExists(userCredential.user!.uid);
+          
+          return {
+            'success': true,
+            'user': userCredential.user,
+            'isNewUser': !userExists,
+            'message': 'OTP verified successfully'
+          };
         } else {
           throw Exception("User credential or user is null after sign-in");
         }
       } catch (credentialError) {
-        print('***** NORMAL VERIFICATION FAILED, TRYING TEST OTP *****');
+        print('***** NORMAL VERIFICATION FAILED: $credentialError *****');
         
         // Check if the auth state has changed despite the error
         final currentFirebaseUser = _auth.currentUser;
@@ -660,7 +592,7 @@ class AuthService {
           };
         }
         
-        // If not the test OTP, rethrow to be caught by outer catch
+        // Rethrow to be caught by outer catch
         throw credentialError;
       }
     } on FirebaseAuthException catch (e) {
@@ -668,8 +600,7 @@ class AuthService {
       return {
         'success': false,
         'message': _getReadableAuthError(e),
-        'error': e,
-        'useTestCode': true
+        'error': e
       };
     } catch (e) {
       print('***** UNEXPECTED ERROR IN VERIFY OTP: $e *****');
@@ -692,8 +623,7 @@ class AuthService {
       
       return {
         'success': false,
-        'message': 'Failed to verify OTP: ${e.toString()}',
-        'useTestCode': true
+        'message': 'Failed to verify OTP: ${e.toString()}'
       };
     }
   }

@@ -216,7 +216,6 @@ class _SignUpState extends State<SignUp> {
       // Phone number doesn't exist, proceed with OTP sending
       final result = await _authService.sendOTP(
         phoneNumber: formattedPhoneNumber,
-        useTestMode: true, // Enable test mode for consistent testing experience
       );
       
       setState(() {
@@ -225,21 +224,6 @@ class _SignUpState extends State<SignUp> {
       
       if (result['success']) {
         print('***** OTP SENT SUCCESSFULLY FOR USER TYPE: $type *****');
-        
-        bool isTestMode = result['testMode'] == true;
-        String otpMessage = isTestMode
-            ? "A test verification code has been generated. Use code: 123456"
-            : "A verification code has been sent to $formattedPhoneNumber";
-            
-        // Show a snackbar with OTP info
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(otpMessage),
-            backgroundColor: isTestMode ? Colors.orange : Colors.green,
-            duration: Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
         
         // Navigate to OTP verification screen with verification ID
         Navigator.push(
@@ -252,6 +236,16 @@ class _SignUpState extends State<SignUp> {
               fullName: _nameController.text.trim(),
               userType: type,
             ),
+          ),
+        );
+        
+        // Show a snackbar indicating OTP was sent
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Verification code has been sent to $formattedPhoneNumber'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
           ),
         );
       } else {
@@ -275,17 +269,15 @@ class _SignUpState extends State<SignUp> {
             _errorMessage = result['message'];
           });
           
-          // If we have a test mode fallback, show a notification
-          if (result['testMode'] == true) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Using test mode due to Firebase limitations. Use code: 123456 for verification.'),
-                backgroundColor: Colors.orange,
-                duration: Duration(seconds: 4),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          }
+          // Show a snackbar with error message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to send verification code: ${result['message']}'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         }
       }
     } catch (e) {

@@ -236,7 +236,7 @@ class _SignINState extends State<SignIN> with SingleTickerProviderStateMixin {
       // Use real Firebase OTP, not test mode
       final result = await _authService.sendOTP(
         phoneNumber: formattedPhoneNumber,
-        useTestMode: false, // Disable test mode to use actual Firebase OTP
+       
       );
       
       setState(() {
@@ -375,9 +375,29 @@ class _SignINState extends State<SignIN> with SingleTickerProviderStateMixin {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
+            builder: (context) => BottomNavigationBarPatientScreen(
+              profileStatus: "complete",
+              suppressProfilePrompt: false,
+              profileCompletionPercentage: 100.0,
+            ),
+          ),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CompleteProfilePatient1Screen(),
+          ),
+        );
+      }
+    } else if (userRole == UserRole.ladyHealthWorker) {
+      if (isProfileComplete) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
             builder: (context) => BottomNavigationBarScreen(
               profileStatus: "complete",
-              userType: "Patient",
+              userType: "ladyhealthworker",
             ),
           ),
         );

@@ -220,229 +220,97 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
       // Check if the verification ID indicates an admin login attempt
       final bool isAdminAuthentication = widget.verificationId.startsWith('admin-verification-id-');
       
-      if (!isAdminAuthentication) {
-        // For non-admin login attempts, ensure all admin sessions are cleared
-        print('***** NON-ADMIN AUTHENTICATION ATTEMPT - CLEARING ADMIN SESSIONS *****');
-        await prefs.remove('admin_session');
-        await prefs.remove('admin_user_id');
-        await prefs.remove('admin_phone');
-      }
+      print('***** IS ADMIN AUTHENTICATION: $isAdminAuthentication *****');
       
-      // Verify OTP with Firebase
+      // Verify OTP
       final result = await _authService.verifyOTP(
         verificationId: widget.verificationId,
         smsCode: otp,
       );
       
+      print('***** OTP VERIFICATION RESULT: ${result['success']} *****');
+      
       if (result['success']) {
-        print('***** OTP VERIFICATION SUCCESSFUL *****');
-        // Set flag for successful verification
-        setState(() {
-          _isVerificationSuccessful = true;
-          _isLoading = false; // Stop loading first so animation is visible
-        });
+        bool isAdmin = result['isAdmin'] == true;
         
-        // Success notification
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Verification successful!'),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            duration: Duration(seconds: 2),
-          ),
-        );
-        
-        // Run the animation first, then proceed with registration/navigation
-        await _animateVerificationSuccess();
-        
-        // Special handling for admin users
-        if (isAdminAuthentication || result['isAdmin'] == true) {
-          print('***** ADMIN LOGIN CONFIRMED - NAVIGATING TO ADMIN DASHBOARD *****');
-          Navigator.pushAndRemoveUntil(
-            context,
+        if (isAdmin) {
+          print('***** ADMIN VERIFICATION SUCCESSFUL *****');
+          // Navigate to admin dashboard
+          Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (context) => AdminDashboard()),
             (route) => false,
           );
-          return;
         } else {
-          // For non-admin login, ensure no admin session persists
-          print('***** NON-ADMIN LOGIN CONFIRMED - ENSURING NO ADMIN SESSION *****');
-          await prefs.remove('admin_session');
-          await prefs.remove('admin_user_id');
-          await prefs.remove('admin_phone');
-        }
-        
-        // Check if this is a new user (from sign up) or existing user (login)
-        User? user = result['user'];
-        bool isNewUser = result['isNewUser'] == true;
-        
-        if (widget.userType != null && widget.fullName != null) {
-          // This is a new user signing up
-          print('***** NEW USER SIGNUP - TYPE: ${widget.userType}, NAME: ${widget.fullName} *****');
+          // Handle normal user authentication
+          User? user = result['user'];
+          bool isNewUser = result['isNewUser'] == true;
           
-          if (user != null) {
-            final String uid = user.uid;
-            print('***** REGISTERING NEW USER WITH UID: $uid *****');
-            
-            final registerResult = await _registerNewUser(uid);
-            
-            if (!registerResult['success']) {
-              setState(() {
-                _isLoading = false;
-                _errorMessage = registerResult['message'];
-              });
-              return;
-            }
+          print('***** USER AUTHENTICATED: ${user?.uid}, NEW USER: $isNewUser *****');
           
-            // Update last login timestamp
-            await _authService.updateLastLogin(uid);
-          } else {
-            // Check if firebase auth has a current user despite the error
-            final currentUser = FirebaseAuth.instance.currentUser;
-            if (currentUser != null) {
-              print('***** USER FOUND FROM FIREBASE AUTH: ${currentUser.uid} *****');
-              
-              final registerResult = await _registerNewUser(currentUser.uid);
-              
-              if (!registerResult['success']) {
-                setState(() {
-                  _isLoading = false;
-                  _errorMessage = registerResult['message'];
-                });
-                return;
-              }
-              
-              // Update last login timestamp
-              await _authService.updateLastLogin(currentUser.uid);
-            } else {
-              print('***** ERROR: NO USER OBJECT AVAILABLE AFTER VERIFICATION *****');
-              setState(() {
-                _isLoading = false;
-                _errorMessage = 'Failed to create user account';
-              });
-              return;
+          // If this is a new user registration
+          if (isNewUser && widget.fullName != null && widget.userType != null) {
+            print('***** REGISTERING NEW USER: ${widget.fullName} *****');
+            
+            // Register the new user
+            if (user != null) {
+              await _registerNewUser(user.uid);
             }
           }
-        } else {
-          print('***** EXISTING USER LOGIN *****');
-          // Existing user login - just proceed with navigation
+          
+          // Save the user ID in shared preferences
           if (user != null) {
-            // Update last login timestamp
-            await _authService.updateLastLogin(user.uid);
-          } else {
-            // Try to get user from Firebase Auth directly
-            final currentUser = FirebaseAuth.instance.currentUser;
-            if (currentUser != null) {
-              // Update last login
-              await _authService.updateLastLogin(currentUser.uid);
+            await prefs.setString('user_id', user.uid);
+            
+            if (widget.userType != null) {
+              await prefs.setString('user_role_${user.uid}', widget.userType!.toLowerCase());
             }
           }
+          
+          // Navigate to the appropriate screen based on user type
+          final String userType = widget.userType?.toLowerCase() ?? "";
+          
+          if (userType == "patient") {
+            // For patient users
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => BottomNavigationBarPatientScreen(
+                profileStatus: "incomplete", // New users start with incomplete profile
+                suppressProfilePrompt: false,
+                profileCompletionPercentage: 0.0,
+              )),
+              (route) => false,
+            );
+          } else if (userType == "lady health worker") {
+            // For lady health worker users
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => BottomNavigationBarScreen(
+                profileStatus: "incomplete", // New users start with incomplete profile
+                userType: "ladyhealthworker",
+              )),
+              (route) => false,
+            );
+          } else {
+            // For doctor users (default)
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => BottomNavigationBarScreen(
+                profileStatus: "incomplete", // New users start with incomplete profile
+                userType: "doctor",
+              )),
+              (route) => false,
+            );
+          }
         }
-        
-        // Navigate based on user role and profile completion
-        await _navigateBasedOnUserRole();
       } else {
-        print('***** OTP VERIFICATION FAILED: ${result['message']} *****');
-        
-        // Check if Firebase Auth has a current user despite the reported error
-        final firebaseUser = FirebaseAuth.instance.currentUser;
-        if (firebaseUser != null) {
-          print('***** FIREBASE USER FOUND DESPITE ERROR: ${firebaseUser.uid} *****');
-          
-          // Show success message
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Verification successful (with recovery)'),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-              duration: Duration(seconds: 2),
-            ),
-          );
-          
-          setState(() {
-            _isVerificationSuccessful = true;
-            _isLoading = false;
-          });
-          
-          await _animateVerificationSuccess();
-          
-          // If we have user type and name, this is a signup
-          if (widget.userType != null && widget.fullName != null) {
-            final registerResult = await _registerNewUser(firebaseUser.uid);
-            if (!registerResult['success']) {
-              setState(() {
-                _errorMessage = registerResult['message'];
-              });
-              return;
-            }
-          }
-          
-          // Update last login
-          await _authService.updateLastLogin(firebaseUser.uid);
-          
-          // Navigate
-          await _navigateBasedOnUserRole();
-          return;
-        }
-        
         setState(() {
           _isLoading = false;
-          _errorMessage = result['message'] ?? 'Invalid OTP. Please try again.';
+          _errorMessage = result['message'] ?? 'Failed to verify OTP';
         });
       }
     } catch (e) {
-      print('***** ERROR IN OTP VERIFICATION: $e *****');
-      
-      // Last chance - check if the user is actually authenticated
-      final firebaseUser = FirebaseAuth.instance.currentUser;
-      if (firebaseUser != null) {
-        print('***** USER AUTHENTICATED DESPITE ERROR: ${firebaseUser.uid} *****');
-        
-        // Show success with warning
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Authentication successful with warnings'),
-            backgroundColor: Colors.orange,
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        
-        setState(() {
-          _isVerificationSuccessful = true;
-          _isLoading = false;
-        });
-        
-        // Animate success
-        await _animateVerificationSuccess();
-        
-        // Process sign up if needed
-        if (widget.userType != null && widget.fullName != null) {
-          final registerResult = await _registerNewUser(firebaseUser.uid);
-          if (!registerResult['success']) {
-            setState(() {
-              _errorMessage = registerResult['message'];
-            });
-            return;
-          }
-        }
-        
-        // Update login
-        await _authService.updateLastLogin(firebaseUser.uid);
-        
-        // Navigate
-        await _navigateBasedOnUserRole();
-        return;
-      }
-      
+      print('***** ERROR VERIFYING OTP: $e *****');
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Error verifying OTP. Please try again.';
+        _errorMessage = 'Error verifying OTP: ${e.toString()}';
       });
-      print('Error in OTP verification: $e');
     }
   }
 
