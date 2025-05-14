@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:firebase_storage/firebase_storage.dart';
 // import 'package:flutter_image_compress/flutter_image_compress.dart'; // COMMENTED OUT DUE TO BUILD ISSUES
 import 'package:path_provider/path_provider.dart';
@@ -36,35 +37,143 @@ class StorageService {
     int maxWidth = maxProfileWidth,
   }) async {
     try {
+      print("Starting image upload process:");
+      print("File path: ${file.path}");
+      print("Storage path: $path");
+      
+      // Check if file exists
+      final fileObj = File(file.path);
+      if (!await fileObj.exists()) {
+        print("ERROR: File does not exist at path: ${file.path}");
+        throw Exception("File not found at ${file.path}");
+      }
+      print("File exists and has size: ${await fileObj.length()} bytes");
+      
       // Generate filename if not provided
       final String fileExt = file.path.split('.').last;
       final String name = fileName ?? '${Uuid().v4()}.$fileExt';
       final String storagePath = '$path/$name';
       
+      print("Full storage path: $storagePath");
+      
       // Get reference to storage location
       final Reference ref = _storage.ref().child(storagePath);
       
-      // Compress image before uploading to save bandwidth and storage
-      final File compressedFile = await _compressImage(
-        file: File(file.path),
-        quality: quality,
-        maxWidth: maxWidth,
+      print("Got storage reference");
+      
+      // Create explicit metadata to avoid null pointer issues
+      final metadata = SettableMetadata(
+        contentType: 'image/${fileExt == 'jpg' ? 'jpeg' : fileExt}',
+        customMetadata: {
+          'uploaded_by': 'app_user',
+          'timestamp': DateTime.now().toIso8601String(),
+          'quality': quality.toString(),
+          'maxWidth': maxWidth.toString(),
+        },
       );
       
-      // Upload to Firebase Storage
-      final TaskSnapshot snapshot = await ref.putFile(compressedFile);
+      print("Created metadata: $metadata");
       
-      // Get the download URL
-      final String downloadUrl = await snapshot.ref.getDownloadURL();
+      // Upload to Firebase Storage with retries and better error handling
+      print("Starting upload to Firebase Storage...");
       
-      // Clean up the temporary compressed file
-      if (compressedFile.path != file.path) {
-        await compressedFile.delete();
+      TaskSnapshot? snapshot;
+      int retryCount = 0;
+      const maxRetries = 3;
+      
+      while (snapshot == null && retryCount < maxRetries) {
+        try {
+          // Use explicit metadata in putFile call
+          final uploadTask = ref.putFile(
+            fileObj,
+            metadata,
+          );
+          
+          // Add error handling for the upload task
+          uploadTask.snapshotEvents.listen(
+            (TaskSnapshot snap) {
+              print("Upload progress: ${snap.bytesTransferred}/${snap.totalBytes}");
+            },
+            onError: (error) {
+              print("Upload error: $error");
+              if (error.toString().contains('channel-error')) {
+                throw Exception("Firebase Storage connection error: $error");
+              }
+            },
+          );
+          
+          snapshot = await uploadTask.timeout(
+            const Duration(minutes: 3),
+            onTimeout: () {
+              print("Upload timed out, will retry");
+              throw TimeoutException("Upload timed out");
+            },
+          );
+          
+          print("Upload complete! Status: ${snapshot.state}");
+        } catch (e) {
+          retryCount++;
+          print("Upload error (attempt $retryCount/$maxRetries): $e");
+          
+          if (e.toString().contains('channel-error')) {
+            print("Platform channel error detected. Retrying in 2 seconds...");
+            await Future.delayed(const Duration(seconds: 2));
+          } else if (e is FirebaseException) {
+            print("Firebase error code: ${e.code}");
+            if (e.code == 'unauthorized' || e.code == 'unauthenticated') {
+              rethrow;
+            }
+          } else if (retryCount >= maxRetries) {
+            print("Max retries reached, giving up");
+            rethrow;
+          }
+          
+          await Future.delayed(Duration(seconds: retryCount));
+        }
+      }
+      
+      if (snapshot == null) {
+        throw Exception("Failed to upload file after $maxRetries attempts");
+      }
+      
+      // Get the download URL with retries
+      print("Getting download URL...");
+      String? downloadUrl;
+      retryCount = 0;
+      
+      while (downloadUrl == null && retryCount < maxRetries) {
+        try {
+          downloadUrl = await snapshot.ref.getDownloadURL();
+          print("Got download URL: $downloadUrl");
+        } catch (e) {
+          retryCount++;
+          print("Error getting download URL (attempt $retryCount/$maxRetries): $e");
+          
+          if (retryCount >= maxRetries) {
+            print("Max retries reached, giving up");
+            rethrow;
+          }
+          
+          await Future.delayed(Duration(seconds: retryCount));
+        }
+      }
+      
+      if (downloadUrl == null) {
+        throw Exception("Failed to get download URL after $maxRetries attempts");
       }
       
       return downloadUrl;
     } catch (e) {
-      print('Error uploading image: $e');
+      print('Error during image upload process: $e');
+      if (e is FirebaseException) {
+        print('Firebase error code: ${e.code}');
+        print('Firebase error message: ${e.message}');
+      }
+      
+      if (e.toString().contains('channel-error')) {
+        throw Exception("Firebase Storage connection error. Please check your internet connection and try again.");
+      }
+      
       rethrow;
     }
   }

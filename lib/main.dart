@@ -21,20 +21,44 @@ import 'package:flutter/services.dart';
 import 'dart:io';
 import 'package:healthcare/models/chat_room_model.dart';
 import 'package:healthcare/views/screens/common/chat/chat_detail_screen.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
   
-  // Set preferred orientations and initialize other aspects
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-  
-  runApp(const MyApp());
+  // Initialize Firebase with explicit error handling
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    
+    // Test Firebase Storage initialization
+    final storage = FirebaseStorage.instance;
+    print("Firebase Storage initialized successfully: $storage");
+    
+    // Set preferred orientations and initialize other aspects
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+    
+    runApp(const MyApp());
+  } catch (e) {
+    print("Error initializing Firebase: $e");
+    // You might want to show an error screen here
+    runApp(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Text(
+              'Error initializing app. Please try again.',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class MyApp extends StatelessWidget {

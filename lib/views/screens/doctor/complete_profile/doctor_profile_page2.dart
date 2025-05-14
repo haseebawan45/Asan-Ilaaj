@@ -14,6 +14,7 @@ import 'dart:io';
 import 'dart:async';
 import 'dart:ui';
 import 'package:healthcare/services/storage_service.dart';
+import 'package:path_provider/path_provider.dart';
 
 class DoctorProfilePage2Screen extends StatefulWidget {
   final String fullName;
@@ -92,6 +93,26 @@ class _DoctorProfilePage2ScreenState extends State<DoctorProfilePage2Screen> {
   void initState() {
     super.initState();
     
+    print("======= Doctor Profile Page 2 Initialized =======");
+    print("isEditing: ${widget.isEditing}");
+    print("Received parameters:");
+    print("fullName: ${widget.fullName}");
+    print("email: ${widget.email}");
+    print("address: ${widget.address}");
+    print("city: ${widget.city}");
+    print("gender: ${widget.gender}");
+    print("profileImage: ${widget.profileImage != null ? 'Exists' : 'Null'}");
+    print("medicalLicenseFront: ${widget.medicalLicenseFront != null ? 'Exists' : 'Null'}");
+    print("medicalLicenseBack: ${widget.medicalLicenseBack != null ? 'Exists' : 'Null'}");
+    print("cnicFront: ${widget.cnicFront != null ? 'Exists' : 'Null'}");
+    print("cnicBack: ${widget.cnicBack != null ? 'Exists' : 'Null'}");
+    print("profileImageUrl: ${widget.profileImageUrl}");
+    print("medicalLicenseFrontUrl: ${widget.medicalLicenseFrontUrl}");
+    print("medicalLicenseBackUrl: ${widget.medicalLicenseBackUrl}");
+    print("cnicFrontUrl: ${widget.cnicFrontUrl}");
+    print("cnicBackUrl: ${widget.cnicBackUrl}");
+    print("==================================================");
+    
     // Set transparent status bar for this screen (white app bar)
     UIHelper.applyTransparentStatusBar(withPostFrameCallback: true);
     
@@ -164,12 +185,18 @@ class _DoctorProfilePage2ScreenState extends State<DoctorProfilePage2Screen> {
   }
 
   Future<void> _pickDocument() async {
+    print("Picking degree document started");
     final ImagePicker picker = ImagePicker();
+    print("Showing image picker");
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
+      print("Degree image selected: ${image.path}");
       setState(() {
         _degreeImage = image;
       });
+      print("_degreeImage set in state");
+    } else {
+      print("No degree image selected (cancelled)");
     }
   }
 
@@ -203,6 +230,33 @@ class _DoctorProfilePage2ScreenState extends State<DoctorProfilePage2Screen> {
   }
 
   bool _validateFields() {
+    // Print debug information about fields being validated
+    print("Validating fields:");
+    print("Specialization: $_selectedSpecialization");
+    print("Experience: ${_experienceController.text}");
+    print("Qualification: ${_qualificationController.text}");
+    print("Consultation Fee: ${_consultationFeeController.text}");
+    print("Degree Institution: ${_degreeInstitutionController.text}");
+    print("Degree Completion Date: ${_degreeCompletionDateController.text}");
+    print("Degree Image: ${_degreeImage != null ? 'Selected' : 'Not Selected'}");
+    print("Bio: ${_bioController.text.isNotEmpty ? 'Not Empty' : 'Empty'}");
+    
+    // Check if we're in edit mode and already have image URLs
+    print("Image URLs (for editing mode):");
+    print("Profile Image URL: ${widget.profileImageUrl ?? 'None'}");
+    print("Medical License Front URL: ${widget.medicalLicenseFrontUrl ?? 'None'}");
+    print("Medical License Back URL: ${widget.medicalLicenseBackUrl ?? 'None'}");
+    print("CNIC Front URL: ${widget.cnicFrontUrl ?? 'None'}");
+    print("CNIC Back URL: ${widget.cnicBackUrl ?? 'None'}");
+    
+    // Check if we have new images selected
+    print("New Images Selected:");
+    print("Profile Image: ${widget.profileImage != null ? 'Selected' : 'Not Selected'}");
+    print("Medical License Front: ${widget.medicalLicenseFront != null ? 'Selected' : 'Not Selected'}");
+    print("Medical License Back: ${widget.medicalLicenseBack != null ? 'Selected' : 'Not Selected'}");
+    print("CNIC Front: ${widget.cnicFront != null ? 'Selected' : 'Not Selected'}");
+    print("CNIC Back: ${widget.cnicBack != null ? 'Selected' : 'Not Selected'}");
+    
     // Commenting out validation for debugging
     /*
     if (_selectedSpecialization == null ||
@@ -415,9 +469,9 @@ class _DoctorProfilePage2ScreenState extends State<DoctorProfilePage2Screen> {
     try {
       // Show loading indicator
       setState(() {
-        // Set loading state if needed
+        _isLoading = true;
       });
-
+      
       final auth = FirebaseAuth.instance;
       final firestore = FirebaseFirestore.instance;
       final userId = auth.currentUser?.uid;
@@ -446,12 +500,9 @@ class _DoctorProfilePage2ScreenState extends State<DoctorProfilePage2Screen> {
 
       final userData = userDoc.data() as Map<String, dynamic>;
       
-      // Update the user's fullName in the users collection
-      await firestore.collection('users').doc(userId).update({
-        'fullName': widget.fullName,
-        'email': widget.email,
-      });
-
+      // Create an instance of StorageService
+      final storageService = StorageService();
+      
       // Upload images to Firebase Storage and get URLs
       String? profileImageUrl = widget.profileImageUrl;
       String? medicalLicenseFrontUrl = widget.medicalLicenseFrontUrl;
@@ -459,176 +510,128 @@ class _DoctorProfilePage2ScreenState extends State<DoctorProfilePage2Screen> {
       String? cnicFrontUrl = widget.cnicFrontUrl;
       String? cnicBackUrl = widget.cnicBackUrl;
       String? degreeImageUrl;
-      
-      // Create an instance of StorageService
-      final storageService = StorageService();
-      
-      // Upload profile image if available and changed
-      if (widget.profileImage != null) {
-        final XFile imageXFile = XFile(widget.profileImage!.path);
-        profileImageUrl = await storageService.uploadProfileImage(
-          file: imageXFile,
-          userId: userId,
-          isDoctor: true,
+
+      try {
+        // Upload profile image if selected
+        if (widget.profileImage != null) {
+          profileImageUrl = await storageService.uploadProfileImage(
+            file: XFile(widget.profileImage!.path),
+            userId: userId,
+            isDoctor: true,
+          );
+        }
+
+        // Upload medical license front if selected
+        if (widget.medicalLicenseFront != null) {
+          medicalLicenseFrontUrl = await storageService.uploadDocumentImage(
+            file: XFile(widget.medicalLicenseFront!.path),
+            userId: userId,
+            isDoctor: true,
+            documentType: 'medical_license_front',
+          );
+        }
+
+        // Upload medical license back if selected
+        if (widget.medicalLicenseBack != null) {
+          medicalLicenseBackUrl = await storageService.uploadDocumentImage(
+            file: XFile(widget.medicalLicenseBack!.path),
+            userId: userId,
+            isDoctor: true,
+            documentType: 'medical_license_back',
+          );
+        }
+
+        // Upload CNIC front if selected
+        if (widget.cnicFront != null) {
+          cnicFrontUrl = await storageService.uploadDocumentImage(
+            file: XFile(widget.cnicFront!.path),
+            userId: userId,
+            isDoctor: true,
+            documentType: 'cnic_front',
+          );
+        }
+
+        // Upload CNIC back if selected
+        if (widget.cnicBack != null) {
+          cnicBackUrl = await storageService.uploadDocumentImage(
+            file: XFile(widget.cnicBack!.path),
+            userId: userId,
+            isDoctor: true,
+            documentType: 'cnic_back',
+          );
+        }
+
+        // Upload degree image if selected
+        if (_degreeImage != null) {
+          degreeImageUrl = await storageService.uploadDocumentImage(
+            file: XFile(_degreeImage!.path),
+            userId: userId,
+            isDoctor: true,
+            documentType: 'degree',
+          );
+        }
+      } catch (e) {
+        print('Error uploading images: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error uploading images. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
         );
-      }
-      
-      // Upload medical license images if available and changed
-      if (widget.medicalLicenseFront != null) {
-        final XFile imageXFile = XFile(widget.medicalLicenseFront!.path);
-        medicalLicenseFrontUrl = await storageService.uploadDocumentImage(
-          file: imageXFile,
-          userId: userId,
-          isDoctor: true,
-          documentType: 'medical_license_front',
-        );
-      }
-      
-      if (widget.medicalLicenseBack != null) {
-        final XFile imageXFile = XFile(widget.medicalLicenseBack!.path);
-        medicalLicenseBackUrl = await storageService.uploadDocumentImage(
-          file: imageXFile,
-          userId: userId,
-          isDoctor: true,
-          documentType: 'medical_license_back',
-        );
-      }
-      
-      // Upload CNIC images if available and changed
-      if (widget.cnicFront != null) {
-        final XFile imageXFile = XFile(widget.cnicFront!.path);
-        cnicFrontUrl = await storageService.uploadDocumentImage(
-          file: imageXFile,
-          userId: userId,
-          isDoctor: true,
-          documentType: 'cnic_front',
-        );
-      }
-      
-      if (widget.cnicBack != null) {
-        final XFile imageXFile = XFile(widget.cnicBack!.path);
-        cnicBackUrl = await storageService.uploadDocumentImage(
-          file: imageXFile,
-          userId: userId,
-          isDoctor: true,
-          documentType: 'cnic_back',
-        );
-      }
-      
-      // Upload degree image if available
-      if (_degreeImage != null) {
-        final XFile imageXFile = XFile(_degreeImage!.path);
-        degreeImageUrl = await storageService.uploadDocumentImage(
-          file: imageXFile,
-          userId: userId,
-          isDoctor: true,
-          documentType: 'degree',
-        );
+        return;
       }
 
-      // Create/update a complete doctor profile document
-      Map<String, dynamic> doctorData = {
-        // Basic information
-        'id': userId,
-        'fullName': widget.fullName,
-        'email': widget.email,
-        'phoneNumber': userData['phoneNumber'] ?? '',
-        'address': widget.address,
-        'city': widget.city,
-        'gender': widget.gender,
-        
-        // Professional information
-        'specialty': _selectedSpecialization,
-        'experience': _experienceController.text,
-        'qualifications': [_qualificationController.text],
-        'fee': int.tryParse(_consultationFeeController.text.replaceAll(RegExp(r'[^\d]'), '')) ?? 0,
+      // Create doctor profile data
+      final doctorData = {
+        'specialization': _selectedSpecialization,
+        'experience': int.parse(_experienceController.text),
+        'qualification': _qualificationController.text,
+        'consultationFee': int.parse(_consultationFeeController.text.replaceAll('Rs ', '')),
+        'degreeInstitution': _degreeInstitutionController.text,
+        'degreeCompletionDate': _degreeCompletionDateController.text,
         'bio': _bioController.text,
-        
-        // Education
-        'education': [
-          {
-            'degree': _qualificationController.text,
-            'institution': _degreeInstitutionController.text,
-            'completionDate': _degreeCompletionDateController.text,
-          }
-        ],
-        
-        // Image URLs
         'profileImageUrl': profileImageUrl,
         'medicalLicenseFrontUrl': medicalLicenseFrontUrl,
         'medicalLicenseBackUrl': medicalLicenseBackUrl,
         'cnicFrontUrl': cnicFrontUrl,
         'cnicBackUrl': cnicBackUrl,
-        
-        // Profile management
+        'degreeImageUrl': degreeImageUrl,
         'updatedAt': FieldValue.serverTimestamp(),
-        'profileComplete': true,
       };
-      
-      // Add degree image URL if available
-      if (degreeImageUrl != null) {
-        doctorData['degreeImageUrl'] = degreeImageUrl;
-      }
-      
-      // If not in editing mode, add these fields as well
-      if (!widget.isEditing) {
-        doctorData.addAll({
-          'createdAt': FieldValue.serverTimestamp(),
-          'isVerified': false, // Admin needs to verify
-          'isActive': true,
-          'rating': 5.0, // Default rating for new doctors
-          'languages': ['English', 'Urdu'],
-          'availableDays': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-        });
-      }
 
-      // Set or update the doctor document
+      // Update doctor profile in Firestore
       await firestore.collection('doctors').doc(userId).set(
         doctorData,
-        SetOptions(merge: widget.isEditing), // Use merge if editing
+        SetOptions(merge: true),
       );
-
-      // Update the user document to mark profile as complete
-      await firestore.collection('users').doc(userId).update({
-        'profileComplete': true,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
 
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(widget.isEditing ? 'Profile updated successfully' : 'Profile completed successfully'),
+          content: Text('Profile updated successfully'),
           backgroundColor: Colors.green,
         ),
       );
-      
-      // Apply pink status bar before navigation
-      UIHelper.applyPinkStatusBar(withPostFrameCallback: true);
-      
-      // Navigate back or to home screen
-      if (widget.isEditing) {
-        // If editing mode, return to previous screens
-        Navigator.pop(context); // Close current screen
-        Navigator.pop(context); // Close previous screen
-      } else {
-        // If new profile, navigate to home screen
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const BottomNavigationBarScreen(profileStatus: "complete")),
-          (route) => false,
-        );
-      }
 
+      // Navigate to the appropriate screen
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (context) => BottomNavigationBarScreen(profileStatus: "complete"),
+        ),
+        (route) => false,
+      );
     } catch (e) {
+      print('Error updating profile: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error saving profile: ${e.toString()}'),
+          content: Text('Error updating profile. Please try again.'),
           backgroundColor: Colors.red,
         ),
       );
     } finally {
       setState(() {
-        // Unset loading state if needed
+        _isLoading = false;
       });
     }
   }
@@ -663,7 +666,27 @@ class _DoctorProfilePage2ScreenState extends State<DoctorProfilePage2Screen> {
         elevation: 0,
       ),
       backgroundColor: AppTheme.veryLightPink,
-      body: SingleChildScrollView(
+      body: _isLoading 
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    color: AppTheme.primaryPink,
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    "Uploading images and saving profile...\nThis may take a moment",
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Colors.grey.shade800,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Column(
@@ -961,8 +984,12 @@ class _DoctorProfilePage2ScreenState extends State<DoctorProfilePage2Screen> {
                   height: 56,
                   child: ElevatedButton(
                     onPressed: () {
+                      print("Update Profile button clicked");
                       if (_validateFields()) {
+                        print("Validation passed, calling _submitProfile");
                         _submitProfile();
+                      } else {
+                        print("Validation failed, not calling _submitProfile");
                       }
                     },
                     style: ElevatedButton.styleFrom(

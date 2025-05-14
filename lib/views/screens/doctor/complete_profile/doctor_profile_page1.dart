@@ -229,35 +229,53 @@ class _DoctorProfilePage1ScreenState extends State<DoctorProfilePage1Screen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
+    print("_pickImage called with source: $source");
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: source);
-    if (image != null) {
-      setState(() {
-        _profileImage = image;
-      });
+    try {
+      final XFile? image = await picker.pickImage(source: source);
+      if (image != null) {
+        print("Profile image selected: ${image.path}");
+        setState(() {
+          _profileImage = image;
+        });
+        print("_profileImage set in state");
+      } else {
+        print("No profile image selected (cancelled)");
+      }
+    } catch (e) {
+      print("Error picking image: $e");
     }
   }
 
   Future<void> _pickDocument(String type) async {
+    print("_pickDocument called for type: $type");
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
-      setState(() {
-        switch (type) {
-          case 'license_front':
-            _medicalLicenseFront = image;
-            break;
-          case 'license_back':
-            _medicalLicenseBack = image;
-            break;
-          case 'cnic_front':
-            _cnicFront = image;
-            break;
-          case 'cnic_back':
-            _cnicBack = image;
-            break;
-        }
-      });
+    try {
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+      if (image != null) {
+        print("Document image selected for $type: ${image.path}");
+        setState(() {
+          switch (type) {
+            case 'license_front':
+              _medicalLicenseFront = image;
+              break;
+            case 'license_back':
+              _medicalLicenseBack = image;
+              break;
+            case 'cnic_front':
+              _cnicFront = image;
+              break;
+            case 'cnic_back':
+              _cnicBack = image;
+              break;
+          }
+        });
+        print("Document image set in state for $type");
+      } else {
+        print("No document image selected for $type (cancelled)");
+      }
+    } catch (e) {
+      print("Error picking document: $e");
     }
   }
 
@@ -1395,6 +1413,20 @@ class _DoctorProfilePage1ScreenState extends State<DoctorProfilePage1Screen> {
                           child: ElevatedButton(
                             onPressed: () {
                               if (_validateFields()) {
+                                print("==== Navigating to DoctorProfilePage2 ====");
+                                print("Images being passed:");
+                                print("profileImage: ${_profileImage != null ? _profileImage!.path : 'null'}");
+                                print("medicalLicenseFront: ${_medicalLicenseFront != null ? _medicalLicenseFront!.path : 'null'}");
+                                print("medicalLicenseBack: ${_medicalLicenseBack != null ? _medicalLicenseBack!.path : 'null'}");
+                                print("cnicFront: ${_cnicFront != null ? _cnicFront!.path : 'null'}");
+                                print("cnicBack: ${_cnicBack != null ? _cnicBack!.path : 'null'}");
+                                print("profileImageUrl: $_profileImageUrl");
+                                print("medicalLicenseFrontUrl: $_medicalLicenseFrontUrl");
+                                print("medicalLicenseBackUrl: $_medicalLicenseBackUrl");
+                                print("cnicFrontUrl: $_cnicFrontUrl");
+                                print("cnicBackUrl: $_cnicBackUrl");
+                                print("==========================================");
+                                
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(

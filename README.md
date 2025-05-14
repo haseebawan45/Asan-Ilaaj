@@ -72,3 +72,4 @@ The app includes a centralized image upload service (`StorageService`) for handl
   - Helper utilities for working with images
 
 For detailed documentation on the StorageService, see [README_STORAGE_SERVICE.md](README_STORAGE_SERVICE.md).
+# Storage Fix\n\nTo fix the profile upload issue, make sure to:\n\n1. Remove the _testFirebaseStorage method\n2. Provide explicit metadata when uploading files\n3. Validate all files before uploading them\n\nThis should resolve the issue with the profile update getting stuck.
