@@ -299,58 +299,58 @@ class AuthService {
       }
 
       final completer = Completer<Map<String, dynamic>>();
-      
+
       print('***** CALLING FIREBASE VERIFY PHONE NUMBER *****');
       try {
-        await _auth.verifyPhoneNumber(
-          phoneNumber: phoneNumber,
+      await _auth.verifyPhoneNumber(
+        phoneNumber: phoneNumber,
           timeout: const Duration(seconds: 60),
-          verificationCompleted: (PhoneAuthCredential credential) async {
-            // Auto-verification on Android
-            try {
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          // Auto-verification on Android
+          try {
               print('***** AUTO VERIFICATION COMPLETED *****');
-              await _auth.signInWithCredential(credential);
-              completer.complete({
-                'success': true,
-                'message': 'Auto-verification successful',
-                'autoVerified': true
-              });
-            } catch (e) {
+            await _auth.signInWithCredential(credential);
+            completer.complete({
+              'success': true,
+              'message': 'Auto-verification successful',
+              'autoVerified': true
+            });
+          } catch (e) {
               print('***** AUTO VERIFICATION FAILED: $e *****');
-              completer.complete({
-                'success': false,
-                'message': 'Auto-verification failed: ${e.toString()}',
-                'autoVerified': false
-              });
-            }
-          },
-          verificationFailed: (FirebaseAuthException e) {
+            completer.complete({
+              'success': false,
+              'message': 'Auto-verification failed: ${e.toString()}',
+              'autoVerified': false
+            });
+          }
+        },
+        verificationFailed: (FirebaseAuthException e) {
             print('***** VERIFICATION FAILED: ${e.code} - ${e.message} *****');
             completer.complete({
               'success': false,
               'message': _getReadableAuthError(e),
               'error': e
             });
-          },
-          codeSent: (String verificationId, int? resendToken) {
+        },
+        codeSent: (String verificationId, int? resendToken) {
             print('***** OTP CODE SENT SUCCESSFULLY, VERIFICATION ID: $verificationId *****');
+          completer.complete({
+            'success': true,
+            'verificationId': verificationId,
+            'resendToken': resendToken,
+            'message': 'OTP sent successfully'
+          });
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {
+            print('***** CODE AUTO RETRIEVAL TIMEOUT *****');
+          // Only complete if not already completed
+          if (!completer.isCompleted) {
             completer.complete({
               'success': true,
               'verificationId': verificationId,
-              'resendToken': resendToken,
-              'message': 'OTP sent successfully'
+              'message': 'Auto-retrieval timeout'
             });
-          },
-          codeAutoRetrievalTimeout: (String verificationId) {
-            print('***** CODE AUTO RETRIEVAL TIMEOUT *****');
-            // Only complete if not already completed
-            if (!completer.isCompleted) {
-              completer.complete({
-                'success': true,
-                'verificationId': verificationId,
-                'message': 'Auto-retrieval timeout'
-              });
-            }
+          }
           }
         );
       } catch (firebaseError) {
@@ -516,12 +516,12 @@ class AuthService {
       print('***** ATTEMPTING NORMAL FIREBASE AUTH VERIFICATION *****');
       
       try {
-        // Normal verification flow
-        final AuthCredential credential = PhoneAuthProvider.credential(
-          verificationId: verificationId,
-          smsCode: smsCode,
-        );
-        
+      // Normal verification flow
+      final AuthCredential credential = PhoneAuthProvider.credential(
+        verificationId: verificationId,
+        smsCode: smsCode,
+      );
+      
         // Try to sign in
         UserCredential? userCredential;
         try {
@@ -560,16 +560,16 @@ class AuthService {
         
         if (userCredential != null && userCredential.user != null) {
           print('***** VERIFICATION SUCCESSFUL: ${userCredential.user?.uid} *****');
-          
-          // Check if user exists in Firestore
-          final bool userExists = await this.userExists(userCredential.user!.uid);
-          
-          return {
-            'success': true,
-            'user': userCredential.user,
-            'isNewUser': !userExists,
-            'message': 'OTP verified successfully'
-          };
+      
+      // Check if user exists in Firestore
+      final bool userExists = await this.userExists(userCredential.user!.uid);
+      
+      return {
+        'success': true,
+        'user': userCredential.user,
+        'isNewUser': !userExists,
+        'message': 'OTP verified successfully'
+      };
         } else {
           throw Exception("User credential or user is null after sign-in");
         }

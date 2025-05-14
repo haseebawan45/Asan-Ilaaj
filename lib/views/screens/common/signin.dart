@@ -168,12 +168,28 @@ class _SignINState extends State<SignIN> with SingleTickerProviderStateMixin {
         
         // Show a success message about the found account
         String userRoleDisplay = 'User';
+        String userTypeString = '';
         switch (userRole) {
-          case UserRole.doctor: userRoleDisplay = 'Doctor'; break;
-          case UserRole.patient: userRoleDisplay = 'Patient'; break;
-          case UserRole.ladyHealthWorker: userRoleDisplay = 'Lady Health Worker'; break;
-          case UserRole.admin: userRoleDisplay = 'Admin'; break;
-          default: userRoleDisplay = 'User'; break;
+          case UserRole.doctor: 
+            userRoleDisplay = 'Doctor'; 
+            userTypeString = 'Doctor';
+            break;
+          case UserRole.patient: 
+            userRoleDisplay = 'Patient'; 
+            userTypeString = 'Patient';
+            break;
+          case UserRole.ladyHealthWorker: 
+            userRoleDisplay = 'Lady Health Worker'; 
+            userTypeString = 'LadyHealthWorker';
+            break;
+          case UserRole.admin: 
+            userRoleDisplay = 'Admin'; 
+            userTypeString = 'Admin';
+            break;
+          default: 
+            userRoleDisplay = 'User'; 
+            userTypeString = 'Patient';
+            break;
         }
         
         ScaffoldMessenger.of(context).showSnackBar(
@@ -252,6 +268,34 @@ class _SignINState extends State<SignIN> with SingleTickerProviderStateMixin {
         
         String title = isAdmin ? "Admin Verification" : "Welcome Back";
         
+        // Get user type string for existing user
+        String userTypeString = 'Patient';  // Default to Patient
+        
+        if (!isAdmin) {
+          // Get user role for existing user
+          final userCheck = await _authService.getUserByPhoneNumber(formattedPhoneNumber);
+          if (userCheck['exists'] == true) {
+            final userRole = userCheck['userRole'] as UserRole;
+            switch (userRole) {
+              case UserRole.doctor: 
+                userTypeString = 'Doctor';
+                break;
+              case UserRole.patient: 
+                userTypeString = 'Patient';
+                break;
+              case UserRole.ladyHealthWorker: 
+                userTypeString = 'LadyHealthWorker';
+                break;
+              case UserRole.admin: 
+                userTypeString = 'Admin';
+                break;
+              default: 
+                userTypeString = 'Patient';
+                break;
+            }
+          }
+        }
+        
         // If auto-verified (rare, but happens on some Android devices)
         if (result['autoVerified'] == true) {
           print('***** AUTO-VERIFICATION DETECTED *****');
@@ -274,6 +318,7 @@ class _SignINState extends State<SignIN> with SingleTickerProviderStateMixin {
                 text: title,
                 phoneNumber: formattedPhoneNumber,
                 verificationId: result['verificationId'],
+                userType: userTypeString,
               ),
             ),
           );
@@ -375,29 +420,9 @@ class _SignINState extends State<SignIN> with SingleTickerProviderStateMixin {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => BottomNavigationBarPatientScreen(
-              profileStatus: "complete",
-              suppressProfilePrompt: false,
-              profileCompletionPercentage: 100.0,
-            ),
-          ),
-        );
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => CompleteProfilePatient1Screen(),
-          ),
-        );
-      }
-    } else if (userRole == UserRole.ladyHealthWorker) {
-      if (isProfileComplete) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
             builder: (context) => BottomNavigationBarScreen(
               profileStatus: "complete",
-              userType: "ladyhealthworker",
+              userType: "Patient",
             ),
           ),
         );

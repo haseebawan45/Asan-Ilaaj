@@ -252,7 +252,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
             print('***** REGISTERING NEW USER: ${widget.fullName} *****');
             
             // Register the new user
-            if (user != null) {
+                if (user != null) {
               await _registerNewUser(user.uid);
             }
           }
@@ -266,10 +266,14 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
             }
           }
           
-          // Navigate to the appropriate screen based on user type
-          final String userType = widget.userType?.toLowerCase() ?? "";
+          // For existing users, navigate based on their stored role
+          if (!isNewUser) {
+            await _navigateBasedOnUserRole();
+          return;
+          }
           
-          if (userType == "patient") {
+          // For new users, navigate based on the widget.userType
+          if (widget.userType?.toLowerCase() == "patient") {
             // For patient users
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(builder: (context) => BottomNavigationBarPatientScreen(
@@ -279,21 +283,14 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
               )),
               (route) => false,
             );
-          } else if (userType == "lady health worker") {
-            // For lady health worker users
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (context) => BottomNavigationBarScreen(
-                profileStatus: "incomplete", // New users start with incomplete profile
-                userType: "ladyhealthworker",
-              )),
-              (route) => false,
-            );
           } else {
-            // For doctor users (default)
+            // For doctor or lady health worker users
+            String userTypeForNavigation = widget.userType?.toLowerCase() ?? "doctor";
+            print('***** NEW USER NAVIGATION - USER TYPE: $userTypeForNavigation *****');
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(builder: (context) => BottomNavigationBarScreen(
                 profileStatus: "incomplete", // New users start with incomplete profile
-                userType: "doctor",
+                userType: userTypeForNavigation,
               )),
               (route) => false,
             );
@@ -358,11 +355,11 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     // Register user in Firestore
     try {
       final result = await _authService.registerUser(
-        uid: uid,
-        fullName: widget.fullName!,
-        phoneNumber: widget.phoneNumber,
-        role: role,
-      );
+      uid: uid,
+      fullName: widget.fullName!,
+      phoneNumber: widget.phoneNumber,
+      role: role,
+    );
       
       if (result['success']) {
         // If registration is successful, show a success message
@@ -448,6 +445,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     // For non-admin users, continue with standard navigation
     try {
       final isProfileComplete = await _authService.isProfileComplete();
+      print('***** PROFILE COMPLETE STATUS: $isProfileComplete *****');
       
       // Get the appropriate screen widget based on role
       final navigationScreen = await _authService.getNavigationScreenForUser(

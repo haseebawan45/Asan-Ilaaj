@@ -113,19 +113,24 @@ class _HomeScreenState extends State<HomeScreen> {
       
       // Check profile completion status
       if (profileStatus != "complete") {
-        if (userType == "Doctor") {
+        print('***** PROFILE IS NOT COMPLETE. USER TYPE: $userType *****');
+        if (userType == "Doctor" || userType == "doctor") {
+          print('***** REDIRECTING DOCTOR TO PROFILE COMPLETION SCREEN *****');
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (context) => const DoctorProfilePage1Screen(),
             ),
           );
         } else {
+          print('***** REDIRECTING NON-DOCTOR TO PROFILE COMPLETION SCREEN *****');
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (context) => const CompleteProfileScreen(),
             ),
           );
         }
+      } else {
+        print('***** PROFILE IS COMPLETE. STAYING ON HOME SCREEN *****');
       }
     });
   }

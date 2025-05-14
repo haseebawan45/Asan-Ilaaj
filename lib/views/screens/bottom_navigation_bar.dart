@@ -55,6 +55,7 @@ class _BottomNavigationBarScreenState extends State<BottomNavigationBarScreen> {
     userType = widget.userType;
     _selectedIndex = widget.initialIndex;
     print('***** BOTTOM NAV BAR INITIALIZED WITH USER TYPE: $userType *****');
+    print('***** BOTTOM NAV BAR INITIALIZED WITH PROFILE STATUS: $profileStatus *****');
   }
 
   List<Widget> _widgetOptions() => <Widget>[
