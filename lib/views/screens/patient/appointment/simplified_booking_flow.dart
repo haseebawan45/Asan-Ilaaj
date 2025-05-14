@@ -191,10 +191,11 @@ class _SimplifiedBookingFlowState extends State<SimplifiedBookingFlow> with Sing
         setState(() {
           _doctorData = {
             'id': doctorDoc.id,
-            'name': doctorData['name'] ?? 'Doctor',
+            'name': doctorData['fullName'] ?? doctorData['name'] ?? 'Doctor',
             'specialty': doctorData['specialty'] ?? specialty,
-            'image': doctorData['image'] ?? 'assets/images/doctor_placeholder.png',
-            'fee': doctorData['fee'] ?? 'Rs. 2000',
+            'profileImageUrl': doctorData['profileImageUrl'],
+            'image': doctorData['image'],
+            'fee': doctorData['fee'] ?? doctorData['consultationFee'] ?? 'Rs. 2000',
           };
           _selectedDoctor = _doctorData['name'];
         });
@@ -223,10 +224,11 @@ class _SimplifiedBookingFlowState extends State<SimplifiedBookingFlow> with Sing
         setState(() {
           _doctorData = {
             'id': doctorDoc.id,
-            'name': doctorData['name'] ?? 'Doctor',
-            'specialty': doctorData['specialty'] ?? 'General Physician',
-            'image': doctorData['image'] ?? 'assets/images/doctor_placeholder.png',
-            'fee': doctorData['fee'] ?? 'Rs. 2000',
+            'name': doctorData['fullName'] ?? doctorData['name'] ?? 'Doctor',
+            'specialty': doctorData['specialty'] ?? doctorData['specialization'] ?? 'General Physician',
+            'profileImageUrl': doctorData['profileImageUrl'],
+            'image': doctorData['image'],
+            'fee': doctorData['fee'] ?? doctorData['consultationFee'] ?? 'Rs. 2000',
           };
           _selectedDoctor = _doctorData['name'];
         });
@@ -559,7 +561,8 @@ class _SimplifiedBookingFlowState extends State<SimplifiedBookingFlow> with Sing
         'doctorDetails': {
           'name': _doctorData['name'] ?? 'Doctor',
           'specialty': _doctorData['specialty'] ?? 'Specialist',
-          'image': _doctorData['image'] ?? '',
+          'profileImageUrl': _doctorData['profileImageUrl'],
+          'image': _doctorData['image'],
         },
         'fee': _doctorData['fee'] ?? 'Rs. 2000',
         'paymentStatus': 'pending',
@@ -986,13 +989,26 @@ class _SimplifiedBookingFlowState extends State<SimplifiedBookingFlow> with Sing
                       color: Colors.white,
                       width: 3,
                     ),
-                    image: DecorationImage(
-                      image: _doctorData.containsKey('image') && _doctorData['image'] != null 
-                          ? NetworkImage(_doctorData['image'])
-                          : AssetImage('assets/images/doctor_placeholder.png') as ImageProvider,
-                      fit: BoxFit.cover,
-                    ),
+                    image: (_doctorData.containsKey('profileImageUrl') && _doctorData['profileImageUrl'] != null) 
+                          ? DecorationImage(
+                              image: NetworkImage(_doctorData['profileImageUrl']),
+                              fit: BoxFit.cover,
+                            )
+                          : (_doctorData.containsKey('image') && _doctorData['image'] != null)
+                              ? DecorationImage(
+                                  image: NetworkImage(_doctorData['image']),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
                   ),
+                  child: (!_doctorData.containsKey('profileImageUrl') || _doctorData['profileImageUrl'] == null) &&
+                        (!_doctorData.containsKey('image') || _doctorData['image'] == null)
+                      ? Icon(
+                          Icons.person,
+                          color: Colors.grey.shade400,
+                          size: 30,
+                        )
+                      : null,
                 ),
                 SizedBox(width: padding * 0.8),
                 

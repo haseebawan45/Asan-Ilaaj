@@ -116,13 +116,7 @@ class _MenuScreenState extends State<MenuScreen> {
       final String? userDataJson = prefs.getString(_userDataCacheKey);
       if (userDataJson != null) {
         final userData = json.decode(userDataJson);
-        if (mounted) {
-          setState(() {
-            _userName = userData['fullName'] ?? userData['name'] ?? widget.name;
-            _userRole = widget.userType == UserType.doctor ? _specialty : "Patient";
-            _profileImageUrl = userData['profileImageUrl'];
-          });
-        }
+        _updateUIWithUserData(userData);
       }
 
       // Load doctor profile from cache if user is a doctor
@@ -130,30 +124,25 @@ class _MenuScreenState extends State<MenuScreen> {
         final String? doctorProfileJson = prefs.getString(_doctorProfileCacheKey);
         if (doctorProfileJson != null) {
           final doctorProfile = json.decode(doctorProfileJson);
-          if (doctorProfile['profileImageUrl'] != null) {
-            setState(() {
-              _profileImageUrl = doctorProfile['profileImageUrl'];
-            });
-          }
           _updateUIWithDoctorProfile(doctorProfile);
         }
       }
     } catch (e) {
       debugPrint('Error loading from cache: $e');
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
     }
-  }
+      }
       
   // Refresh data in background
   Future<void> _refreshDataInBackground() async {
     if (!mounted) return;
       
-    setState(() {
+          setState(() {
       _isRefreshing = true;
     });
 
@@ -171,15 +160,7 @@ class _MenuScreenState extends State<MenuScreen> {
         // Cache user data
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(_userDataCacheKey, json.encode(processedUserData));
-        
-        // Update UI with user data
-        if (mounted) {
-          setState(() {
-            _userName = userData['fullName'] ?? userData['name'] ?? widget.name;
-            _userRole = widget.userType == UserType.doctor ? _specialty : "Patient";
-            _profileImageUrl = userData['profileImageUrl'];
-          });
-        }
+        _updateUIWithUserData(userData);
       }
       
       // Get user role
@@ -188,12 +169,6 @@ class _MenuScreenState extends State<MenuScreen> {
       // Load doctor-specific data if user is a doctor
       if (userRole == UserRole.doctor) {
         final doctorProfile = await _doctorProfileService.getDoctorProfile();
-        if (doctorProfile != null && doctorProfile['profileImageUrl'] != null) {
-          setState(() {
-            _profileImageUrl = doctorProfile['profileImageUrl'];
-          });
-        }
-        
         final doctorStats = await _doctorProfileService.getDoctorStats();
 
         // Combine profile and stats
@@ -213,12 +188,12 @@ class _MenuScreenState extends State<MenuScreen> {
     } catch (e) {
       debugPrint('Error refreshing data: $e');
     } finally {
-      if (mounted) {
-        setState(() {
+        if (mounted) {
+          setState(() {
           _isRefreshing = false;
-        });
+          });
+        }
       }
-    }
   }
 
   // Helper method to process data for caching
@@ -687,55 +662,20 @@ class _MenuScreenState extends State<MenuScreen> {
                       ),
                     ],
                   ),
-                  child: _profileImageUrl != null
-                      ? CircleAvatar(
-                          radius: widget.userType == UserType.patient ? 40 : 55,
-                          backgroundImage: NetworkImage(
-                            _profileImageUrl!,
-                            // Add caching headers
-                            headers: const {
-                              'Cache-Control': 'max-age=3600',
-                            },
-                          ),
-                          backgroundColor: Colors.grey[200],
-                          onBackgroundImageError: (exception, stackTrace) {
-                            debugPrint('Error loading profile image: $exception');
-                            if (mounted) {
-                              setState(() {
-                                _profileImageUrl = null;
-                              });
-                            }
-                          },
-                          child: _isRefreshing
-                              ? Container(
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.black26,
-                                  ),
-                                  child: Center(
-                                    child: SizedBox(
-                                      width: widget.userType == UserType.patient ? 20 : 25,
-                                      height: widget.userType == UserType.patient ? 20 : 25,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                      ),
-                                    ),
-                                  ),
-                                )
-                              : _profileImageUrl == null
-                                  ? Icon(
-                                      Icons.person,
-                                      size: widget.userType == UserType.patient ? 40 : 55,
-                                      color: Colors.grey[400],
-                                    )
-                                  : null,
-                        )
-                      : CircleAvatar(
-                          radius: widget.userType == UserType.patient ? 40 : 55,
-                          backgroundColor: Colors.grey[200],
-                          backgroundImage: const AssetImage("assets/images/User.png"),
-                        ),
+                  child: _profileImageUrl != null && _profileImageUrl!.isNotEmpty
+                    ? CircleAvatar(
+                        radius: widget.userType == UserType.patient ? 40 : 55,
+                        backgroundImage: NetworkImage(_profileImageUrl!),
+                      )
+                    : CircleAvatar(
+                    radius: widget.userType == UserType.patient ? 40 : 55,
+                    backgroundColor: Colors.grey.shade200,
+                    child: Icon(
+                      Icons.person,
+                      color: Colors.grey.shade400,
+                      size: widget.userType == UserType.patient ? 30 : 40,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 20),

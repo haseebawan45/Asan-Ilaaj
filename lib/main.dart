@@ -28,21 +28,21 @@ void main() async {
   
   // Initialize Firebase with explicit error handling
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
     
     // Test Firebase Storage initialization
     final storage = FirebaseStorage.instance;
     print("Firebase Storage initialized successfully: $storage");
-    
-    // Set preferred orientations and initialize other aspects
-    await SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]);
-    
-    runApp(const MyApp());
+  
+  // Set preferred orientations and initialize other aspects
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+  
+  runApp(const MyApp());
   } catch (e) {
     print("Error initializing Firebase: $e");
     // You might want to show an error screen here

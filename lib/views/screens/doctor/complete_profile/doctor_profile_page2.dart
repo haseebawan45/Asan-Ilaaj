@@ -512,98 +512,196 @@ class _DoctorProfilePage2ScreenState extends State<DoctorProfilePage2Screen> {
       String? degreeImageUrl;
 
       try {
+        print("Starting image uploads to Firebase Storage...");
+        int successfulUploads = 0;
+        int failedUploads = 0;
+        
         // Upload profile image if selected
         if (widget.profileImage != null) {
-          profileImageUrl = await storageService.uploadProfileImage(
-            file: XFile(widget.profileImage!.path),
-            userId: userId,
-            isDoctor: true,
-          );
+          try {
+            profileImageUrl = await storageService.uploadProfileImage(
+              file: XFile(widget.profileImage!.path),
+              userId: userId,
+              isDoctor: true,
+            );
+            print("Successfully uploaded profile image: $profileImageUrl");
+            successfulUploads++;
+          } catch (e) {
+            print("Error uploading profile image: $e");
+            failedUploads++;
+            // Keep existing URL if upload fails
+            // profileImageUrl = widget.profileImageUrl; // Already set above
+          }
         }
 
         // Upload medical license front if selected
         if (widget.medicalLicenseFront != null) {
-          medicalLicenseFrontUrl = await storageService.uploadDocumentImage(
-            file: XFile(widget.medicalLicenseFront!.path),
-            userId: userId,
-            isDoctor: true,
-            documentType: 'medical_license_front',
-          );
+          try {
+            medicalLicenseFrontUrl = await storageService.uploadDocumentImage(
+              file: XFile(widget.medicalLicenseFront!.path),
+              userId: userId,
+              isDoctor: true,
+              documentType: 'medical_license_front',
+            );
+            print("Successfully uploaded medical license front: $medicalLicenseFrontUrl");
+            successfulUploads++;
+          } catch (e) {
+            print("Error uploading medical license front: $e");
+            failedUploads++;
+            // Keep existing URL if upload fails
+            // medicalLicenseFrontUrl = widget.medicalLicenseFrontUrl; // Already set above
+          }
         }
 
         // Upload medical license back if selected
         if (widget.medicalLicenseBack != null) {
-          medicalLicenseBackUrl = await storageService.uploadDocumentImage(
-            file: XFile(widget.medicalLicenseBack!.path),
-            userId: userId,
-            isDoctor: true,
-            documentType: 'medical_license_back',
-          );
+          try {
+            medicalLicenseBackUrl = await storageService.uploadDocumentImage(
+              file: XFile(widget.medicalLicenseBack!.path),
+              userId: userId,
+              isDoctor: true,
+              documentType: 'medical_license_back',
+            );
+            print("Successfully uploaded medical license back: $medicalLicenseBackUrl");
+            successfulUploads++;
+          } catch (e) {
+            print("Error uploading medical license back: $e");
+            failedUploads++;
+            // Keep existing URL if upload fails
+            // medicalLicenseBackUrl = widget.medicalLicenseBackUrl; // Already set above
+          }
         }
 
         // Upload CNIC front if selected
         if (widget.cnicFront != null) {
-          cnicFrontUrl = await storageService.uploadDocumentImage(
-            file: XFile(widget.cnicFront!.path),
-            userId: userId,
-            isDoctor: true,
-            documentType: 'cnic_front',
-          );
+          try {
+            cnicFrontUrl = await storageService.uploadDocumentImage(
+              file: XFile(widget.cnicFront!.path),
+              userId: userId,
+              isDoctor: true,
+              documentType: 'cnic_front',
+            );
+            print("Successfully uploaded CNIC front: $cnicFrontUrl");
+            successfulUploads++;
+          } catch (e) {
+            print("Error uploading CNIC front: $e");
+            failedUploads++;
+            // Keep existing URL if upload fails
+            // cnicFrontUrl = widget.cnicFrontUrl; // Already set above
+          }
         }
 
         // Upload CNIC back if selected
         if (widget.cnicBack != null) {
-          cnicBackUrl = await storageService.uploadDocumentImage(
-            file: XFile(widget.cnicBack!.path),
-            userId: userId,
-            isDoctor: true,
-            documentType: 'cnic_back',
-          );
+          try {
+            cnicBackUrl = await storageService.uploadDocumentImage(
+              file: XFile(widget.cnicBack!.path),
+              userId: userId,
+              isDoctor: true,
+              documentType: 'cnic_back',
+            );
+            print("Successfully uploaded CNIC back: $cnicBackUrl");
+            successfulUploads++;
+          } catch (e) {
+            print("Error uploading CNIC back: $e");
+            failedUploads++;
+            // Keep existing URL if upload fails
+            // cnicBackUrl = widget.cnicBackUrl; // Already set above
+          }
         }
 
         // Upload degree image if selected
         if (_degreeImage != null) {
-          degreeImageUrl = await storageService.uploadDocumentImage(
-            file: XFile(_degreeImage!.path),
-            userId: userId,
-            isDoctor: true,
-            documentType: 'degree',
-          );
+          try {
+            degreeImageUrl = await storageService.uploadDocumentImage(
+              file: XFile(_degreeImage!.path),
+              userId: userId,
+              isDoctor: true,
+              documentType: 'degree',
+            );
+            print("Successfully uploaded degree image: $degreeImageUrl");
+            successfulUploads++;
+          } catch (e) {
+            print("Error uploading degree image: $e");
+            failedUploads++;
+            // Keep existing URL if upload fails
+            degreeImageUrl = _degreeImageUrl; // Use existing URL
+          }
+        } else {
+          // Use existing degree image URL if not uploading a new one
+          degreeImageUrl = _degreeImageUrl;
+        }
+        
+        print("Image upload summary: $successfulUploads successful, $failedUploads failed");
+        
+        // If all uploads failed, show error
+        if (failedUploads > 0 && successfulUploads == 0) {
+          throw Exception("Failed to upload all images. Please check your internet connection and try again.");
+        }
+        
+        // If some uploads failed, show warning
+        if (failedUploads > 0) {
+          // We'll show a warning but continue with the form submission
+          print("Warning: Some image uploads failed but we'll continue with the profile update");
         }
       } catch (e) {
-        print('Error uploading images: $e');
+        print('Error during image upload process: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error uploading images. Please try again.'),
             backgroundColor: Colors.red,
           ),
         );
+        setState(() {
+          _isLoading = false;
+        });
         return;
       }
 
       // Create doctor profile data
       final doctorData = {
-        'specialization': _selectedSpecialization,
-        'experience': int.parse(_experienceController.text),
-        'qualification': _qualificationController.text,
-        'consultationFee': int.parse(_consultationFeeController.text.replaceAll('Rs ', '')),
-        'degreeInstitution': _degreeInstitutionController.text,
-        'degreeCompletionDate': _degreeCompletionDateController.text,
+        'specialty': _selectedSpecialization,
+        'experience': _experienceController.text.isEmpty ? 0 : int.parse(_experienceController.text),
+        'qualifications': [_qualificationController.text],
+        'fee': _consultationFeeController.text.isEmpty ? 0 :
+               int.parse(_consultationFeeController.text.replaceAll('Rs ', '')),
+        'education': [
+          {
+            'institution': _degreeInstitutionController.text,
+            'completionDate': _degreeCompletionDateController.text,
+            'degree': _qualificationController.text,
+            'degreeImageUrl': degreeImageUrl,
+          }
+        ],
         'bio': _bioController.text,
         'profileImageUrl': profileImageUrl,
-        'medicalLicenseFrontUrl': medicalLicenseFrontUrl,
-        'medicalLicenseBackUrl': medicalLicenseBackUrl,
-        'cnicFrontUrl': cnicFrontUrl,
-        'cnicBackUrl': cnicBackUrl,
-        'degreeImageUrl': degreeImageUrl,
-        'updatedAt': FieldValue.serverTimestamp(),
+        'documents': {
+          'medicalLicense': {
+            'frontUrl': medicalLicenseFrontUrl,
+            'backUrl': medicalLicenseBackUrl,
+          },
+          'cnic': {
+            'frontUrl': cnicFrontUrl,
+            'backUrl': cnicBackUrl,
+          },
+        },
+        'lastUpdated': FieldValue.serverTimestamp(),
+        'isProfileComplete': true,
       };
+
+      print("Updating doctor profile with data: $doctorData");
 
       // Update doctor profile in Firestore
       await firestore.collection('doctors').doc(userId).set(
         doctorData,
         SetOptions(merge: true),
       );
+
+      // Also update user record to mark profile as complete
+      await firestore.collection('users').doc(userId).update({
+        'profileComplete': true,
+        'lastUpdated': FieldValue.serverTimestamp(),
+      });
 
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(

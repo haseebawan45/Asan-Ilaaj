@@ -110,7 +110,7 @@ class StorageService {
             },
           );
           
-          print("Upload complete! Status: ${snapshot.state}");
+        print("Upload complete! Status: ${snapshot.state}");
         } catch (e) {
           retryCount++;
           print("Upload error (attempt $retryCount/$maxRetries): $e");
@@ -137,14 +137,14 @@ class StorageService {
       }
       
       // Get the download URL with retries
-      print("Getting download URL...");
+        print("Getting download URL...");
       String? downloadUrl;
       retryCount = 0;
-      
+        
       while (downloadUrl == null && retryCount < maxRetries) {
         try {
           downloadUrl = await snapshot.ref.getDownloadURL();
-          print("Got download URL: $downloadUrl");
+        print("Got download URL: $downloadUrl");
         } catch (e) {
           retryCount++;
           print("Error getting download URL (attempt $retryCount/$maxRetries): $e");

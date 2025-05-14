@@ -440,24 +440,26 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         });
         
-        // Get patient details
-        String patientName = "Patient";
-        
-        if (processedData['patientId'] != null) {
-          try {
-            final patientDoc = await _firestore
-                .collection('users')
-                .doc(processedData['patientId'])
-                .get();
+                  // Get patient details
+            String patientName = "Patient";
+            String? patientImageUrl;
             
-            if (patientDoc.exists) {
-              final patientData = patientDoc.data();
-              patientName = patientData?['fullName'] ?? "Patient";
+            if (processedData['patientId'] != null) {
+              try {
+                final patientDoc = await _firestore
+                    .collection('users')
+                    .doc(processedData['patientId'])
+                    .get();
+                
+                if (patientDoc.exists) {
+                  final patientData = patientDoc.data();
+                  patientName = patientData?['fullName'] ?? "Patient";
+                  patientImageUrl = patientData?['profileImageUrl'];
+                }
+              } catch (e) {
+                print('Error fetching patient data: $e');
+              }
             }
-          } catch (e) {
-            print('Error fetching patient data: $e');
-          }
-        }
         
         // Get hospital details - check multiple possible field names
         String hospitalName = "Not specified";
@@ -551,7 +553,7 @@ class _HomeScreenState extends State<HomeScreen> {
         appointments.add({
           'id': doc.id,
           'patientName': patientName,
-          'patientImage': 'assets/images/User.png', // Use default image
+          'patientImageUrl': patientImageUrl,
           'date': processedData['date'] ?? "No date",
           'time': processedData['time'] ?? "No time",
           'type': processedData['type'] ?? "In-person",
@@ -741,43 +743,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                             child: _profileImageUrl != null && _profileImageUrl!.isNotEmpty
                                                 ? CircleAvatar(
                                                     radius: screenWidth * 0.065,
-                                                    backgroundImage: NetworkImage(
-                                                      _profileImageUrl!,
-                                                      // Add caching headers
-                                                      headers: const {
-                                                        'Cache-Control': 'max-age=3600',
-                                                      },
-                                                    ),
-                                                    onBackgroundImageError: (exception, stackTrace) {
-                                                      print('Error loading profile image: $exception');
-                                                      // Use default image on error
-                                                      setState(() {
-                                                        _profileImageUrl = null;
-                                                      });
-                                                    },
-                                                    child: _isRefreshing
-                                                        ? Container(
-                                                            decoration: BoxDecoration(
-                                                              shape: BoxShape.circle,
-                                                              color: Colors.black26,
-                                                            ),
-                                                            child: Center(
-                                                              child: SizedBox(
-                                                                width: screenWidth * 0.03,
-                                                                height: screenWidth * 0.03,
-                                                                child: CircularProgressIndicator(
-                                                                  strokeWidth: 2,
-                                                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          )
-                                                        : null,
+                                                    backgroundImage: NetworkImage(_profileImageUrl!),
                                                   )
                                                 : CircleAvatar(
                                                     radius: screenWidth * 0.065,
-                                                    backgroundColor: Colors.grey[200],
-                                                    backgroundImage: const AssetImage("assets/images/User.png"),
+                                                    backgroundColor: Colors.grey.shade200,
+                                                    child: Icon(
+                                                      Icons.person,
+                                                      color: Colors.grey.shade400,
+                                                      size: screenWidth * 0.08,
+                                                    ),
                                                   ),
                                           ),
                                         ),
@@ -1644,9 +1619,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     child: CircleAvatar(
                       radius: screenWidth * imageSizeMultiplier,
-                      backgroundImage: appointment['patientImage'].startsWith('assets/')
-                          ? AssetImage(appointment['patientImage'])
-                          : NetworkImage(appointment['patientImage']) as ImageProvider,
+                      backgroundColor: Colors.grey.shade200,
+                      backgroundImage: appointment['patientImageUrl'] != null && appointment['patientImageUrl'].toString().isNotEmpty
+                          ? NetworkImage(appointment['patientImageUrl'])
+                          : null,
+                      child: appointment['patientImageUrl'] == null || appointment['patientImageUrl'].toString().isEmpty
+                          ? Icon(
+                              Icons.person,
+                              color: Colors.grey.shade400,
+                              size: screenWidth * imageSizeMultiplier,
+                            )
+                          : null,
                     ),
                   ),
                   SizedBox(width: horizontalPadding * 0.6),
