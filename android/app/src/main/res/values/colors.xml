@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#E8F5FE</color>
+    <!-- App primary colors -->
+    <color name="notification_color">#FF3F80</color> <!-- Pink color from AppColors.primaryPink -->
 </resources>

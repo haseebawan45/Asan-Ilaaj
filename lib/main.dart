@@ -16,12 +16,24 @@ import 'package:healthcare/views/screens/dashboard/menu.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:healthcare/views/screens/patient/dashboard/home.dart';
 import 'package:healthcare/utils/app_theme.dart';
+import 'package:healthcare/services/notification_service.dart';
+import 'package:flutter/services.dart';
+import 'dart:io';
+import 'package:healthcare/models/chat_room_model.dart';
+import 'package:healthcare/views/screens/common/chat/chat_detail_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
+  // Set preferred orientations and initialize other aspects
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+  
   runApp(const MyApp());
 }
 
@@ -58,8 +70,19 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    // Scaffold key needed for global context access
+    final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+    
+    // Initialize notification service with context after build completes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (navigatorKey.currentContext != null) {
+        NotificationService().initialize(navigatorKey.currentContext!);
+      }
+    });
+    
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      navigatorKey: navigatorKey, // Add navigator key
       theme: AppTheme.getThemeData(), // Apply our centralized theme
       initialRoute: '/',
       routes: {
@@ -141,17 +164,28 @@ class _AuthWrapperState extends State<AuthWrapper> {
           _initialized = true;
         });
         
-        // Use the simplified navigation helper
-        final navigationScreen = await _authService.getNavigationScreenForUser(
-          isProfileComplete: isProfileComplete
-        );
+        // First check if there's a pending notification
+        final notificationService = NotificationService();
+        final notificationData = notificationService.getAndClearClickedNotification();
         
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => navigationScreen),
+        if (notificationData != null && notificationData.chatRoomId != null) {
+          // If there's a notification, navigate to the chat room
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _navigateToChatFromNotification(notificationData);
+          });
+        } else {
+          // Use the simplified navigation helper
+          final navigationScreen = await _authService.getNavigationScreenForUser(
+            isProfileComplete: isProfileComplete
           );
-        });
+          
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => navigationScreen),
+            );
+          });
+        }
       } else {
         // No existing user - need to go through onboarding flow
         setState(() {
@@ -166,6 +200,56 @@ class _AuthWrapperState extends State<AuthWrapper> {
         _checkingAuth = false;
         _initialized = true;
       });
+    }
+  }
+  
+  // Navigate to chat room from notification
+  Future<void> _navigateToChatFromNotification(NotificationData notificationData) async {
+    try {
+      // Get the chat room document
+      final roomDoc = await FirebaseFirestore.instance
+          .collection('chatRooms')
+          .doc(notificationData.chatRoomId)
+          .get();
+          
+      if (!roomDoc.exists) {
+        // Fallback to normal navigation if chat room doesn't exist
+        final navigationScreen = await _authService.getNavigationScreenForUser(
+          isProfileComplete: true
+        );
+        
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => navigationScreen),
+        );
+        return;
+      }
+      
+      // Import needed here to avoid circular dependencies in notification_service.dart
+      // This is only used in a user-facing component, not a service
+      final chatRoom = ChatRoom.fromFirestore(roomDoc);
+      
+      // Navigate to the chat screen
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ChatDetailScreen(
+            chatRoom: chatRoom,
+            isDoctor: notificationData.isDoctor ?? false,
+          ),
+        ),
+      );
+    } catch (e) {
+      print('Error navigating to chat room: $e');
+      // Fallback to normal navigation if anything goes wrong
+      final navigationScreen = await _authService.getNavigationScreenForUser(
+        isProfileComplete: true
+      );
+      
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => navigationScreen),
+      );
     }
   }
 

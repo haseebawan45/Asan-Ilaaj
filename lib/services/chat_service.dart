@@ -5,10 +5,12 @@ import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 import '../models/chat_message_model.dart';
 import '../models/chat_room_model.dart';
+import 'notification_service.dart';
 
 class ChatService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
+  final NotificationService _notificationService = NotificationService();
   
   // Collection references
   final CollectionReference _chatRoomsCollection = 
@@ -179,6 +181,25 @@ class ChatService {
       receiverId
     );
     
+    // Get chat room data to retrieve sender name
+    final roomDoc = await _chatRoomsCollection.doc(roomId).get();
+    final roomData = roomDoc.data() as Map<String, dynamic>?;
+    
+    if (roomData != null) {
+      final bool isSenderDoctor = senderId == roomData['doctorId'];
+      final String senderName = isSenderDoctor ? 
+          (roomData['doctorName'] ?? 'Doctor') : 
+          (roomData['patientName'] ?? 'Patient');
+      
+      // Send notification to recipient
+      await _notificationService.sendChatNotification(
+        recipientId: receiverId,
+        senderName: senderName,
+        messageBody: content,
+        chatRoomId: roomId,
+      );
+    }
+    
     return message;
   }
   
@@ -227,6 +248,25 @@ class ChatService {
       receiverId
     );
     
+    // Get chat room data to retrieve sender name
+    final roomDoc = await _chatRoomsCollection.doc(roomId).get();
+    final roomData = roomDoc.data() as Map<String, dynamic>?;
+    
+    if (roomData != null) {
+      final bool isSenderDoctor = senderId == roomData['doctorId'];
+      final String senderName = isSenderDoctor ? 
+          (roomData['doctorName'] ?? 'Doctor') : 
+          (roomData['patientName'] ?? 'Patient');
+      
+      // Send notification to recipient
+      await _notificationService.sendChatNotification(
+        recipientId: receiverId,
+        senderName: senderName,
+        messageBody: caption.isNotEmpty ? 'Photo: $caption' : 'Sent you a photo',
+        chatRoomId: roomId,
+      );
+    }
+    
     return message;
   }
   
@@ -273,6 +313,25 @@ class ChatService {
       timestamp, 
       receiverId
     );
+    
+    // Get chat room data to retrieve sender name
+    final roomDoc = await _chatRoomsCollection.doc(roomId).get();
+    final roomData = roomDoc.data() as Map<String, dynamic>?;
+    
+    if (roomData != null) {
+      final bool isSenderDoctor = senderId == roomData['doctorId'];
+      final String senderName = isSenderDoctor ? 
+          (roomData['doctorName'] ?? 'Doctor') : 
+          (roomData['patientName'] ?? 'Patient');
+      
+      // Send notification to recipient
+      await _notificationService.sendChatNotification(
+        recipientId: receiverId,
+        senderName: senderName,
+        messageBody: 'Sent you a voice message',
+        chatRoomId: roomId,
+      );
+    }
     
     return message;
   }
@@ -326,6 +385,27 @@ class ChatService {
       timestamp, 
       receiverId
     );
+    
+    // Get chat room data to retrieve sender name
+    final roomDoc = await _chatRoomsCollection.doc(roomId).get();
+    final roomData = roomDoc.data() as Map<String, dynamic>?;
+    
+    if (roomData != null) {
+      final bool isSenderDoctor = senderId == roomData['doctorId'];
+      final String senderName = isSenderDoctor ? 
+          (roomData['doctorName'] ?? 'Doctor') : 
+          (roomData['patientName'] ?? 'Patient');
+      
+      // Send notification to recipient
+      await _notificationService.sendChatNotification(
+        recipientId: receiverId,
+        senderName: senderName,
+        messageBody: caption.isNotEmpty 
+            ? 'Sent you a document: $fileName' 
+            : 'Sent you a document',
+        chatRoomId: roomId,
+      );
+    }
     
     return message;
   }
