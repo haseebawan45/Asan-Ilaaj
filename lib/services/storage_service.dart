@@ -1,9 +1,10 @@
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
+// import 'package:flutter_image_compress/flutter_image_compress.dart'; // COMMENTED OUT DUE TO BUILD ISSUES
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:path/path.dart' as path;
+import 'package:image_picker/image_picker.dart'; // Import for XFile
 
 class StorageService {
   final FirebaseStorage _storage = FirebaseStorage.instance;
@@ -134,6 +135,12 @@ class StorageService {
     required int quality,
     required int maxWidth,
   }) async {
+    // TEMPORARY IMPLEMENTATION - Uses original file without compression
+    // When flutter_image_compress is available, this should be replaced with proper compression
+    print('Image compression is disabled. Using original file: ${file.path}');
+    return file;
+    
+    /* COMMENTED OUT DUE TO BUILD ISSUES
     // If the image is already small, don't bother compressing
     final fileSize = await file.length();
     if (fileSize < 500 * 1024) { // Less than 500KB
@@ -157,6 +164,7 @@ class StorageService {
       print('Error compressing image: $e');
       return file; // Return original if compression fails
     }
+    */
   }
   
   /// Fetches an image as a File from URL for editing

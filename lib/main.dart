@@ -76,7 +76,7 @@ class MyApp extends StatelessWidget {
     // Initialize notification service with context after build completes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (navigatorKey.currentContext != null) {
-        NotificationService().initialize(navigatorKey.currentContext!);
+        // NotificationService().initialize(navigatorKey.currentContext!); // COMMENTED OUT DUE TO BUILD ISSUES
       }
     });
     
@@ -165,6 +165,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
         });
         
         // First check if there's a pending notification
+        /* COMMENTED OUT DUE TO BUILD ISSUES
         final notificationService = NotificationService();
         final notificationData = notificationService.getAndClearClickedNotification();
         
@@ -174,6 +175,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
             _navigateToChatFromNotification(notificationData);
           });
         } else {
+        */
           // Use the simplified navigation helper
           final navigationScreen = await _authService.getNavigationScreenForUser(
             isProfileComplete: isProfileComplete
@@ -185,7 +187,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
               MaterialPageRoute(builder: (context) => navigationScreen),
             );
           });
-        }
+        // } // COMMENTED OUT DUE TO BUILD ISSUES
       } else {
         // No existing user - need to go through onboarding flow
         setState(() {

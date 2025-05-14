@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+// import 'package:flutter_local_notifications/flutter_local_notifications.dart'; // COMMENTED OUT DUE TO BUILD ISSUES
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -19,7 +19,7 @@ class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+  // final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin(); // COMMENTED OUT
   
   // Keep track of the latest notification that was clicked
   NotificationData? lastNotificationClicked;
@@ -53,6 +53,7 @@ class NotificationService {
       return; // Don't continue if permission denied
     }
     
+    /* COMMENTED OUT DUE TO BUILD ISSUES
     // Initialize local notifications
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -71,6 +72,7 @@ class NotificationService {
     
     // Create notification channel for Android
     await _createNotificationChannel();
+    */
     
     // Get the token
     String? token = await _fcm.getToken();
@@ -99,6 +101,7 @@ class NotificationService {
     _initialized = true;
   }
   
+  /* COMMENTED OUT DUE TO BUILD ISSUES
   Future<void> _createNotificationChannel() async {
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       'chat_messages', // id
@@ -111,6 +114,7 @@ class NotificationService {
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
   }
+  */
   
   Future<void> _saveTokenToFirestore(String token) async {
     final user = FirebaseAuth.instance.currentUser;
@@ -129,6 +133,7 @@ class NotificationService {
     AndroidNotification? android = message.notification?.android;
     
     if (notification != null && android != null) {
+      /* COMMENTED OUT DUE TO BUILD ISSUES
       _localNotifications.show(
         notification.hashCode,
         notification.title,
@@ -146,9 +151,13 @@ class NotificationService {
         ),
         payload: json.encode(message.data),
       );
+      */
+      // Just print the notification for now
+      print('Received notification: ${notification.title} - ${notification.body}');
     }
   }
   
+  /* COMMENTED OUT DUE TO BUILD ISSUES
   void _handleNotificationTap(NotificationResponse response) {
     if (response.payload != null) {
       try {
@@ -161,6 +170,7 @@ class NotificationService {
       }
     }
   }
+  */
   
   void _handleNotificationClick(RemoteMessage message) {
     if (message.data.containsKey('chatRoomId')) {
