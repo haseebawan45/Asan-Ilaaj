@@ -178,6 +178,9 @@ class _HospitalSelectionScreenState extends State<HospitalSelectionScreen> with 
       setState(() {
         _selectedHospitals.add(fullHospitalName);
       });
+      
+      // Save this hospital to Firestore immediately
+      _saveHospitalToFirestore(fullHospitalName);
     } else {
       // Show error for duplicate hospital
       ScaffoldMessenger.of(context).showSnackBar(
@@ -195,11 +198,154 @@ class _HospitalSelectionScreenState extends State<HospitalSelectionScreen> with 
     });
   }
   
+  // Save a single hospital to Firestore
+  Future<void> _saveHospitalToFirestore(String hospitalName) async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      // Get current user ID
+      final String? doctorId = _auth.currentUser?.uid;
+      
+      if (doctorId == null) {
+        throw Exception('User not authenticated');
+      }
+      
+      // Extract city from the hospital name format "Hospital Name, City"
+      List<String> parts = hospitalName.split(', ');
+      String city = "";
+      String rawHospitalName = hospitalName;
+      
+      if (parts.length > 1) {
+        city = parts.last;
+        rawHospitalName = parts.sublist(0, parts.length - 1).join(', ');
+      }
+      
+      // Create a unique ID for the hospital
+      String cityPrefix = city.isNotEmpty ? city.substring(0, math.min(3, city.length)).toUpperCase() : "HSP";
+      String hospitalId = 'custom_${cityPrefix}_${DateTime.now().millisecondsSinceEpoch}';
+        
+      // Save to Firestore
+      final docRef = _firestore.collection('doctor_hospitals').doc();
+      await docRef.set({
+        'doctorId': doctorId,
+        'hospitalId': hospitalId,
+        'hospitalName': hospitalName, // Full name with city
+        'rawHospitalName': rawHospitalName,
+        'city': city,
+        'created': FieldValue.serverTimestamp(),
+        'isCustom': true, // All entries are custom now
+      });
+      
+      if (!mounted) return;
+      
+      setState(() {
+        _isLoading = false;
+      });
+      
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Hospital added successfully'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      print('Error saving hospital to Firestore: $e');
+      
+      if (!mounted) return;
+      
+      setState(() {
+        _isLoading = false;
+        // Remove the hospital from the list since saving failed
+        _selectedHospitals.remove(hospitalName);
+      });
+      
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save hospital: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+  
   // Remove hospital from selection
   void _removeHospital(String hospital) {
     setState(() {
       _selectedHospitals.remove(hospital);
     });
+    
+    // Remove from Firestore immediately
+    _removeHospitalFromFirestore(hospital);
+  }
+  
+  // Remove a hospital from Firestore
+  Future<void> _removeHospitalFromFirestore(String hospitalName) async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      // Get current user ID
+      final String? doctorId = _auth.currentUser?.uid;
+      
+      if (doctorId == null) {
+        throw Exception('User not authenticated');
+      }
+      
+      // Find the document to delete
+      final querySnapshot = await _firestore
+          .collection('doctor_hospitals')
+          .where('doctorId', isEqualTo: doctorId)
+          .where('hospitalName', isEqualTo: hospitalName)
+          .get();
+      
+      if (querySnapshot.docs.isNotEmpty) {
+        // Delete the document
+        await querySnapshot.docs.first.reference.delete();
+      }
+      
+      if (!mounted) return;
+      
+      setState(() {
+        _isLoading = false;
+      });
+      
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Hospital removed successfully'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      print('Error removing hospital from Firestore: $e');
+      
+      if (!mounted) return;
+      
+      setState(() {
+        _isLoading = false;
+        // Add the hospital back to the list since deletion failed
+        if (!_selectedHospitals.contains(hospitalName)) {
+          _selectedHospitals.add(hospitalName);
+        }
+      });
+      
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to remove hospital: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   @override
@@ -239,22 +385,24 @@ class _HospitalSelectionScreenState extends State<HospitalSelectionScreen> with 
               ),
           ),
             centerTitle: true,
-      ),
-      floatingActionButton: _selectedHospitals.isNotEmpty
-          ? FloatingActionButton.extended(
-              onPressed: _isLoading ? null : _saveSelection,
-              backgroundColor: AppTheme.primaryPink,
-              elevation: 4,
-              icon: Icon(LucideIcons.save),
-              label: Text(
-                "Save",
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              UIHelper.applyPinkStatusBar(withPostFrameCallback: true);
+              Navigator.pop(context, _selectedHospitals);
+            },
+            child: Text(
+              "Done",
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
               ),
-            )
-          : null,
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: null,
       body: Stack(
         children: [
           // Background gradient and design elements
@@ -458,7 +606,7 @@ class _HospitalSelectionScreenState extends State<HospitalSelectionScreen> with 
                       ),
                       SizedBox(height: 16),
                       Text(
-                        "Saving hospitals...",
+                        "Updating hospital data...",
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
@@ -479,7 +627,7 @@ Widget _buildMainContent() {
   return SingleChildScrollView(
     physics: BouncingScrollPhysics(),
     child: Padding(
-      padding: EdgeInsets.fromLTRB(20, 25, 20, 100),
+      padding: EdgeInsets.fromLTRB(20, 25, 20, 80),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1225,112 +1373,6 @@ Widget _buildMainContent() {
       ),
     ),
   );
-}
-
-void _saveSelection() async {
-  setState(() {
-    _isLoading = true;
-  });
-  
-  try {
-    // Get current user ID
-    final String? doctorId = _auth.currentUser?.uid;
-    
-    if (doctorId == null) {
-      throw Exception('User not authenticated');
-    }
-    
-    // Get existing hospital associations
-    final existingAssociations = await _firestore
-        .collection('doctor_hospitals')
-        .where('doctorId', isEqualTo: doctorId)
-        .get();
-    
-    // Create a batch for better performance
-    final batch = _firestore.batch();
-    
-    // Keep track of which hospitals are already in the database
-    final Map<String, DocumentReference> existingHospitalRefs = {};
-    
-    // Track hospital names that already exist
-    final Set<String> existingHospitalNames = {};
-    
-    // First pass: identify existing hospitals
-    for (var doc in existingAssociations.docs) {
-      final data = doc.data() as Map<String, dynamic>;
-      final hospitalName = data['hospitalName'] as String;
-      existingHospitalRefs[hospitalName] = doc.reference;
-      existingHospitalNames.add(hospitalName);
-    }
-    
-    // Second pass: remove hospitals that are no longer selected
-    for (String hospitalName in existingHospitalNames) {
-      if (!_selectedHospitals.contains(hospitalName)) {
-        // This hospital was removed by the user, so delete it
-        batch.delete(existingHospitalRefs[hospitalName]!);
-      }
-    }
-    
-    // Third pass: add new hospital associations that don't already exist
-    for (String hospitalName in _selectedHospitals) {
-      if (!existingHospitalNames.contains(hospitalName)) {
-        // This is a new hospital selection, add it
-          final docRef = _firestore.collection('doctor_hospitals').doc();
-        
-        // Extract city from the hospital name format "Hospital Name, City"
-        List<String> parts = hospitalName.split(', ');
-        String city = "";
-        String rawHospitalName = hospitalName;
-        
-        if (parts.length > 1) {
-          city = parts.last;
-          rawHospitalName = parts.sublist(0, parts.length - 1).join(', ');
-        }
-        
-        // Create a unique ID for the hospital
-        String cityPrefix = city.isNotEmpty ? city.substring(0, math.min(3, city.length)).toUpperCase() : "HSP";
-        String hospitalId = 'custom_${cityPrefix}_${DateTime.now().millisecondsSinceEpoch}';
-          
-          batch.set(docRef, {
-            'doctorId': doctorId,
-          'hospitalId': hospitalId,
-            'hospitalName': hospitalName, // Full name with city
-          'rawHospitalName': rawHospitalName,
-          'city': city,
-            'created': FieldValue.serverTimestamp(),
-          'isCustom': true, // All entries are custom now
-          });
-      }
-    }
-    
-    // Commit the batch
-    await batch.commit();
-    
-    if (!mounted) return;
-    
-    setState(() {
-      _isLoading = false;
-    });
-    
-    // Show success dialog
-    bool? shouldReturn = await _showSuccessDialog();
-    
-    // Return to previous screen if confirmed
-    if (shouldReturn == true && mounted) {
-    Navigator.pop(context, _selectedHospitals);
-    }
-  } catch (e) {
-    print('Error saving hospital selection: $e');
-    
-    if (!mounted) return;
-    
-    setState(() {
-      _isLoading = false;
-    });
-    
-    // Show error dialog
-    _showErrorDialog(e.toString());
-  }
 }
 
 Future<bool?> _showSuccessDialog() {
