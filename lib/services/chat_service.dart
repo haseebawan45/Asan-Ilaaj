@@ -216,10 +216,10 @@ class ChatService {
     final timestamp = DateTime.now();
     
     try {
-      // Upload image to Firebase Storage
-      final fileExtension = path.extension(imageFile.path);
-      final storagePath = 'chat_images/$roomId/$messageId$fileExtension';
-      
+    // Upload image to Firebase Storage
+    final fileExtension = path.extension(imageFile.path);
+    final storagePath = 'chat_images/$roomId/$messageId$fileExtension';
+    
       // Create explicit metadata to prevent NullPointerException
       final metadata = SettableMetadata(
         contentType: 'image/${fileExtension.toLowerCase() == '.jpg' ? 'jpeg' : fileExtension.substring(1)}',
@@ -311,54 +311,54 @@ class ChatService {
       if (fileUrl == null) {
         throw Exception("Failed to get download URL after $maxRetries attempts");
       }
-      
-      final message = ChatMessage(
-        id: messageId,
-        senderId: senderId,
-        receiverId: receiverId,
-        content: caption.isNotEmpty ? caption : 'Image',
-        type: MessageType.image,
-        timestamp: timestamp,
-        fileUrl: fileUrl,
+    
+    final message = ChatMessage(
+      id: messageId,
+      senderId: senderId,
+      receiverId: receiverId,
+      content: caption.isNotEmpty ? caption : 'Image',
+      type: MessageType.image,
+      timestamp: timestamp,
+      fileUrl: fileUrl,
         caption: caption.isNotEmpty ? caption : null,
+    );
+    
+    // Add to messages subcollection
+    await _chatRoomsCollection
+        .doc(roomId)
+        .collection('messages')
+        .doc(messageId)
+        .set(message.toFirestore());
+    
+    // Update chat room with last message
+    final lastMessageText = caption.isNotEmpty ? 'Photo: $caption' : 'Photo';
+    await _updateChatRoomWithLastMessage(
+      roomId, 
+      lastMessageText, 
+      timestamp, 
+      receiverId
+    );
+    
+    // Get chat room data to retrieve sender name
+    final roomDoc = await _chatRoomsCollection.doc(roomId).get();
+    final roomData = roomDoc.data() as Map<String, dynamic>?;
+    
+    if (roomData != null) {
+      final bool isSenderDoctor = senderId == roomData['doctorId'];
+      final String senderName = isSenderDoctor ? 
+          (roomData['doctorName'] ?? 'Doctor') : 
+          (roomData['patientName'] ?? 'Patient');
+      
+      // Send notification to recipient
+      await _notificationService.sendChatNotification(
+        recipientId: receiverId,
+        senderName: senderName,
+        messageBody: caption.isNotEmpty ? 'Photo: $caption' : 'Sent you a photo',
+        chatRoomId: roomId,
       );
-      
-      // Add to messages subcollection
-      await _chatRoomsCollection
-          .doc(roomId)
-          .collection('messages')
-          .doc(messageId)
-          .set(message.toFirestore());
-      
-      // Update chat room with last message
-      final lastMessageText = caption.isNotEmpty ? 'Photo: $caption' : 'Photo';
-      await _updateChatRoomWithLastMessage(
-        roomId, 
-        lastMessageText, 
-        timestamp, 
-        receiverId
-      );
-      
-      // Get chat room data to retrieve sender name
-      final roomDoc = await _chatRoomsCollection.doc(roomId).get();
-      final roomData = roomDoc.data() as Map<String, dynamic>?;
-      
-      if (roomData != null) {
-        final bool isSenderDoctor = senderId == roomData['doctorId'];
-        final String senderName = isSenderDoctor ? 
-            (roomData['doctorName'] ?? 'Doctor') : 
-            (roomData['patientName'] ?? 'Patient');
-        
-        // Send notification to recipient
-        await _notificationService.sendChatNotification(
-          recipientId: receiverId,
-          senderName: senderName,
-          messageBody: caption.isNotEmpty ? 'Photo: $caption' : 'Sent you a photo',
-          chatRoomId: roomId,
-        );
-      }
-      
-      return message;
+    }
+    
+    return message;
     } catch (e) {
       print('Error sending image message: $e');
       rethrow;
@@ -377,9 +377,9 @@ class ChatService {
     final timestamp = DateTime.now();
     
     try {
-      // Upload audio to Firebase Storage
-      final storagePath = 'chat_audio/$roomId/$messageId.m4a';
-      
+    // Upload audio to Firebase Storage
+    final storagePath = 'chat_audio/$roomId/$messageId.m4a';
+    
       // Create explicit metadata for audio
       final metadata = SettableMetadata(
         contentType: 'audio/m4a',
@@ -472,53 +472,53 @@ class ChatService {
       if (fileUrl == null) {
         throw Exception("Failed to get audio download URL after $maxRetries attempts");
       }
+    
+    final message = ChatMessage(
+      id: messageId,
+      senderId: senderId,
+      receiverId: receiverId,
+      content: 'Audio',
+      type: MessageType.audio,
+      timestamp: timestamp,
+      fileUrl: fileUrl,
+      audioDuration: audioDuration,
+    );
+    
+    // Add to messages subcollection
+    await _chatRoomsCollection
+        .doc(roomId)
+        .collection('messages')
+        .doc(messageId)
+        .set(message.toFirestore());
+    
+    // Update chat room with last message
+    await _updateChatRoomWithLastMessage(
+      roomId, 
+      'Audio', 
+      timestamp, 
+      receiverId
+    );
+    
+    // Get chat room data to retrieve sender name
+    final roomDoc = await _chatRoomsCollection.doc(roomId).get();
+    final roomData = roomDoc.data() as Map<String, dynamic>?;
+    
+    if (roomData != null) {
+      final bool isSenderDoctor = senderId == roomData['doctorId'];
+      final String senderName = isSenderDoctor ? 
+          (roomData['doctorName'] ?? 'Doctor') : 
+          (roomData['patientName'] ?? 'Patient');
       
-      final message = ChatMessage(
-        id: messageId,
-        senderId: senderId,
-        receiverId: receiverId,
-        content: 'Audio',
-        type: MessageType.audio,
-        timestamp: timestamp,
-        fileUrl: fileUrl,
-        audioDuration: audioDuration,
+      // Send notification to recipient
+      await _notificationService.sendChatNotification(
+        recipientId: receiverId,
+        senderName: senderName,
+        messageBody: 'Sent you a voice message',
+        chatRoomId: roomId,
       );
-      
-      // Add to messages subcollection
-      await _chatRoomsCollection
-          .doc(roomId)
-          .collection('messages')
-          .doc(messageId)
-          .set(message.toFirestore());
-      
-      // Update chat room with last message
-      await _updateChatRoomWithLastMessage(
-        roomId, 
-        'Audio', 
-        timestamp, 
-        receiverId
-      );
-      
-      // Get chat room data to retrieve sender name
-      final roomDoc = await _chatRoomsCollection.doc(roomId).get();
-      final roomData = roomDoc.data() as Map<String, dynamic>?;
-      
-      if (roomData != null) {
-        final bool isSenderDoctor = senderId == roomData['doctorId'];
-        final String senderName = isSenderDoctor ? 
-            (roomData['doctorName'] ?? 'Doctor') : 
-            (roomData['patientName'] ?? 'Patient');
-        
-        // Send notification to recipient
-        await _notificationService.sendChatNotification(
-          recipientId: receiverId,
-          senderName: senderName,
-          messageBody: 'Sent you a voice message',
-          chatRoomId: roomId,
-        );
-      }
-      
-      return message;
+    }
+    
+    return message;
     } catch (e) {
       print('Error sending audio message: $e');
       rethrow;
@@ -538,10 +538,10 @@ class ChatService {
     final timestamp = DateTime.now();
     
     try {
-      // Upload document to Firebase Storage
-      final fileExtension = path.extension(documentFile.path);
-      final storagePath = 'chat_documents/$roomId/$messageId$fileExtension';
-      
+    // Upload document to Firebase Storage
+    final fileExtension = path.extension(documentFile.path);
+    final storagePath = 'chat_documents/$roomId/$messageId$fileExtension';
+    
       // Create explicit metadata for document
       String mimeType = 'application/octet-stream'; // Default MIME type
       
@@ -651,57 +651,57 @@ class ChatService {
       if (fileUrl == null) {
         throw Exception("Failed to get document download URL after $maxRetries attempts");
       }
+    
+    final message = ChatMessage(
+      id: messageId,
+      senderId: senderId,
+      receiverId: receiverId,
+      content: fileName,
+      type: MessageType.document,
+      timestamp: timestamp,
+      fileUrl: fileUrl,
+      caption: caption,
+    );
+    
+    // Add to messages subcollection
+    await _chatRoomsCollection
+        .doc(roomId)
+        .collection('messages')
+        .doc(messageId)
+        .set(message.toFirestore());
+    
+    // Update chat room with last message
+    final lastMessageText = caption.isNotEmpty 
+        ? 'Document: $fileName ($caption)' 
+        : 'Document: $fileName';
+    
+    await _updateChatRoomWithLastMessage(
+      roomId, 
+      lastMessageText, 
+      timestamp, 
+      receiverId
+    );
+    
+    // Get chat room data to retrieve sender name
+    final roomDoc = await _chatRoomsCollection.doc(roomId).get();
+    final roomData = roomDoc.data() as Map<String, dynamic>?;
+    
+    if (roomData != null) {
+      final bool isSenderDoctor = senderId == roomData['doctorId'];
+      final String senderName = isSenderDoctor ? 
+          (roomData['doctorName'] ?? 'Doctor') : 
+          (roomData['patientName'] ?? 'Patient');
       
-      final message = ChatMessage(
-        id: messageId,
-        senderId: senderId,
-        receiverId: receiverId,
-        content: fileName,
-        type: MessageType.document,
-        timestamp: timestamp,
-        fileUrl: fileUrl,
-        caption: caption,
-      );
-      
-      // Add to messages subcollection
-      await _chatRoomsCollection
-          .doc(roomId)
-          .collection('messages')
-          .doc(messageId)
-          .set(message.toFirestore());
-      
-      // Update chat room with last message
-      final lastMessageText = caption.isNotEmpty 
-          ? 'Document: $fileName ($caption)' 
-          : 'Document: $fileName';
-      
-      await _updateChatRoomWithLastMessage(
-        roomId, 
-        lastMessageText, 
-        timestamp, 
-        receiverId
-      );
-      
-      // Get chat room data to retrieve sender name
-      final roomDoc = await _chatRoomsCollection.doc(roomId).get();
-      final roomData = roomDoc.data() as Map<String, dynamic>?;
-      
-      if (roomData != null) {
-        final bool isSenderDoctor = senderId == roomData['doctorId'];
-        final String senderName = isSenderDoctor ? 
-            (roomData['doctorName'] ?? 'Doctor') : 
-            (roomData['patientName'] ?? 'Patient');
-        
-        // Send notification to recipient
-        await _notificationService.sendChatNotification(
-          recipientId: receiverId,
-          senderName: senderName,
+      // Send notification to recipient
+      await _notificationService.sendChatNotification(
+        recipientId: receiverId,
+        senderName: senderName,
           messageBody: caption.isNotEmpty ? 'Document: $fileName ($caption)' : 'Sent you a document: $fileName',
-          chatRoomId: roomId,
-        );
-      }
-      
-      return message;
+        chatRoomId: roomId,
+      );
+    }
+    
+    return message;
     } catch (e) {
       print('Error sending document message: $e');
       rethrow;
