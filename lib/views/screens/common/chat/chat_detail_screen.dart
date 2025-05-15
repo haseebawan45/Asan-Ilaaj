@@ -1186,40 +1186,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           children: [
             Hero(
                   tag: widget.chatRoom.id,
-                  child: Stack(
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: widget.isDoctor 
-                            ? AppColors.lightPink
-                            : AppColors.lightTeal,
-                        radius: 18,
-                        child: Icon(
-                          widget.isDoctor ? LucideIcons.user : LucideIcons.stethoscope,
-                          color: widget.isDoctor 
-                              ? AppColors.primaryPink
-                              : AppColors.primaryTeal,
-                          size: 18,
-                        ),
-                      ),
-                      if (isOnline)
-                        Positioned(
-                          right: 0,
-                          bottom: 0,
-              child: Container(
-                            width: 10,
-                            height: 10,
-                decoration: BoxDecoration(
-                              color: AppColors.onlineGreen,
-                  shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 2,
-                              ),
-                            ),
-                          ),
-                ),
-                    ],
-              ),
+                  child: _buildProfileAvatar(
+                    isOnline: isOnline,
+                    imageUrl: widget.isDoctor ? widget.chatRoom.patientProfilePic : widget.chatRoom.doctorProfilePic,
+                    placeholderIcon: widget.isDoctor ? LucideIcons.user : LucideIcons.stethoscope,
+                  ),
             ),
                 SizedBox(width: 12),
             Expanded(
@@ -1894,30 +1865,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     : Radius.circular(0),
               ),
               child: message.fileUrl != null
-                  ? CachedNetworkImage(
-                        imageUrl: message.fileUrl!,
-                        placeholder: (context, url) => Container(
-                          height: 200,
-                          color: Colors.grey.shade200,
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
-                            ),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          height: 200,
-                          color: Colors.grey.shade200,
-                          child: Center(
-                            child: Icon(
-                              Icons.error_outline,
-                              color: Colors.grey.shade400,
-                              size: 32,
-                            ),
-                          ),
-                        ),
-                        fit: BoxFit.cover,
+                  ? _buildChatImageWithErrorHandling(
+                      message.fileUrl!,
+                      message.id,
+                      primaryColor
                     )
                   : Container(
                       height: 200,
@@ -2177,10 +2128,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 title: Text('Open Document', style: GoogleFonts.poppins()),
                 onTap: () {
                   Navigator.pop(context);
-                  // Launch document URL
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Opening document...'))
-                  );
+                  _openDocumentUrl(url, fileName);
                 },
               ),
               ListTile(
@@ -2188,10 +2136,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 title: Text('Download', style: GoogleFonts.poppins()),
                 onTap: () {
                   Navigator.pop(context);
-                  // Download document
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Download started...'))
-                  );
+                  _downloadDocument(url, fileName);
                 },
               ),
               SizedBox(height: 20),
@@ -2200,5 +2145,363 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         );
       },
     );
+  }
+  
+  // New methods for document handling
+  
+  // Open document URL with validation
+  void _openDocumentUrl(String url, String fileName) {
+    try {
+      // Validate and fix URL before attempting to open
+      final validatedUrl = _validateAndFixImageUrl(url);
+      
+      if (validatedUrl.isEmpty) {
+        _showErrorSnackBar('Invalid document URL');
+        return;
+      }
+      
+      // Here you would typically use url_launcher to open the URL
+      // For now, we'll just show a snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Opening document: $fileName'),
+          duration: Duration(seconds: 2),
+        )
+      );
+    } catch (e) {
+      debugPrint('Error opening document: $e');
+      _showErrorSnackBar('Failed to open document');
+    }
+  }
+  
+  // Download document with validation
+  void _downloadDocument(String url, String fileName) {
+    try {
+      // Validate and fix URL before attempting to download
+      final validatedUrl = _validateAndFixImageUrl(url);
+      
+      if (validatedUrl.isEmpty) {
+        _showErrorSnackBar('Invalid document URL');
+        return;
+      }
+      
+      // Here you would typically implement download functionality
+      // For now, we'll just show a snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Downloading: $fileName'),
+          duration: Duration(seconds: 2),
+        )
+      );
+    } catch (e) {
+      debugPrint('Error downloading document: $e');
+      _showErrorSnackBar('Failed to download document');
+    }
+  }
+  
+  // New methods for profile image handling
+  
+  // Build profile avatar with error handling
+  Widget _buildProfileAvatar({required bool isOnline, String? imageUrl, required IconData placeholderIcon}) {
+    final Color primaryColor = widget.isDoctor ? AppColors.primaryPink : AppColors.primaryTeal;
+    final ValueNotifier<bool> isImageLoading = ValueNotifier<bool>(true);
+    final ValueNotifier<bool> hasImageError = ValueNotifier<bool>(false);
+    
+    // Skip loading state for empty URLs or asset images
+    if (imageUrl == null || imageUrl.isEmpty || imageUrl.startsWith('assets/')) {
+      isImageLoading.value = false;
+    } else {
+      // Setup image loading tracking
+      _handleProfileImageLoad(imageUrl, (success) {
+        if (!success && mounted) {
+          hasImageError.value = true;
+        }
+        if (mounted) {
+          isImageLoading.value = false;
+        }
+      });
+    }
+    
+    return Stack(
+      children: [
+        ValueListenableBuilder<bool>(
+          valueListenable: hasImageError,
+          builder: (context, hasError, _) {
+            return ValueListenableBuilder<bool>(
+              valueListenable: isImageLoading,
+              builder: (context, isLoading, _) {
+                return CircleAvatar(
+                  radius: 18,
+                  backgroundColor: widget.isDoctor ? AppColors.lightPink : AppColors.lightTeal,
+                  backgroundImage: (hasError || imageUrl == null || imageUrl.isEmpty) 
+                      ? null 
+                      : _getImageProvider(imageUrl),
+                  onBackgroundImageError: (exception, stackTrace) {
+                    debugPrint('Failed to load chat profile image: $exception');
+                    hasImageError.value = true;
+                    isImageLoading.value = false;
+                  },
+                  child: (hasError || imageUrl == null || imageUrl.isEmpty)
+                      ? Icon(
+                          placeholderIcon,
+                          color: primaryColor,
+                          size: 18,
+                        )
+                      : (isLoading ? SizedBox(
+                          height: 15,
+                          width: 15,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                          ),
+                        ) : null),
+                );
+              }
+            );
+          }
+        ),
+        if (isOnline)
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: AppColors.onlineGreen,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white,
+                  width: 2,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+  
+  // Track image loading completion
+  void _handleProfileImageLoad(String imageUrl, Function(bool) onComplete) {
+    if (imageUrl.startsWith('assets/')) {
+      onComplete(true);
+      return;
+    }
+    
+    try {
+      final resolvedImage = _getImageProvider(imageUrl);
+      if (resolvedImage == null) {
+        onComplete(false);
+        return;
+      }
+      
+      final imageStream = resolvedImage.resolve(ImageConfiguration.empty);
+      final imageStreamListener = ImageStreamListener(
+        (ImageInfo image, bool synchronousCall) {
+          // Image loaded successfully
+          onComplete(true);
+        },
+        onError: (exception, stackTrace) {
+          // Error loading image
+          debugPrint('Error preloading image: $exception');
+          onComplete(false);
+        },
+      );
+      
+      // Add listener to track when image finishes loading
+      imageStream.addListener(imageStreamListener);
+      
+      // Clean up listener after a timeout (in case image never loads)
+      Future.delayed(Duration(seconds: 10), () {
+        imageStream.removeListener(imageStreamListener);
+      });
+    } catch (e) {
+      debugPrint('Error handling image load: $e');
+      onComplete(false);
+    }
+  }
+  
+  // Get image provider with URL validation
+  ImageProvider? _getImageProvider(String url) {
+    try {
+      if (url.isEmpty) return null;
+      
+      // Handle asset images
+      if (url.startsWith('assets/')) {
+        return AssetImage(url);
+      }
+      
+      // Validate URL format
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        // Try to fix Firebase Storage URLs missing protocol
+        if (url.contains('firebasestorage.googleapis.com')) {
+          url = 'https://$url';
+          debugPrint('Fixed Firebase Storage URL: https://$url');
+        } else {
+          debugPrint('Invalid image URL format: $url');
+          return null;
+        }
+      }
+      
+      // Clean URL by removing unwanted characters
+      if (url.contains(' ') || url.contains("'")) {
+        url = url.replaceAll('"', '')
+                  .replaceAll("'", '')
+                  .replaceAll(' ', '%20');
+        debugPrint('Cleaned profile image URL: $url');
+      }
+      
+      return NetworkImage(url);
+    } catch (e) {
+      debugPrint('Error processing profile image: $e');
+      return null;
+    }
+  }
+  
+  // New method for handling chat images with error handling
+  Widget _buildChatImageWithErrorHandling(String imageUrl, String messageId, Color primaryColor) {
+    final ValueNotifier<bool> isImageLoading = ValueNotifier<bool>(true);
+    final ValueNotifier<bool> hasImageError = ValueNotifier<bool>(false);
+    
+    // Validate and fix URL before loading
+    imageUrl = _validateAndFixImageUrl(imageUrl);
+    
+    return ValueListenableBuilder<bool>(
+      valueListenable: hasImageError,
+      builder: (context, hasError, _) {
+        return ValueListenableBuilder<bool>(
+          valueListenable: isImageLoading,
+          builder: (context, isLoading, _) {
+            if (hasError) {
+              return Container(
+                height: 200,
+                color: Colors.grey.shade200,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      color: Colors.grey.shade400,
+                      size: 32,
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Failed to load image',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        // Reset loading states
+                        hasImageError.value = false;
+                        isImageLoading.value = true;
+                      },
+                      child: Text(
+                        'Retry',
+                        style: GoogleFonts.poppins(
+                          color: primaryColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    )
+                  ],
+                ),
+              );
+            }
+            
+            return CachedNetworkImage(
+              imageUrl: imageUrl,
+              placeholder: (context, url) => Container(
+                height: 200,
+                color: Colors.grey.shade200,
+                child: Center(
+                  child: SizedBox(
+                    height: 30,
+                    width: 30,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                    ),
+                  ),
+                ),
+              ),
+              errorWidget: (context, url, error) {
+                // Update error state
+                if (!hasImageError.value) {
+                  hasImageError.value = true;
+                  isImageLoading.value = false;
+                  debugPrint('Failed to load chat image ($messageId): $error');
+                }
+                return Container(
+                  height: 200,
+                  color: Colors.grey.shade200,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        color: Colors.grey.shade400,
+                        size: 32,
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Failed to load image',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              imageBuilder: (context, imageProvider) {
+                // Mark as loaded once complete
+                if (isImageLoading.value) {
+                  isImageLoading.value = false;
+                }
+                return Image(
+                  image: imageProvider,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: 200, // Fixed height for consistency
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+  
+  // Validate and fix image URLs
+  String _validateAndFixImageUrl(String url) {
+    if (url.isEmpty) return url;
+    
+    try {      
+      // Validate URL format
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        // Try to fix Firebase Storage URLs missing protocol
+        if (url.contains('firebasestorage.googleapis.com')) {
+          url = 'https://$url';
+          debugPrint('Fixed Firebase Storage URL in message: https://$url');
+        }
+      }
+      
+      // Clean URL by removing unwanted characters
+      if (url.contains(' ') || url.contains("'") || url.contains('"')) {
+        url = url.replaceAll('"', '')
+                  .replaceAll("'", '')
+                  .replaceAll(' ', '%20');
+        debugPrint('Cleaned message image URL: $url');
+      }
+      
+      return url;
+    } catch (e) {
+      debugPrint('Error processing message image URL: $e');
+      return url; // Return original URL if any errors
+    }
   }
 } 

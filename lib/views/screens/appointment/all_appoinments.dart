@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../../../../services/cache_service.dart';
 import 'package:healthcare/utils/app_theme.dart';
+import 'dart:async';
 
 class AppointmentsScreen extends StatefulWidget {
   const AppointmentsScreen({super.key});
@@ -211,7 +212,27 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
               // Merge doctor data into appointment
               appointment['doctorName'] = doctorData['fullName'] ?? doctorData['name'] ?? 'Doctor';
               appointment['specialty'] = doctorData['specialty'] ?? 'Specialist';
-              appointment['doctorImage'] = doctorData['profileImageUrl'];
+              
+              // Process the doctor profile image with validation
+              if (doctorData.containsKey('profileImageUrl') && doctorData['profileImageUrl'] != null) {
+                String imageUrl = doctorData['profileImageUrl'].toString().trim();
+                
+                // Validate URL format
+                if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+                  appointment['doctorImage'] = imageUrl;
+                  debugPrint('Valid doctor image URL found: $imageUrl');
+                } else if (imageUrl.contains('firebasestorage.googleapis.com')) {
+                  // Try to fix Firebase Storage URLs missing protocol
+                  appointment['doctorImage'] = 'https://' + imageUrl;
+                  debugPrint('Fixed Firebase Storage URL: https://$imageUrl');
+                } else {
+                  debugPrint('Invalid doctor image URL format: $imageUrl');
+                  appointment['doctorImage'] = 'assets/images/User.png';
+                }
+              } else {
+                debugPrint('No doctor profile image found for doctor ${doctorData['fullName'] ?? doctorData['name']}');
+                appointment['doctorImage'] = 'assets/images/User.png';
+              }
             }
           }
 
@@ -771,6 +792,55 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
     // Only show review options for appointments in the completed tab
     final bool canReview = isCompleted && !isCancelled && !hasReview;
     
+    // Track doctor image loading state
+    final ValueNotifier<bool> isImageLoading = ValueNotifier<bool>(true);
+    final ValueNotifier<bool> hasImageError = ValueNotifier<bool>(false);
+    final ImageProvider? doctorImage = _getDoctorImageSafely(appointment);
+    
+    // If we have no image to load or using a default asset, don't show loading state
+    if (doctorImage == null || 
+        (appointment['doctorImage'] is String && 
+         appointment['doctorImage'].toString().startsWith('assets/'))) {
+      isImageLoading.value = false;
+    } else if (doctorImage is NetworkImage) {
+      // Handle network image loading state
+      final imageStream = doctorImage.resolve(ImageConfiguration.empty);
+      final imageStreamListener = ImageStreamListener(
+        (ImageInfo image, bool synchronousCall) {
+          // Image loaded successfully
+          isImageLoading.value = false;
+        },
+        onError: (exception, stackTrace) {
+          // Error loading image
+          hasImageError.value = true;
+          isImageLoading.value = false;
+          debugPrint('Network error loading doctor image: $exception');
+          
+          // Try to retry image load if we have doctorId
+          if (appointment.containsKey('doctorId') && 
+              appointment['doctorId'] != null && 
+              appointment['doctorId'].toString().isNotEmpty) {
+            // Delay retry to avoid spamming requests
+            Future.delayed(Duration(seconds: 1), () {
+              _retryDoctorImageLoad(
+                appointment['id'].toString(), 
+                appointment['doctorId'].toString()
+              );
+            });
+          }
+        },
+      );
+      
+      // Add listener to track when image finishes loading
+      imageStream.addListener(imageStreamListener);
+      
+      // Clean up listener after a timeout (in case image never loads)
+      Future.delayed(Duration(seconds: 10), () {
+        imageStream.removeListener(imageStreamListener);
+        isImageLoading.value = false;
+      });
+    }
+    
     return Container(
       margin: EdgeInsets.only(bottom: 18),
       decoration: BoxDecoration(
@@ -819,15 +889,50 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
                       ),
                     ],
                   ),
-                  child: CircleAvatar(
-                    radius: 25,
-                    backgroundColor: Colors.grey.shade200,
-                    child: Icon(
-                      LucideIcons.user,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                    foregroundImage: null,
+                  child: ValueListenableBuilder<bool>(
+                    valueListenable: isImageLoading,
+                    builder: (context, loading, _) {
+                      return ValueListenableBuilder<bool>(
+                        valueListenable: hasImageError,
+                        builder: (context, hasError, _) {
+                          return CircleAvatar(
+                            radius: 25,
+                            backgroundColor: Colors.grey.shade200,
+                            backgroundImage: hasError ? null : doctorImage,
+                            onBackgroundImageError: (exception, stackTrace) {
+                              debugPrint('Error loading doctor image for appointment ${appointment['id']}: $exception');
+                              hasImageError.value = true;
+                              isImageLoading.value = false;
+                              
+                              // Try to retry image load if we have doctorId
+                              if (appointment.containsKey('doctorId') && 
+                                  appointment['doctorId'] != null && 
+                                  appointment['doctorId'].toString().isNotEmpty) {
+                                // Delay retry to avoid spamming requests
+                                Future.delayed(Duration(seconds: 1), () {
+                                  _retryDoctorImageLoad(
+                                    appointment['id'].toString(), 
+                                    appointment['doctorId'].toString()
+                                  );
+                                });
+                              }
+                            },
+                            child: hasError || doctorImage == null
+                              ? Icon(
+                                  LucideIcons.user,
+                                  color: Colors.white,
+                                  size: 22,
+                                )
+                              : loading
+                                ? CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  )
+                                : null,
+                          );
+                        }
+                      );
+                    }
                   ),
                 ),
                 SizedBox(width: 15),
@@ -1437,8 +1542,47 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
 
   // Helper method to handle doctor image safely
   ImageProvider? _getDoctorImageSafely(Map<String, dynamic> appointment) {
-    // Return null to use the fallback icon instead
-    return null;
+    try {
+      // Check if doctor image URL exists
+      if (!appointment.containsKey('doctorImage') || 
+          appointment['doctorImage'] == null || 
+          appointment['doctorImage'].toString().trim().isEmpty) {
+        return null;
+      }
+      
+      String imageUrl = appointment['doctorImage'].toString().trim();
+      
+      // If it's an asset path, return an AssetImage
+      if (imageUrl.startsWith('assets/')) {
+        return AssetImage(imageUrl);
+      }
+      
+      // Validate URL format
+      if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+        // Try to fix Firebase Storage URLs missing protocol
+        if (imageUrl.contains('firebasestorage.googleapis.com')) {
+          imageUrl = 'https://' + imageUrl;
+          debugPrint('Fixed malformed Firebase Storage URL: $imageUrl');
+        } else {
+          debugPrint('Invalid image URL format: $imageUrl');
+          return null;
+        }
+      }
+      
+      // Clean URL by removing unwanted characters
+      if (imageUrl.contains(' ') || imageUrl.contains("'")) {
+        imageUrl = imageUrl.replaceAll('"', '')
+                          .replaceAll("'", '')
+                          .replaceAll(' ', '%20');
+        debugPrint('Cleaned doctor image URL: $imageUrl');
+      }
+      
+      // Return the NetworkImage with the validated URL
+      return NetworkImage(imageUrl);
+    } catch (e) {
+      debugPrint('Error processing doctor image: $e');
+      return null;
+    }
   }
 
   // Helper method to compare lists (deep comparison)
@@ -1524,5 +1668,63 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
       _isLoadingMore = false;
       _hasMoreItems = endIndex < filteredList.length;
     });
+  }
+
+  // Attempt to retry loading a doctor image by fetching updated URL 
+  Future<void> _retryDoctorImageLoad(String appointmentId, String doctorId) async {
+    if (appointmentId.isEmpty || doctorId.isEmpty) return;
+    
+    debugPrint('Retrying image load for doctor ID: $doctorId');
+    
+    try {
+      final FirebaseFirestore firestore = FirebaseFirestore.instance;
+      final doctorDoc = await firestore.collection('doctors').doc(doctorId).get();
+      
+      if (!doctorDoc.exists || doctorDoc.data() == null) return;
+      
+      final doctorData = doctorDoc.data()!;
+      String? updatedImageUrl;
+      
+      // Try different image fields that might exist
+      if (doctorData.containsKey('profileImageUrl') && doctorData['profileImageUrl'] != null) {
+        updatedImageUrl = doctorData['profileImageUrl'].toString();
+      } else if (doctorData.containsKey('imageUrl') && doctorData['imageUrl'] != null) {
+        updatedImageUrl = doctorData['imageUrl'].toString();
+      } else if (doctorData.containsKey('photoURL') && doctorData['photoURL'] != null) {
+        updatedImageUrl = doctorData['photoURL'].toString();
+      }
+      
+      if (updatedImageUrl == null || updatedImageUrl.isEmpty) {
+        debugPrint('No valid image URL found in doctor document');
+        return;
+      }
+      
+      // Validate URL format
+      if (!updatedImageUrl.startsWith('http://') && !updatedImageUrl.startsWith('https://')) {
+        if (updatedImageUrl.contains('firebasestorage.googleapis.com')) {
+          updatedImageUrl = 'https://' + updatedImageUrl;
+        } else {
+          debugPrint('Invalid image URL format after retry: $updatedImageUrl');
+          return;
+        }
+      }
+      
+      // Update appointment in our lists
+      for (var appointment in _appointments) {
+        if (appointment['id'] == appointmentId) {
+          appointment['doctorImage'] = updatedImageUrl;
+          debugPrint('Updated doctor image URL: $updatedImageUrl');
+          break;
+        }
+      }
+      
+      // Force UI update by triggering filter
+      if (mounted) {
+        _filterAppointments();
+      }
+      
+    } catch (e) {
+      debugPrint('Error retrying doctor image load: $e');
+    }
   }
 }

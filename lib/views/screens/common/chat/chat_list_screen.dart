@@ -356,6 +356,15 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
         ? _formatTime(chatRoom.lastMessageTime!)
         : '';
     
+    // Track image loading states
+    final ValueNotifier<bool> isImageLoading = ValueNotifier<bool>(true);
+    final ValueNotifier<bool> hasImageError = ValueNotifier<bool>(false);
+    
+    // Skip loading state for empty URLs or asset images
+    if (imageUrl.isEmpty || imageUrl.startsWith('assets/')) {
+      isImageLoading.value = false;
+    }
+    
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
@@ -397,23 +406,12 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
             children: [
               Hero(
                     tag: chatRoom.id,
-                  child: CircleAvatar(
-                    radius: 30,
-                      backgroundColor: widget.isDoctor 
-                          ? AppColors.lightPink 
-                          : AppColors.lightTeal,
-                    backgroundImage: imageUrl.isNotEmpty
-                        ? CachedNetworkImageProvider(imageUrl)
-                        : null,
-                    child: imageUrl.isEmpty
-                        ? Icon(
-                              widget.isDoctor 
-                                  ? LucideIcons.user 
-                                  : LucideIcons.stethoscope,
-                              color: primaryColor,
-                              size: 26,
-                          )
-                        : null,
+                  child: _buildChatAvatar(
+                    imageUrl: imageUrl,
+                    isDoctor: widget.isDoctor,
+                    primaryColor: primaryColor,
+                    isLoading: isImageLoading,
+                    hasError: hasImageError
                   ),
                 ),
                   if (isOnline)
@@ -525,6 +523,85 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
         ),
       ),
     );
+  }
+  
+  // Helper method to build the chat avatar with proper error handling
+  Widget _buildChatAvatar({
+    required String imageUrl,
+    required bool isDoctor,
+    required Color primaryColor,
+    required ValueNotifier<bool> isLoading,
+    required ValueNotifier<bool> hasError,
+  }) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: hasError,
+      builder: (context, hasErrorValue, _) {
+        return ValueListenableBuilder<bool>(
+          valueListenable: isLoading,
+          builder: (context, isLoadingValue, _) {
+            return CircleAvatar(
+              radius: 30,
+              backgroundColor: isDoctor 
+                  ? AppColors.lightPink 
+                  : AppColors.lightTeal,
+              backgroundImage: (!hasErrorValue && imageUrl.isNotEmpty && !imageUrl.startsWith('assets/')) 
+                  ? _getValidImageProvider(imageUrl)
+                  : null,
+              onBackgroundImageError: (e, stackTrace) {
+                debugPrint('Error loading chat list profile image: $e');
+                hasError.value = true;
+                isLoading.value = false;
+              },
+              child: (hasErrorValue || imageUrl.isEmpty || imageUrl.startsWith('assets/'))
+                  ? Icon(
+                      isDoctor 
+                          ? LucideIcons.user 
+                          : LucideIcons.stethoscope,
+                      color: primaryColor,
+                      size: 26,
+                    )
+                  : (isLoadingValue 
+                      ? CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                        ) 
+                      : null),
+            );
+          }
+        );
+      }
+    );
+  }
+  
+  // Helper method to validate and get image provider
+  NetworkImage? _getValidImageProvider(String url) {
+    if (url.isEmpty) return null;
+    
+    try {
+      // Validate and fix URL
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        if (url.contains('firebasestorage.googleapis.com')) {
+          url = 'https://$url';
+          debugPrint('Fixed Firebase Storage URL: https://$url');
+        } else {
+          debugPrint('Invalid chat list image URL format: $url');
+          return null;
+        }
+      }
+      
+      // Clean URL by removing unwanted characters
+      if (url.contains(' ') || url.contains("'") || url.contains('"')) {
+        url = url.replaceAll('"', '')
+                  .replaceAll("'", '')
+                  .replaceAll(' ', '%20');
+        debugPrint('Cleaned chat list image URL: $url');
+      }
+      
+      return NetworkImage(url);
+    } catch (e) {
+      debugPrint('Error processing chat list image: $e');
+      return null;
+    }
   }
   
   String _formatTime(DateTime dateTime) {
