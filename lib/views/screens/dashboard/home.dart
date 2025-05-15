@@ -56,8 +56,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final DoctorProfileService _doctorProfileService = DoctorProfileService();
   
   // User data
-  String _userName = "Dr. Asmara";
-  String _specialty = "";
+  String _userName = "Loading...";
+  String _specialty = "Please wait...";
   String? _profileImageUrl;
   bool _isLoading = true;
   bool _isRefreshing = false;

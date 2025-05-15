@@ -203,7 +203,22 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
     // Set doctor info
     _doctorName = details['doctorName'] ?? "Unknown Doctor";
     _doctorSpecialty = details['specialty'] ?? details['doctorSpecialty'] ?? "General";
-    _doctorImage = details['doctorImage'] ?? 'assets/images/User.png';
+    
+    // Process doctor image with validation
+    if (details.containsKey('doctorImage') && details['doctorImage'] != null) {
+      String imageUrl = details['doctorImage'].toString();
+      // Validate and fix URL
+      String? validatedUrl = _validateAndFixImageUrl(imageUrl);
+      if (validatedUrl != null) {
+        _doctorImage = validatedUrl;
+        print('Set doctor image to validated URL: $validatedUrl');
+      } else {
+        _doctorImage = 'assets/images/User.png';
+        print('Using default doctor image due to invalid URL: $imageUrl');
+      }
+    } else {
+      _doctorImage = 'assets/images/User.png';
+    }
     
     // Set hospital name - use direct value without fallback
     _hospitalName = details['hospitalName'] ?? "Unknown Hospital";
@@ -245,11 +260,62 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
     if (_isCancelled && details.containsKey('cancellationReason') && details['cancellationReason'] != null) {
       _cancellationReason = details['cancellationReason'];
     }
+    
+    // Validate patient image URLs
+    if (details.containsKey('patientImageUrl') && details['patientImageUrl'] != null) {
+      String imageUrl = details['patientImageUrl'].toString();
+      String? validatedUrl = _validateAndFixImageUrl(imageUrl);
+      if (validatedUrl != null) {
+        details['patientImageUrl'] = validatedUrl;
+        print('Validated patient image URL: $validatedUrl');
+      } else {
+        // Remove invalid URL
+        details['patientImageUrl'] = '';
+        print('Removed invalid patient image URL: $imageUrl');
+      }
+    }
   }
 
   String _capitalize(String text) {
     if (text.isEmpty) return text;
     return text.substring(0, 1).toUpperCase() + text.substring(1);
+  }
+  
+  // Helper method to validate and fix image URLs
+  String? _validateAndFixImageUrl(String url) {
+    if (url.isEmpty) return null;
+    
+    // Trim any whitespace
+    url = url.trim();
+    
+    // Check if URL starts with http:// or https://
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      // Try to fix if it's a firebase storage URL missing the protocol
+      if (url.contains('firebasestorage.googleapis.com')) {
+        return 'https://' + url;
+      }
+      return null; // Can't fix, return null
+    }
+    
+    // Check for extra whitespace or quotes in the URL
+    if (url.contains(' ') || url.contains('"') || url.contains("'")) {
+      // Remove quotes and whitespace
+      url = url.replaceAll('"', '').replaceAll("'", '').replaceAll(' ', '%20');
+    }
+    
+    // Check if URL ends with valid image extension (optional)
+    final validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'];
+    bool hasValidExtension = validExtensions.any((ext) => url.toLowerCase().endsWith(ext));
+    
+    // For Firebase Storage URLs, we don't need to enforce extensions
+    bool isFirebaseStorage = url.contains('firebasestorage.googleapis.com');
+    
+    if (!hasValidExtension && !isFirebaseStorage) {
+      print('Warning: URL may not be an image: $url');
+      // Still return it, but log a warning
+    }
+    
+    return url;
   }
 
   Future<void> _fetchAppointmentData() async {
@@ -361,7 +427,22 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
               appointmentDetails['specialty'] = doctorData['specialty'] ?? "General";
             }
             
-            appointmentDetails['doctorImage'] = doctorData['profileImageUrl'] ?? 'assets/images/User.png';
+            // Get doctor profile image with improved validation
+            if (doctorData.containsKey('profileImageUrl') && doctorData['profileImageUrl'] != null) {
+              String imageUrl = doctorData['profileImageUrl'].toString();
+              // Validate URL format
+              if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+                appointmentDetails['doctorImage'] = imageUrl;
+                
+                // Also update the class variable for direct use
+                _doctorImage = imageUrl;
+                print('Found valid doctor image URL: $imageUrl');
+              } else {
+                print('Invalid doctor image URL format: $imageUrl');
+              }
+            } else {
+              print('No doctor profile image URL found');
+            }
           }
         } catch (e) {
           print('Error fetching doctor information: $e');
@@ -386,7 +467,20 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
               appointmentDetails['specialty'] = doctorData['specialty'] ?? "General";
             }
             
-            appointmentDetails['doctorImage'] = doctorData['profileImageUrl'] ?? 'assets/images/User.png';
+            // Get doctor profile image with validation
+            if (doctorData.containsKey('profileImageUrl') && doctorData['profileImageUrl'] != null) {
+              String imageUrl = doctorData['profileImageUrl'].toString();
+              // Validate URL format
+              if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+                appointmentDetails['doctorImage'] = imageUrl;
+                
+                // Also update the class variable for direct use
+                _doctorImage = imageUrl;
+                print('Found valid doctor image URL from name lookup: $imageUrl');
+              } else {
+                print('Invalid doctor image URL format from name lookup: $imageUrl');
+              }
+            }
           }
         } catch (e) {
           print('Error looking up doctor by name: $e');
@@ -417,8 +511,40 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
               appointmentDetails['patientPhone'] = patientData['phone'] ?? patientData['phoneNumber'] ?? "No contact info";
             }
             
-            if (_isDoctor || !data.containsKey('patientImageUrl') || data['patientImageUrl'] == null) {
-              appointmentDetails['patientImageUrl'] = patientData['profileImageUrl'] ?? patientData['imageUrl'] ?? '';
+            // Get patient profile image with validation
+            if (patientData.containsKey('profileImageUrl') && patientData['profileImageUrl'] != null) {
+              String imageUrl = patientData['profileImageUrl'].toString().trim();
+              // Validate URL format
+              if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+                appointmentDetails['patientImageUrl'] = imageUrl;
+                print('Found valid patient image URL: $imageUrl');
+              } else if (patientData.containsKey('imageUrl') && 
+                         patientData['imageUrl'] != null && 
+                         patientData['imageUrl'].toString().isNotEmpty) {
+                // Try fallback to imageUrl field
+                String fallbackUrl = patientData['imageUrl'].toString().trim();
+                if (fallbackUrl.startsWith('http://') || fallbackUrl.startsWith('https://')) {
+                  appointmentDetails['patientImageUrl'] = fallbackUrl;
+                  print('Found valid patient fallback image URL: $fallbackUrl');
+                } else {
+                  print('Invalid patient fallback image URL format: $fallbackUrl');
+                }
+              } else {
+                print('Invalid patient image URL format: $imageUrl');
+              }
+            } else if (patientData.containsKey('imageUrl') && 
+                       patientData['imageUrl'] != null && 
+                       patientData['imageUrl'].toString().isNotEmpty) {
+              // Try imageUrl field
+              String imageUrl = patientData['imageUrl'].toString().trim();
+              if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+                appointmentDetails['patientImageUrl'] = imageUrl;
+                print('Using patient imageUrl field: $imageUrl');
+              } else {
+                print('Invalid patient image URL in imageUrl field: $imageUrl');
+              }
+            } else {
+              print('No patient profile image URL found');
             }
           }
         } catch (e) {
@@ -617,6 +743,74 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
             ),
           ),
           SizedBox(height: 20),
+          
+          // Add doctor image with proper error handling
+          if (!_isDoctor) // Only show image for patient view
+            Container(
+              width: 75,
+              height: 75,
+              margin: EdgeInsets.only(bottom: 10),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 10,
+                    offset: Offset(0, 5),
+                  ),
+                ],
+                border: Border.all(
+                  color: Colors.white,
+                  width: 3,
+                ),
+              ),
+              child: ClipOval(
+                child: _doctorImage.startsWith('assets')
+                  ? Image.asset(
+                      _doctorImage,
+                      fit: BoxFit.cover,
+                      width: 75,
+                      height: 75,
+                      errorBuilder: (context, error, stackTrace) {
+                        print('Error loading doctor asset image: $error');
+                        return Icon(
+                          LucideIcons.user,
+                          size: 35,
+                          color: Colors.grey.shade400,
+                        );
+                      },
+                    )
+                  : Image.network(
+                      _doctorImage,
+                      fit: BoxFit.cover,
+                      width: 75,
+                      height: 75,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        print('Error loading doctor network image: $error');
+                        // Schedule retry if it's a network error
+                        _retryDoctorImageLoad();
+                        return Icon(
+                          LucideIcons.user,
+                          size: 35,
+                          color: Colors.grey.shade400,
+                        );
+                      },
+                    ),
+              ),
+            ),
+          
           Text(
             _isDoctor ? "Patient Appointment" : "Appointment with",
             style: GoogleFonts.poppins(
@@ -653,6 +847,46 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
         ],
       ),
     );
+  }
+  
+  // Method to retry loading doctor image
+  void _retryDoctorImageLoad() {
+    if (_doctorImage.startsWith('assets')) return;
+    
+    // Add a small delay before retrying
+    Future.delayed(Duration(seconds: 2), () {
+      if (!mounted) return;
+      
+      // Try to fetch the doctor information again if we have doctorId
+      if (_appointmentData.containsKey('doctorId') && _appointmentData['doctorId'] != null) {
+        try {
+          FirebaseFirestore.instance
+              .collection('doctors')
+              .doc(_appointmentData['doctorId'])
+              .get()
+              .then((doctorDoc) {
+                if (doctorDoc.exists && doctorDoc.data() != null) {
+                  final doctorData = doctorDoc.data()!;
+                  
+                  if (doctorData.containsKey('profileImageUrl') && 
+                      doctorData['profileImageUrl'] != null && 
+                      doctorData['profileImageUrl'].toString().isNotEmpty) {
+                    
+                    String imageUrl = doctorData['profileImageUrl'].toString();
+                    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+                      setState(() {
+                        _doctorImage = imageUrl;
+                        print('Retried and found valid doctor image: $imageUrl');
+                      });
+                    }
+                  }
+                }
+              });
+        } catch (e) {
+          print('Error in retry doctor image load: $e');
+        }
+      }
+    });
   }
 
   Widget _buildAppointmentTimeSection() {
@@ -768,10 +1002,15 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
             ),
             child: CircleAvatar(
               radius: 35,
-              backgroundImage: _doctorImage.startsWith('assets')
-                ? AssetImage(_doctorImage)
-                : NetworkImage(_doctorImage) as ImageProvider,
+              backgroundImage: _getDoctorImageProvider(),
               backgroundColor: Colors.grey.shade200,
+              onBackgroundImageError: (exception, stackTrace) {
+                print('Error loading doctor image: $exception');
+                // If network image fails, fall back to asset image
+                setState(() {
+                  _doctorImage = 'assets/images/User.png';
+                });
+              },
             ),
           ),
           SizedBox(width: 15),
@@ -824,6 +1063,20 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
     );
   }
 
+  // Helper method to get doctor image provider with proper error handling
+  ImageProvider _getDoctorImageProvider() {
+    if (_doctorImage.startsWith('assets')) {
+      return AssetImage(_doctorImage);
+    } else {
+      try {
+        return NetworkImage(_doctorImage);
+      } catch (e) {
+        print('Error creating NetworkImage provider: $e');
+        return AssetImage('assets/images/User.png');
+      }
+    }
+  }
+
   Widget _buildPatientInfoSection() {
     bool isPatientDataLoading = _isRefreshing && (_appointmentData['patientName'] == null || _appointmentData['patientPhone'] == null);
     
@@ -859,17 +1112,20 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
             ),
             child: CircleAvatar(
               radius: 35,
-              backgroundImage: _appointmentData.containsKey('patientImageUrl') && 
-                              _appointmentData['patientImageUrl'] != null &&
-                              _appointmentData['patientImageUrl'].toString().isNotEmpty
-                ? NetworkImage(_appointmentData['patientImageUrl'])
-                : null,
+              backgroundImage: _getPatientImageProvider(),
               backgroundColor: Colors.grey.shade200,
+              onBackgroundImageError: (exception, stackTrace) {
+                print('Error loading patient image: $exception');
+                setState(() {
+                  // Remove the problematic image URL
+                  _appointmentData['patientImageUrl'] = '';
+                });
+              },
               child: (!_appointmentData.containsKey('patientImageUrl') || 
                      _appointmentData['patientImageUrl'] == null ||
                      _appointmentData['patientImageUrl'].toString().isEmpty)
                 ? Icon(
-                LucideIcons.user,
+                    LucideIcons.user,
                     color: Colors.grey.shade500,
                     size: 28,
                   )
@@ -1063,6 +1319,28 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
         ],
       ),
     );
+  }
+  
+  // Helper method to get patient image provider with proper error handling
+  ImageProvider? _getPatientImageProvider() {
+    if (!_appointmentData.containsKey('patientImageUrl') || 
+        _appointmentData['patientImageUrl'] == null ||
+        _appointmentData['patientImageUrl'].toString().isEmpty) {
+      return null;
+    }
+    
+    try {
+      String imageUrl = _appointmentData['patientImageUrl'].toString();
+      // Retry loading if the URL doesn't start with http or https
+      if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+        print('Invalid patient image URL format: $imageUrl');
+        return null;
+      }
+      return NetworkImage(imageUrl);
+    } catch (e) {
+      print('Error creating patient image provider: $e');
+      return null;
+    }
   }
 
   Widget _buildHospitalSection() {
