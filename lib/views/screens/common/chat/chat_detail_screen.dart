@@ -13,8 +13,6 @@ import 'package:file_selector/file_selector.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:healthcare/utils/app_theme.dart';
-import 'package:http/http.dart' as http;
-import 'package:image_gallery_saver/image_gallery_saver.dart';
 
 import '../../../../models/chat_message_model.dart';
 import '../../../../models/chat_room_model.dart';
@@ -2434,7 +2432,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (!hasImageError.value) {
                         hasImageError.value = true;
-                        isImageLoading.value = true;
+                        isImageLoading.value = false;
+                        debugPrint('Failed to load chat image ($messageId): $error');
                       }
                     });
                     return Container(
@@ -2608,9 +2607,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             bottom: MediaQuery.of(context).padding.bottom + 16,
             right: 16,
             child: GestureDetector(
-              onTap: () async {
-                Navigator.pop(context);
-                await _downloadImage(imageUrl);
+              onTap: () {
+                // TODO: Implement image download
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Downloading image...'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
               },
               child: Container(
                 padding: EdgeInsets.all(12),
@@ -2629,98 +2633,5 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         ],
       ),
     );
-  }
-
-  Future<void> _downloadImage(String imageUrl) async {
-    try {
-      // Request storage permission first
-      final status = await Permission.storage.request();
-      if (!status.isGranted) {
-        // Show error if permission is denied
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Storage permission is required to save images'),
-            backgroundColor: Colors.red,
-            action: SnackBarAction(
-              label: 'Settings',
-              onPressed: () => openAppSettings(),
-              textColor: Colors.white,
-            ),
-          ),
-        );
-        return;
-      }
-
-      // Show downloading indicator
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
-              SizedBox(width: 16),
-              Text('Downloading image...'),
-            ],
-          ),
-          duration: Duration(seconds: 2),
-        ),
-      );
-
-      // Get the temporary directory
-      final directory = await getTemporaryDirectory();
-      
-      // Generate a unique filename using timestamp
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final fileName = 'chat_image_$timestamp.jpg';
-      final filePath = '${directory.path}/$fileName';
-      
-      // Download and save the image
-      final response = await http.get(Uri.parse(imageUrl));
-      if (response.statusCode != 200) {
-        throw Exception('Failed to download image');
-      }
-      
-      // Save to file
-      final file = File(filePath);
-      await file.writeAsBytes(response.bodyBytes);
-      
-      // Save to gallery
-      final result = await ImageGallerySaver.saveFile(
-        filePath,
-        name: fileName,
-        isReturnPathOfIOS: true,
-      );
-      
-      if (result['isSuccess'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Image saved to gallery'),
-            backgroundColor: widget.isDoctor ? AppColors.primaryPink : AppColors.primaryTeal,
-          ),
-        );
-      } else {
-        throw Exception('Failed to save image to gallery');
-      }
-      
-      // Clean up temporary file
-      if (await file.exists()) {
-        await file.delete();
-      }
-      
-    } catch (e) {
-      debugPrint('Error downloading image: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to download image'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
   }
 } 

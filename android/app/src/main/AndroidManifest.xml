@@ -8,11 +8,6 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     
-    <!-- Storage permissions for saving images -->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    
     <!-- The Agora SDK requires Bluetooth permissions in case users are using Bluetooth devices -->
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <!-- For Android 12 and above devices -->
