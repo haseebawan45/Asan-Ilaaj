@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart' as path;
@@ -214,60 +215,154 @@ class ChatService {
     final messageId = const Uuid().v4();
     final timestamp = DateTime.now();
     
-    // Upload image to Firebase Storage
-    final fileExtension = path.extension(imageFile.path);
-    final storagePath = 'chat_images/$roomId/$messageId$fileExtension';
-    
-    final uploadTask = _storage.ref(storagePath).putFile(imageFile);
-    final snapshot = await uploadTask;
-    final fileUrl = await snapshot.ref.getDownloadURL();
-    
-    final message = ChatMessage(
-      id: messageId,
-      senderId: senderId,
-      receiverId: receiverId,
-      content: caption.isNotEmpty ? caption : 'Image',
-      type: MessageType.image,
-      timestamp: timestamp,
-      fileUrl: fileUrl,
-    );
-    
-    // Add to messages subcollection
-    await _chatRoomsCollection
-        .doc(roomId)
-        .collection('messages')
-        .doc(messageId)
-        .set(message.toFirestore());
-    
-    // Update chat room with last message
-    final lastMessageText = caption.isNotEmpty ? 'Photo: $caption' : 'Photo';
-    await _updateChatRoomWithLastMessage(
-      roomId, 
-      lastMessageText, 
-      timestamp, 
-      receiverId
-    );
-    
-    // Get chat room data to retrieve sender name
-    final roomDoc = await _chatRoomsCollection.doc(roomId).get();
-    final roomData = roomDoc.data() as Map<String, dynamic>?;
-    
-    if (roomData != null) {
-      final bool isSenderDoctor = senderId == roomData['doctorId'];
-      final String senderName = isSenderDoctor ? 
-          (roomData['doctorName'] ?? 'Doctor') : 
-          (roomData['patientName'] ?? 'Patient');
+    try {
+      // Upload image to Firebase Storage
+      final fileExtension = path.extension(imageFile.path);
+      final storagePath = 'chat_images/$roomId/$messageId$fileExtension';
       
-      // Send notification to recipient
-      await _notificationService.sendChatNotification(
-        recipientId: receiverId,
-        senderName: senderName,
-        messageBody: caption.isNotEmpty ? 'Photo: $caption' : 'Sent you a photo',
-        chatRoomId: roomId,
+      // Create explicit metadata to prevent NullPointerException
+      final metadata = SettableMetadata(
+        contentType: 'image/${fileExtension.toLowerCase() == '.jpg' ? 'jpeg' : fileExtension.substring(1)}',
+        customMetadata: {
+          'uploaded_by': senderId,
+          'timestamp': timestamp.toIso8601String(),
+          'roomId': roomId,
+          'messageId': messageId,
+        },
       );
+      
+      // Upload with retries
+      int retryCount = 0;
+      const maxRetries = 3;
+      TaskSnapshot? snapshot;
+      
+      while (snapshot == null && retryCount < maxRetries) {
+        try {
+          final ref = _storage.ref(storagePath);
+          final uploadTask = ref.putFile(imageFile, metadata);
+          
+          // Monitor for errors
+          uploadTask.snapshotEvents.listen(
+            (TaskSnapshot snap) {
+              print("Upload progress: ${snap.bytesTransferred}/${snap.totalBytes}");
+            },
+            onError: (error) {
+              print("Upload error: $error");
+              throw Exception("Firebase Storage error during upload: $error");
+            },
+          );
+          
+          // Wait for completion with timeout
+          snapshot = await uploadTask.timeout(
+            const Duration(minutes: 2),
+            onTimeout: () {
+              print("Upload timed out, will retry");
+              throw TimeoutException("Upload timed out");
+            },
+          );
+          
+          print("Upload complete! Status: ${snapshot.state}");
+        } catch (e) {
+          retryCount++;
+          print("Upload error (attempt $retryCount/$maxRetries): $e");
+          
+          if (e.toString().contains('channel-error')) {
+            print("Platform channel error detected. Retrying in 2 seconds...");
+            await Future.delayed(const Duration(seconds: 2));
+          } else if (e is FirebaseException) {
+            print("Firebase error code: ${e.code}");
+            if (e.code == 'unauthorized' || e.code == 'unauthenticated') {
+              rethrow;
+            }
+          } else if (retryCount >= maxRetries) {
+            print("Max retries reached, giving up");
+            rethrow;
+          }
+          
+          await Future.delayed(Duration(seconds: retryCount));
+        }
+      }
+      
+      if (snapshot == null) {
+        throw Exception("Failed to upload image after $maxRetries attempts");
+      }
+      
+      // Get download URL with retries
+      String? fileUrl;
+      retryCount = 0;
+      
+      while (fileUrl == null && retryCount < maxRetries) {
+        try {
+          fileUrl = await snapshot.ref.getDownloadURL();
+          print("Got download URL: $fileUrl");
+        } catch (e) {
+          retryCount++;
+          print("Error getting download URL (attempt $retryCount/$maxRetries): $e");
+          
+          if (retryCount >= maxRetries) {
+            print("Max retries reached for download URL, giving up");
+            rethrow;
+          }
+          
+          await Future.delayed(Duration(seconds: retryCount));
+        }
+      }
+      
+      if (fileUrl == null) {
+        throw Exception("Failed to get download URL after $maxRetries attempts");
+      }
+      
+      final message = ChatMessage(
+        id: messageId,
+        senderId: senderId,
+        receiverId: receiverId,
+        content: caption.isNotEmpty ? caption : 'Image',
+        type: MessageType.image,
+        timestamp: timestamp,
+        fileUrl: fileUrl,
+        caption: caption.isNotEmpty ? caption : null,
+      );
+      
+      // Add to messages subcollection
+      await _chatRoomsCollection
+          .doc(roomId)
+          .collection('messages')
+          .doc(messageId)
+          .set(message.toFirestore());
+      
+      // Update chat room with last message
+      final lastMessageText = caption.isNotEmpty ? 'Photo: $caption' : 'Photo';
+      await _updateChatRoomWithLastMessage(
+        roomId, 
+        lastMessageText, 
+        timestamp, 
+        receiverId
+      );
+      
+      // Get chat room data to retrieve sender name
+      final roomDoc = await _chatRoomsCollection.doc(roomId).get();
+      final roomData = roomDoc.data() as Map<String, dynamic>?;
+      
+      if (roomData != null) {
+        final bool isSenderDoctor = senderId == roomData['doctorId'];
+        final String senderName = isSenderDoctor ? 
+            (roomData['doctorName'] ?? 'Doctor') : 
+            (roomData['patientName'] ?? 'Patient');
+        
+        // Send notification to recipient
+        await _notificationService.sendChatNotification(
+          recipientId: receiverId,
+          senderName: senderName,
+          messageBody: caption.isNotEmpty ? 'Photo: $caption' : 'Sent you a photo',
+          chatRoomId: roomId,
+        );
+      }
+      
+      return message;
+    } catch (e) {
+      print('Error sending image message: $e');
+      rethrow;
     }
-    
-    return message;
   }
   
   // Send an audio message
@@ -281,59 +376,153 @@ class ChatService {
     final messageId = const Uuid().v4();
     final timestamp = DateTime.now();
     
-    // Upload audio to Firebase Storage
-    final storagePath = 'chat_audio/$roomId/$messageId.m4a';
-    
-    final uploadTask = _storage.ref(storagePath).putFile(audioFile);
-    final snapshot = await uploadTask;
-    final fileUrl = await snapshot.ref.getDownloadURL();
-    
-    final message = ChatMessage(
-      id: messageId,
-      senderId: senderId,
-      receiverId: receiverId,
-      content: 'Audio',
-      type: MessageType.audio,
-      timestamp: timestamp,
-      fileUrl: fileUrl,
-      audioDuration: audioDuration,
-    );
-    
-    // Add to messages subcollection
-    await _chatRoomsCollection
-        .doc(roomId)
-        .collection('messages')
-        .doc(messageId)
-        .set(message.toFirestore());
-    
-    // Update chat room with last message
-    await _updateChatRoomWithLastMessage(
-      roomId, 
-      'Audio', 
-      timestamp, 
-      receiverId
-    );
-    
-    // Get chat room data to retrieve sender name
-    final roomDoc = await _chatRoomsCollection.doc(roomId).get();
-    final roomData = roomDoc.data() as Map<String, dynamic>?;
-    
-    if (roomData != null) {
-      final bool isSenderDoctor = senderId == roomData['doctorId'];
-      final String senderName = isSenderDoctor ? 
-          (roomData['doctorName'] ?? 'Doctor') : 
-          (roomData['patientName'] ?? 'Patient');
+    try {
+      // Upload audio to Firebase Storage
+      final storagePath = 'chat_audio/$roomId/$messageId.m4a';
       
-      // Send notification to recipient
-      await _notificationService.sendChatNotification(
-        recipientId: receiverId,
-        senderName: senderName,
-        messageBody: 'Sent you a voice message',
-        chatRoomId: roomId,
+      // Create explicit metadata for audio
+      final metadata = SettableMetadata(
+        contentType: 'audio/m4a',
+        customMetadata: {
+          'uploaded_by': senderId,
+          'timestamp': timestamp.toIso8601String(),
+          'roomId': roomId,
+          'messageId': messageId,
+          'duration': audioDuration.toString(),
+        },
       );
+      
+      // Upload with retries
+      int retryCount = 0;
+      const maxRetries = 3;
+      TaskSnapshot? snapshot;
+      
+      while (snapshot == null && retryCount < maxRetries) {
+        try {
+          final ref = _storage.ref(storagePath);
+          final uploadTask = ref.putFile(audioFile, metadata);
+          
+          // Monitor for errors
+          uploadTask.snapshotEvents.listen(
+            (TaskSnapshot snap) {
+              print("Audio upload progress: ${snap.bytesTransferred}/${snap.totalBytes}");
+            },
+            onError: (error) {
+              print("Audio upload error: $error");
+              throw Exception("Firebase Storage error during audio upload: $error");
+            },
+          );
+          
+          // Wait for completion with timeout
+          snapshot = await uploadTask.timeout(
+            const Duration(minutes: 2),
+            onTimeout: () {
+              print("Audio upload timed out, will retry");
+              throw TimeoutException("Audio upload timed out");
+            },
+          );
+          
+          print("Audio upload complete! Status: ${snapshot.state}");
+        } catch (e) {
+          retryCount++;
+          print("Audio upload error (attempt $retryCount/$maxRetries): $e");
+          
+          if (e.toString().contains('channel-error')) {
+            print("Platform channel error detected. Retrying in 2 seconds...");
+            await Future.delayed(const Duration(seconds: 2));
+          } else if (e is FirebaseException) {
+            print("Firebase error code: ${e.code}");
+            if (e.code == 'unauthorized' || e.code == 'unauthenticated') {
+              rethrow;
+            }
+          } else if (retryCount >= maxRetries) {
+            print("Max retries reached, giving up");
+            rethrow;
+          }
+          
+          await Future.delayed(Duration(seconds: retryCount));
+        }
+      }
+      
+      if (snapshot == null) {
+        throw Exception("Failed to upload audio after $maxRetries attempts");
+      }
+      
+      // Get download URL with retries
+      String? fileUrl;
+      retryCount = 0;
+      
+      while (fileUrl == null && retryCount < maxRetries) {
+        try {
+          fileUrl = await snapshot.ref.getDownloadURL();
+          print("Got audio download URL: $fileUrl");
+        } catch (e) {
+          retryCount++;
+          print("Error getting audio download URL (attempt $retryCount/$maxRetries): $e");
+          
+          if (retryCount >= maxRetries) {
+            print("Max retries reached for audio download URL, giving up");
+            rethrow;
+          }
+          
+          await Future.delayed(Duration(seconds: retryCount));
+        }
+      }
+      
+      if (fileUrl == null) {
+        throw Exception("Failed to get audio download URL after $maxRetries attempts");
+      }
+      
+      final message = ChatMessage(
+        id: messageId,
+        senderId: senderId,
+        receiverId: receiverId,
+        content: 'Audio',
+        type: MessageType.audio,
+        timestamp: timestamp,
+        fileUrl: fileUrl,
+        audioDuration: audioDuration,
+      );
+      
+      // Add to messages subcollection
+      await _chatRoomsCollection
+          .doc(roomId)
+          .collection('messages')
+          .doc(messageId)
+          .set(message.toFirestore());
+      
+      // Update chat room with last message
+      await _updateChatRoomWithLastMessage(
+        roomId, 
+        'Audio', 
+        timestamp, 
+        receiverId
+      );
+      
+      // Get chat room data to retrieve sender name
+      final roomDoc = await _chatRoomsCollection.doc(roomId).get();
+      final roomData = roomDoc.data() as Map<String, dynamic>?;
+      
+      if (roomData != null) {
+        final bool isSenderDoctor = senderId == roomData['doctorId'];
+        final String senderName = isSenderDoctor ? 
+            (roomData['doctorName'] ?? 'Doctor') : 
+            (roomData['patientName'] ?? 'Patient');
+        
+        // Send notification to recipient
+        await _notificationService.sendChatNotification(
+          recipientId: receiverId,
+          senderName: senderName,
+          messageBody: 'Sent you a voice message',
+          chatRoomId: roomId,
+        );
+      }
+      
+      return message;
+    } catch (e) {
+      print('Error sending audio message: $e');
+      rethrow;
     }
-    
-    return message;
   }
   
   // Send a document message
@@ -348,66 +537,175 @@ class ChatService {
     final messageId = const Uuid().v4();
     final timestamp = DateTime.now();
     
-    // Upload document to Firebase Storage
-    final fileExtension = path.extension(documentFile.path);
-    final storagePath = 'chat_documents/$roomId/$messageId$fileExtension';
-    
-    final uploadTask = _storage.ref(storagePath).putFile(documentFile);
-    final snapshot = await uploadTask;
-    final fileUrl = await snapshot.ref.getDownloadURL();
-    
-    final message = ChatMessage(
-      id: messageId,
-      senderId: senderId,
-      receiverId: receiverId,
-      content: fileName,
-      type: MessageType.document,
-      timestamp: timestamp,
-      fileUrl: fileUrl,
-      caption: caption,
-    );
-    
-    // Add to messages subcollection
-    await _chatRoomsCollection
-        .doc(roomId)
-        .collection('messages')
-        .doc(messageId)
-        .set(message.toFirestore());
-    
-    // Update chat room with last message
-    final lastMessageText = caption.isNotEmpty 
-        ? 'Document: $fileName ($caption)' 
-        : 'Document: $fileName';
-    
-    await _updateChatRoomWithLastMessage(
-      roomId, 
-      lastMessageText, 
-      timestamp, 
-      receiverId
-    );
-    
-    // Get chat room data to retrieve sender name
-    final roomDoc = await _chatRoomsCollection.doc(roomId).get();
-    final roomData = roomDoc.data() as Map<String, dynamic>?;
-    
-    if (roomData != null) {
-      final bool isSenderDoctor = senderId == roomData['doctorId'];
-      final String senderName = isSenderDoctor ? 
-          (roomData['doctorName'] ?? 'Doctor') : 
-          (roomData['patientName'] ?? 'Patient');
+    try {
+      // Upload document to Firebase Storage
+      final fileExtension = path.extension(documentFile.path);
+      final storagePath = 'chat_documents/$roomId/$messageId$fileExtension';
       
-      // Send notification to recipient
-      await _notificationService.sendChatNotification(
-        recipientId: receiverId,
-        senderName: senderName,
-        messageBody: caption.isNotEmpty 
-            ? 'Sent you a document: $fileName' 
-            : 'Sent you a document',
-        chatRoomId: roomId,
+      // Create explicit metadata for document
+      String mimeType = 'application/octet-stream'; // Default MIME type
+      
+      // Set proper MIME type based on file extension
+      switch (fileExtension.toLowerCase()) {
+        case '.pdf':
+          mimeType = 'application/pdf';
+          break;
+        case '.doc':
+        case '.docx':
+          mimeType = 'application/msword';
+          break;
+        case '.txt':
+          mimeType = 'text/plain';
+          break;
+        // Add more cases as needed
+      }
+      
+      final metadata = SettableMetadata(
+        contentType: mimeType,
+        customMetadata: {
+          'uploaded_by': senderId,
+          'timestamp': timestamp.toIso8601String(),
+          'roomId': roomId,
+          'messageId': messageId,
+          'fileName': fileName,
+        },
       );
+      
+      // Upload with retries
+      int retryCount = 0;
+      const maxRetries = 3;
+      TaskSnapshot? snapshot;
+      
+      while (snapshot == null && retryCount < maxRetries) {
+        try {
+          final ref = _storage.ref(storagePath);
+          final uploadTask = ref.putFile(documentFile, metadata);
+          
+          // Monitor for errors
+          uploadTask.snapshotEvents.listen(
+            (TaskSnapshot snap) {
+              print("Document upload progress: ${snap.bytesTransferred}/${snap.totalBytes}");
+            },
+            onError: (error) {
+              print("Document upload error: $error");
+              throw Exception("Firebase Storage error during document upload: $error");
+            },
+          );
+          
+          // Wait for completion with timeout
+          snapshot = await uploadTask.timeout(
+            const Duration(minutes: 3), // Documents might be larger than images
+            onTimeout: () {
+              print("Document upload timed out, will retry");
+              throw TimeoutException("Document upload timed out");
+            },
+          );
+          
+          print("Document upload complete! Status: ${snapshot.state}");
+        } catch (e) {
+          retryCount++;
+          print("Document upload error (attempt $retryCount/$maxRetries): $e");
+          
+          if (e.toString().contains('channel-error')) {
+            print("Platform channel error detected. Retrying in 2 seconds...");
+            await Future.delayed(const Duration(seconds: 2));
+          } else if (e is FirebaseException) {
+            print("Firebase error code: ${e.code}");
+            if (e.code == 'unauthorized' || e.code == 'unauthenticated') {
+              rethrow;
+            }
+          } else if (retryCount >= maxRetries) {
+            print("Max retries reached, giving up");
+            rethrow;
+          }
+          
+          await Future.delayed(Duration(seconds: retryCount));
+        }
+      }
+      
+      if (snapshot == null) {
+        throw Exception("Failed to upload document after $maxRetries attempts");
+      }
+      
+      // Get download URL with retries
+      String? fileUrl;
+      retryCount = 0;
+      
+      while (fileUrl == null && retryCount < maxRetries) {
+        try {
+          fileUrl = await snapshot.ref.getDownloadURL();
+          print("Got document download URL: $fileUrl");
+        } catch (e) {
+          retryCount++;
+          print("Error getting document download URL (attempt $retryCount/$maxRetries): $e");
+          
+          if (retryCount >= maxRetries) {
+            print("Max retries reached for document download URL, giving up");
+            rethrow;
+          }
+          
+          await Future.delayed(Duration(seconds: retryCount));
+        }
+      }
+      
+      if (fileUrl == null) {
+        throw Exception("Failed to get document download URL after $maxRetries attempts");
+      }
+      
+      final message = ChatMessage(
+        id: messageId,
+        senderId: senderId,
+        receiverId: receiverId,
+        content: fileName,
+        type: MessageType.document,
+        timestamp: timestamp,
+        fileUrl: fileUrl,
+        caption: caption,
+      );
+      
+      // Add to messages subcollection
+      await _chatRoomsCollection
+          .doc(roomId)
+          .collection('messages')
+          .doc(messageId)
+          .set(message.toFirestore());
+      
+      // Update chat room with last message
+      final lastMessageText = caption.isNotEmpty 
+          ? 'Document: $fileName ($caption)' 
+          : 'Document: $fileName';
+      
+      await _updateChatRoomWithLastMessage(
+        roomId, 
+        lastMessageText, 
+        timestamp, 
+        receiverId
+      );
+      
+      // Get chat room data to retrieve sender name
+      final roomDoc = await _chatRoomsCollection.doc(roomId).get();
+      final roomData = roomDoc.data() as Map<String, dynamic>?;
+      
+      if (roomData != null) {
+        final bool isSenderDoctor = senderId == roomData['doctorId'];
+        final String senderName = isSenderDoctor ? 
+            (roomData['doctorName'] ?? 'Doctor') : 
+            (roomData['patientName'] ?? 'Patient');
+        
+        // Send notification to recipient
+        await _notificationService.sendChatNotification(
+          recipientId: receiverId,
+          senderName: senderName,
+          messageBody: caption.isNotEmpty ? 'Document: $fileName ($caption)' : 'Sent you a document: $fileName',
+          chatRoomId: roomId,
+        );
+      }
+      
+      return message;
+    } catch (e) {
+      print('Error sending document message: $e');
+      rethrow;
     }
-    
-    return message;
   }
   
   // Get messages for a chat room

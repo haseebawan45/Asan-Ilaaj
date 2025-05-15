@@ -539,33 +539,29 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
         return ValueListenableBuilder<bool>(
           valueListenable: isLoading,
           builder: (context, isLoadingValue, _) {
+            final bool shouldShowImage = !hasErrorValue && imageUrl.isNotEmpty && !imageUrl.startsWith('assets/');
+            final ImageProvider? imageProvider = shouldShowImage ? _getValidImageProvider(imageUrl) : null;
+            
             return CircleAvatar(
               radius: 30,
               backgroundColor: isDoctor 
                   ? AppColors.lightPink 
                   : AppColors.lightTeal,
-              backgroundImage: (!hasErrorValue && imageUrl.isNotEmpty && !imageUrl.startsWith('assets/')) 
-                  ? _getValidImageProvider(imageUrl)
-                  : null,
-              onBackgroundImageError: (e, stackTrace) {
-                debugPrint('Error loading chat list profile image: $e');
-                hasError.value = true;
-                isLoading.value = false;
-              },
-              child: (hasErrorValue || imageUrl.isEmpty || imageUrl.startsWith('assets/'))
-                  ? Icon(
-                      isDoctor 
-                          ? LucideIcons.user 
-                          : LucideIcons.stethoscope,
-                      color: primaryColor,
-                      size: 26,
-                    )
-                  : (isLoadingValue 
+              backgroundImage: imageProvider,
+              child: (!shouldShowImage || isLoadingValue)
+                  ? (isLoadingValue 
                       ? CircularProgressIndicator(
                           strokeWidth: 2,
                           valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
-                        ) 
-                      : null),
+                        )
+                      : Icon(
+                          isDoctor 
+                              ? LucideIcons.user 
+                              : LucideIcons.stethoscope,
+                          color: primaryColor,
+                          size: 26,
+                        ))
+                  : null,
             );
           }
         );

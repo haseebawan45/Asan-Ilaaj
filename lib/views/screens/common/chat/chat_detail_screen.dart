@@ -165,7 +165,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         final File imageFile = File(image.path);
         
         // Show preview dialog instead of sending immediately
-        _showImagePreviewDialog(imageFile);
+        _showImageUploadPreviewDialog(imageFile);
       }
     } catch (e) {
       _showErrorSnackBar('Failed to load image');
@@ -193,14 +193,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         final File imageFile = File(image.path);
         
         // Use the same preview dialog as for gallery images
-        _showImagePreviewDialog(imageFile);
+        _showImageUploadPreviewDialog(imageFile);
       }
     } catch (e) {
       _showErrorSnackBar('Failed to take photo: ${e.toString()}');
     }
   }
   
-  void _showImagePreviewDialog(File imageFile) {
+  void _showImageUploadPreviewDialog(File imageFile) {
     final TextEditingController captionController = TextEditingController();
     bool isDialogOpen = true;
     
@@ -504,9 +504,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         },
       ),
     ).then((_) {
-      // Only dispose the controller if we still have access to it
       if (isDialogOpen) {
-      captionController.dispose();
+        captionController.dispose();
       }
     });
   }
@@ -986,9 +985,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         },
       ),
     ).then((_) {
-      // Only dispose the controller if we still have access to it
       if (isDialogOpen) {
-      captionController.dispose();
+        captionController.dispose();
       }
     });
   }
@@ -2230,31 +2228,29 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             return ValueListenableBuilder<bool>(
               valueListenable: isImageLoading,
               builder: (context, isLoading, _) {
+                final bool shouldShowImage = !hasError && imageUrl != null && imageUrl.isNotEmpty && !imageUrl.startsWith('assets/');
+                final ImageProvider? imageProvider = shouldShowImage ? _getImageProvider(imageUrl) : null;
+                
                 return CircleAvatar(
                   radius: 18,
                   backgroundColor: widget.isDoctor ? AppColors.lightPink : AppColors.lightTeal,
-                  backgroundImage: (hasError || imageUrl == null || imageUrl.isEmpty) 
-                      ? null 
-                      : _getImageProvider(imageUrl),
-                  onBackgroundImageError: (exception, stackTrace) {
-                    debugPrint('Failed to load chat profile image: $exception');
-                    hasImageError.value = true;
-                    isImageLoading.value = false;
-                  },
-                  child: (hasError || imageUrl == null || imageUrl.isEmpty)
-                      ? Icon(
-                          placeholderIcon,
-                          color: primaryColor,
-                          size: 18,
-                        )
-                      : (isLoading ? SizedBox(
-                          height: 15,
-                          width: 15,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
-                          ),
-                        ) : null),
+                  backgroundImage: imageProvider,
+                  child: (!shouldShowImage || isLoading)
+                      ? (isLoading 
+                          ? SizedBox(
+                              height: 15,
+                              width: 15,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                              ),
+                            )
+                          : Icon(
+                              placeholderIcon,
+                              color: primaryColor,
+                              size: 18,
+                            ))
+                      : null,
                 );
               }
             );
@@ -2411,64 +2407,74 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               );
             }
             
-            return CachedNetworkImage(
-              imageUrl: imageUrl,
-              placeholder: (context, url) => Container(
-                height: 200,
-                color: Colors.grey.shade200,
-                child: Center(
-                  child: SizedBox(
-                    height: 30,
-                    width: 30,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
-                    ),
-                  ),
-                ),
-              ),
-              errorWidget: (context, url, error) {
-                // Update error state
-                if (!hasImageError.value) {
-                  hasImageError.value = true;
-                  isImageLoading.value = false;
-                  debugPrint('Failed to load chat image ($messageId): $error');
-                }
-                return Container(
-                  height: 200,
-                  color: Colors.grey.shade200,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        color: Colors.grey.shade400,
-                        size: 32,
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Failed to load image',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
+            return GestureDetector(
+              onTap: () => _showFullScreenImagePreview(context, imageUrl),
+              child: Hero(
+                tag: 'chat_image_$messageId',
+                child: CachedNetworkImage(
+                  imageUrl: imageUrl,
+                  placeholder: (context, url) => Container(
+                    height: 200,
+                    color: Colors.grey.shade200,
+                    child: Center(
+                      child: SizedBox(
+                        height: 30,
+                        width: 30,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                );
-              },
-              imageBuilder: (context, imageProvider) {
-                // Mark as loaded once complete
-                if (isImageLoading.value) {
-                  isImageLoading.value = false;
-                }
-                return Image(
-                  image: imageProvider,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: 200, // Fixed height for consistency
-                );
-              },
+                  errorWidget: (context, url, error) {
+                    // Update error state using post frame callback
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!hasImageError.value) {
+                        hasImageError.value = true;
+                        isImageLoading.value = false;
+                        debugPrint('Failed to load chat image ($messageId): $error');
+                      }
+                    });
+                    return Container(
+                      height: 200,
+                      color: Colors.grey.shade200,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: Colors.grey.shade400,
+                            size: 32,
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Failed to load image',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  imageBuilder: (context, imageProvider) {
+                    // Update loading state using post frame callback
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (isImageLoading.value) {
+                        isImageLoading.value = false;
+                      }
+                    });
+                    return Image(
+                      image: imageProvider,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: 200, // Fixed height for consistency
+                    );
+                  },
+                ),
+              ),
             );
           },
         );
@@ -2503,5 +2509,129 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       debugPrint('Error processing message image URL: $e');
       return url; // Return original URL if any errors
     }
+  }
+
+  void _showFullScreenImagePreview(BuildContext context, String imageUrl) {
+    final TransformationController _transformationController = TransformationController();
+    bool _isZoomed = false;
+
+    showDialog(
+      context: context,
+      useSafeArea: false,
+      builder: (context) => Stack(
+        children: [
+          // Black semi-transparent background
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(0.9),
+            ),
+          ),
+          
+          // Dismissible area
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              behavior: HitTestBehavior.opaque,
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+          
+          // Image with InteractiveViewer
+          Center(
+            child: InteractiveViewer(
+              transformationController: _transformationController,
+              minScale: 0.5,
+              maxScale: 4.0,
+              onInteractionStart: (details) {
+                _isZoomed = _transformationController.value.getMaxScaleOnAxis() > 1.0;
+              },
+              onInteractionEnd: (details) {
+                if (!_isZoomed) {
+                  _transformationController.value = Matrix4.identity();
+                }
+              },
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
+                placeholder: (context, url) => Container(
+                  color: Colors.transparent,
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: Colors.transparent,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline, color: Colors.white, size: 48),
+                      SizedBox(height: 16),
+                      Text(
+                        'Failed to load image',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          
+          // Close button
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 16,
+            right: 16,
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  LucideIcons.x,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+            ),
+          ),
+          
+          // Download button
+          Positioned(
+            bottom: MediaQuery.of(context).padding.bottom + 16,
+            right: 16,
+            child: GestureDetector(
+              onTap: () {
+                // TODO: Implement image download
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Downloading image...'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              child: Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  LucideIcons.download,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 } 
