@@ -992,7 +992,7 @@ class _SimplifiedBookingFlowState extends State<SimplifiedBookingFlow> with Sing
                     image: (_doctorData.containsKey('profileImageUrl') && _doctorData['profileImageUrl'] != null) 
                           ? DecorationImage(
                               image: NetworkImage(_doctorData['profileImageUrl']),
-                              fit: BoxFit.cover,
+                      fit: BoxFit.cover,
                             )
                           : (_doctorData.containsKey('image') && _doctorData['image'] != null)
                               ? DecorationImage(

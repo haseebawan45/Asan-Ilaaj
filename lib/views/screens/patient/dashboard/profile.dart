@@ -395,9 +395,17 @@ class _PatientMenuScreenState extends State<PatientMenuScreen> {
                                         ),
                                         child: CircleAvatar(
                                           radius: screenSize.width * 0.1,
-                                          backgroundImage: profileImageUrl != null
-                                              ? NetworkImage(profileImageUrl!)
-                                              : const AssetImage("assets/images/User.png") as ImageProvider,
+                                          backgroundColor: Colors.white,
+                                          child: profileImageUrl != null && profileImageUrl!.isNotEmpty
+                                              ? CircleAvatar(
+                                                  radius: screenSize.width * 0.1,
+                                                  backgroundImage: NetworkImage(profileImageUrl!),
+                                                )
+                                              : Icon(
+                                                  LucideIcons.user,
+                                                  size: screenSize.width * 0.06,
+                                                  color: Colors.grey.shade400,
+                                                ),
                                         ),
                                       ),
                                     ),

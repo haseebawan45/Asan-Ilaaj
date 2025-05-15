@@ -148,29 +148,36 @@ class _DoctorProfilePage2ScreenState extends State<DoctorProfilePage2Screen> {
       
       // Populate form fields with existing data
       setState(() {
-        _experienceController.text = data['experience'] ?? '';
-        _consultationFeeController.text = data['fee'] != null ? 'Rs ${data['fee']}' : '';
+        // Convert experience to string if it's an integer
+        final experience = data['experience'];
+        _experienceController.text = experience != null ? experience.toString() : '';
+
+        // Convert fee to string with 'Rs ' prefix if it's an integer
+        final fee = data['fee'];
+        _consultationFeeController.text = fee != null ? 'Rs ${fee.toString()}' : '';
+        
         _bioController.text = data['bio'] ?? '';
         
         // Set qualification from the qualifications array if available
         if (data['qualifications'] != null && data['qualifications'] is List && data['qualifications'].isNotEmpty) {
-          _qualificationController.text = data['qualifications'][0] ?? '';
+          _qualificationController.text = data['qualifications'][0]?.toString() ?? '';
         }
         
         // Set specialization
-        _selectedSpecialization = data['specialty'];
+        _selectedSpecialization = data['specialty']?.toString();
         
         // Get education details if available
         if (data['education'] != null && data['education'] is List && data['education'].isNotEmpty) {
           final education = data['education'][0] as Map<String, dynamic>;
-          _degreeInstitutionController.text = education['institution'] ?? '';
-          _degreeCompletionDateController.text = education['completionDate'] ?? '';
+          _degreeInstitutionController.text = education['institution']?.toString() ?? '';
+          _degreeCompletionDateController.text = education['completionDate']?.toString() ?? '';
         }
         
         // Get degree image URL
-        _degreeImageUrl = data['degreeImageUrl'];
+        _degreeImageUrl = data['degreeImageUrl']?.toString();
       });
     } catch (e) {
+      print('Error loading profile data: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error loading profile data: ${e.toString()}'),
@@ -229,111 +236,65 @@ class _DoctorProfilePage2ScreenState extends State<DoctorProfilePage2Screen> {
     return 'Rs ${number.toString()}';
   }
 
+  // Validate numeric input
+  int? _parseIntegerField(String value, {String fieldName = ''}) {
+    if (value.isEmpty) return 0;
+    try {
+      return int.parse(value.replaceAll('Rs ', '').trim());
+    } catch (e) {
+      print('Error parsing $fieldName: $e');
+      return null;
+    }
+  }
+
+  // Validate fields before submission
   bool _validateFields() {
-    // Print debug information about fields being validated
-    print("Validating fields:");
-    print("Specialization: $_selectedSpecialization");
-    print("Experience: ${_experienceController.text}");
-    print("Qualification: ${_qualificationController.text}");
-    print("Consultation Fee: ${_consultationFeeController.text}");
-    print("Degree Institution: ${_degreeInstitutionController.text}");
-    print("Degree Completion Date: ${_degreeCompletionDateController.text}");
-    print("Degree Image: ${_degreeImage != null ? 'Selected' : 'Not Selected'}");
-    print("Bio: ${_bioController.text.isNotEmpty ? 'Not Empty' : 'Empty'}");
-    
-    // Check if we're in edit mode and already have image URLs
-    print("Image URLs (for editing mode):");
-    print("Profile Image URL: ${widget.profileImageUrl ?? 'None'}");
-    print("Medical License Front URL: ${widget.medicalLicenseFrontUrl ?? 'None'}");
-    print("Medical License Back URL: ${widget.medicalLicenseBackUrl ?? 'None'}");
-    print("CNIC Front URL: ${widget.cnicFrontUrl ?? 'None'}");
-    print("CNIC Back URL: ${widget.cnicBackUrl ?? 'None'}");
-    
-    // Check if we have new images selected
-    print("New Images Selected:");
-    print("Profile Image: ${widget.profileImage != null ? 'Selected' : 'Not Selected'}");
-    print("Medical License Front: ${widget.medicalLicenseFront != null ? 'Selected' : 'Not Selected'}");
-    print("Medical License Back: ${widget.medicalLicenseBack != null ? 'Selected' : 'Not Selected'}");
-    print("CNIC Front: ${widget.cnicFront != null ? 'Selected' : 'Not Selected'}");
-    print("CNIC Back: ${widget.cnicBack != null ? 'Selected' : 'Not Selected'}");
-    
-    // Check if profile image is available (either from URL or newly selected)
-    bool hasProfileImage = widget.profileImage != null || (widget.profileImageUrl != null && widget.profileImageUrl!.isNotEmpty);
-    
-    // Check if CNIC is available (either from URL or newly selected)
-    bool hasCnicFront = widget.cnicFront != null || (widget.cnicFrontUrl != null && widget.cnicFrontUrl!.isNotEmpty);
-    bool hasCnicBack = widget.cnicBack != null || (widget.cnicBackUrl != null && widget.cnicBackUrl!.isNotEmpty);
-    
-    // For required documents, show error if missing
-    if (!hasProfileImage) {
+    // Experience validation
+    final experience = _parseIntegerField(_experienceController.text, fieldName: 'experience');
+    if (experience == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please upload a profile image'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return false;
-    }
-    
-    if (!hasCnicFront || !hasCnicBack) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please upload both sides of your CNIC'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return false;
-    }
-    
-    // Validate specialization
-    if (_selectedSpecialization == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select your specialization'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return false;
-    }
-    
-    // Validate experience field if not empty
-    if (_experienceController.text.isNotEmpty && !_isValidNumber(_experienceController.text)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Please enter a valid number for years of experience'),
           backgroundColor: Colors.red,
         ),
       );
       return false;
     }
-    
-    // Validate consultation fee if not empty
-    String fee = _consultationFeeController.text.replaceAll('Rs ', '');
-    if (fee.isNotEmpty && !_isValidNumber(fee)) {
+
+    // Fee validation
+    final fee = _parseIntegerField(_consultationFeeController.text.replaceAll('Rs ', ''), fieldName: 'fee');
+    if (fee == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Please enter a valid consultation fee'),
           backgroundColor: Colors.red,
         ),
       );
       return false;
     }
-    
-    // Don't validate degree fields if we're in edit mode
-    if (!widget.isEditing) {
-      // Validate degree related information
-      bool hasDegreeImage = _degreeImage != null || (_degreeImageUrl != null && _degreeImageUrl!.isNotEmpty);
-      if (_degreeInstitutionController.text.isEmpty || _degreeCompletionDateController.text.isEmpty || !hasDegreeImage) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please complete all degree information'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return false;
-      }
+
+    // Specialization validation
+    if (_selectedSpecialization == null || _selectedSpecialization!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please select your specialization'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return false;
     }
-    
+
+    // Qualification validation
+    if (_qualificationController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please enter your qualification'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return false;
+    }
+
     return true;
   }
 
@@ -496,7 +457,6 @@ class _DoctorProfilePage2ScreenState extends State<DoctorProfilePage2Screen> {
     if (!_validateFields()) return;
 
     try {
-      // Show loading indicator
       setState(() {
         _isLoading = true;
       });
@@ -531,7 +491,7 @@ class _DoctorProfilePage2ScreenState extends State<DoctorProfilePage2Screen> {
       
       // Create an instance of StorageService
       final storageService = StorageService();
-      
+
       // Upload images to Firebase Storage and get URLs
       String? profileImageUrl = widget.profileImageUrl;
       String? medicalLicenseFrontUrl = widget.medicalLicenseFrontUrl;
@@ -539,7 +499,7 @@ class _DoctorProfilePage2ScreenState extends State<DoctorProfilePage2Screen> {
       String? cnicFrontUrl = widget.cnicFrontUrl;
       String? cnicBackUrl = widget.cnicBackUrl;
       String? degreeImageUrl;
-
+      
       try {
         // Upload profile image if selected
         if (widget.profileImage != null) {
@@ -548,50 +508,50 @@ class _DoctorProfilePage2ScreenState extends State<DoctorProfilePage2Screen> {
             userId: userId,
             isDoctor: true,
           );
-        }
-
+      }
+      
         // Upload medical license front if selected
-        if (widget.medicalLicenseFront != null) {
+      if (widget.medicalLicenseFront != null) {
           medicalLicenseFrontUrl = await storageService.uploadDocumentImage(
             file: XFile(widget.medicalLicenseFront!.path),
             userId: userId,
             isDoctor: true,
             documentType: 'medical_license_front',
           );
-        }
-
+      }
+      
         // Upload medical license back if selected
-        if (widget.medicalLicenseBack != null) {
+      if (widget.medicalLicenseBack != null) {
           medicalLicenseBackUrl = await storageService.uploadDocumentImage(
             file: XFile(widget.medicalLicenseBack!.path),
             userId: userId,
             isDoctor: true,
             documentType: 'medical_license_back',
           );
-        }
-
+      }
+      
         // Upload CNIC front if selected
-        if (widget.cnicFront != null) {
+      if (widget.cnicFront != null) {
           cnicFrontUrl = await storageService.uploadDocumentImage(
             file: XFile(widget.cnicFront!.path),
             userId: userId,
             isDoctor: true,
             documentType: 'cnic_front',
           );
-        }
-
+      }
+      
         // Upload CNIC back if selected
-        if (widget.cnicBack != null) {
+      if (widget.cnicBack != null) {
           cnicBackUrl = await storageService.uploadDocumentImage(
             file: XFile(widget.cnicBack!.path),
             userId: userId,
             isDoctor: true,
             documentType: 'cnic_back',
           );
-        }
-
+      }
+      
         // Upload degree image if selected
-        if (_degreeImage != null) {
+      if (_degreeImage != null) {
           degreeImageUrl = await storageService.uploadDocumentImage(
             file: XFile(_degreeImage!.path),
             userId: userId,
@@ -599,7 +559,7 @@ class _DoctorProfilePage2ScreenState extends State<DoctorProfilePage2Screen> {
             documentType: 'degree',
           );
         }
-      } catch (e) {
+        } catch (e) {
         print('Error uploading images: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -610,15 +570,19 @@ class _DoctorProfilePage2ScreenState extends State<DoctorProfilePage2Screen> {
         return;
       }
 
+      // Parse numeric fields with validation
+      final experience = _parseIntegerField(_experienceController.text, fieldName: 'experience') ?? 0;
+      final fee = _parseIntegerField(_consultationFeeController.text.replaceAll('Rs ', ''), fieldName: 'fee') ?? 0;
+
       // Create doctor profile data with correct field names matching Firestore structure
       final doctorData = {
         'specialty': _selectedSpecialization,
         'specialization': _selectedSpecialization, // Keep both for backward compatibility
-        'experience': int.parse(_experienceController.text.isEmpty ? '0' : _experienceController.text),
+        'experience': experience,
         'qualification': _qualificationController.text,
         'qualifications': [_qualificationController.text],
-        'fee': int.parse(_consultationFeeController.text.replaceAll('Rs ', '').isEmpty ? '0' : _consultationFeeController.text.replaceAll('Rs ', '')),
-        'consultationFee': int.parse(_consultationFeeController.text.replaceAll('Rs ', '').isEmpty ? '0' : _consultationFeeController.text.replaceAll('Rs ', '')),
+        'fee': fee,
+        'consultationFee': fee, // Keep both for backward compatibility
         'bio': _bioController.text,
         'profileImageUrl': profileImageUrl,
         'education': [
@@ -662,7 +626,7 @@ class _DoctorProfilePage2ScreenState extends State<DoctorProfilePage2Screen> {
         'isProfileComplete': true,
         'profileComplete': true,
       };
-
+      
       // First, get any existing doctor data to preserve it
       final existingDoctorDoc = await firestore.collection('doctors').doc(userId).get();
       Map<String, dynamic> mergedData = {};
@@ -698,7 +662,7 @@ class _DoctorProfilePage2ScreenState extends State<DoctorProfilePage2Screen> {
         mergedData,
         SetOptions(merge: true),
       );
-      
+
       // Also update the user document with profileComplete status
       await firestore.collection('users').doc(userId).update({
         'profileComplete': true,
@@ -713,17 +677,17 @@ class _DoctorProfilePage2ScreenState extends State<DoctorProfilePage2Screen> {
           backgroundColor: Colors.green,
         ),
       );
-
+      
       // Navigate to the appropriate screen
-      Navigator.pushAndRemoveUntil(
-        context,
+        Navigator.pushAndRemoveUntil(
+          context,
         MaterialPageRoute(
           builder: (context) => BottomNavigationBarScreen(profileStatus: "complete"),
         ),
-        (route) => false,
-      );
+          (route) => false,
+        );
     } catch (e) {
-      print('Error updating profile: $e');
+      print('Error submitting profile: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error updating profile. Please try again.'),

@@ -424,9 +424,25 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
       // Query doctors collection
       Query doctorsQuery = _firestore.collection('doctors');
       
-      // Apply specialty filter if specified
-      if (widget.specialty != null && widget.specialty != "All") {
+      // Apply specialty filter if specified - use both fields
+      if (selectedSpecialty != null && selectedSpecialty != "All") {
+        print("Filtering by selected specialty: $selectedSpecialty");
+        // Try to query by both potential field names
+        doctorsQuery = doctorsQuery.where('specialty', isEqualTo: selectedSpecialty);
+        // We can't do an OR query in Firestore easily, so we'll filter by 'specialization' in the client
+      } else if (_selectedCategoryIndex > 0) {
+        final selectedCategory = _categories[_selectedCategoryIndex];
+        print("Filtering by category: $selectedCategory");
+        // Try to query by both potential field names
+        doctorsQuery = doctorsQuery.where('specialty', isEqualTo: selectedCategory);
+        // We can't do an OR query in Firestore easily, so we'll filter by 'specialization' in the client
+      } else if (widget.specialty != null && widget.specialty != "All") {
+        print("Filtering by widget specialty: ${widget.specialty}");
+        // Try to query by both potential field names
         doctorsQuery = doctorsQuery.where('specialty', isEqualTo: widget.specialty);
+        // We can't do an OR query in Firestore easily, so we'll filter by 'specialization' in the client
+      } else {
+        print("No specialty filter applied");
       }
       
       // Apply gender filter if specified
@@ -436,10 +452,16 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
       
       final QuerySnapshot doctorsSnapshot = await doctorsQuery.get();
       
+      // Log the number of doctors found
+      print("Retrieved ${doctorsSnapshot.docs.length} doctors from Firestore");
+      
       // Process each doctor document
       for (var doc in doctorsSnapshot.docs) {
         final doctorData = doc.data() as Map<String, dynamic>;
         final doctorId = doc.id;
+        
+        // Log doctor data for debugging
+        print("Processing doctor: ${doctorData['fullName'] ?? doctorData['name'] ?? 'Unknown'} - Specialty: ${doctorData['specialty'] ?? doctorData['specialization'] ?? 'Unknown'}");
         
         // Get doctor's hospitals and availability
         final hospitalsQuery = await _firestore
@@ -486,15 +508,17 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
         final bool isAvailableToday = hospitalsList.any((hospital) => hospital['availableToday'] == true);
         
         // Create doctor map with all relevant information
+        String? profileImageUrl = doctorData['profileImageUrl'];
+        
         doctorsList.add({
           'id': doctorId,
           'name': doctorData['fullName'] ?? doctorData['name'] ?? 'Unknown Doctor',
-          'specialty': doctorData['specialty'] ?? 'General Practitioner',
+          'specialty': doctorData['specialty'] ?? doctorData['specialization'] ?? 'General Practitioner',
           'rating': doctorData['rating']?.toString() ?? "0.0",
           'experience': doctorData['experience']?.toString() ?? "0 years",
-          'fee': 'Rs ${doctorData['fee']?.toString() ?? "0"}',
+          'fee': 'Rs ${doctorData['fee'] ?? doctorData['consultationFee']?.toString() ?? "0"}',
           'location': hospitalsList.isNotEmpty ? hospitalsList.first['hospitalName'] : 'Multiple Hospitals',
-          'image': doctorData['profileImageUrl'] ?? "assets/images/User.png",
+          'profileImageUrl': profileImageUrl, // Use the actual profile image URL
           'available': isAvailableToday,
           'hospitals': hospitalsList,
           'gender': doctorData['gender'] ?? 'Not specified',
@@ -510,6 +534,17 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
           } else {
             // Use doctors from Firestore
             filteredDoctors = doctorsList;
+            
+            // Additional client-side filtering for doctors that use 'specialization' instead of 'specialty'
+            if (selectedSpecialty != null && selectedSpecialty != "All") {
+              // Also include doctors with matching 'specialization' field
+              print("Adding client-side filtering for 'specialization' field with value: $selectedSpecialty");
+            } else if (_selectedCategoryIndex > 0) {
+              final selectedCategory = _categories[_selectedCategoryIndex];
+              print("Adding client-side filtering for 'specialization' field with value: $selectedCategory");
+            } else if (widget.specialty != null && widget.specialty != "All") {
+              print("Adding client-side filtering for 'specialization' field with value: ${widget.specialty}");
+            }
           }
           _isLoading = false;
           _isRefreshing = false;
@@ -686,20 +721,21 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
         final bool isAvailableToday = hospitalsList.any((hospital) => hospital['availableToday'] == true);
         
         // Create doctor map with all relevant information
+        String? profileImageUrl = doctorData['profileImageUrl'];
+        
         doctorsList.add({
           'id': doctorId,
           'name': doctorData['fullName'] ?? doctorData['name'] ?? 'Unknown Doctor',
-          'specialty': doctorData['specialty'] ?? 'General Practitioner',
+          'specialty': doctorData['specialty'] ?? doctorData['specialization'] ?? 'General Practitioner',
           'rating': doctorData['rating']?.toString() ?? "0.0",
           'experience': doctorData['experience']?.toString() ?? "0 years",
-          'fee': 'Rs ${doctorData['fee']?.toString() ?? "0"}',
+          'fee': 'Rs ${doctorData['fee'] ?? doctorData['consultationFee']?.toString() ?? "0"}',
           'location': hospitalsList.isNotEmpty ? hospitalsList.first['hospitalName'] : 'Multiple Hospitals',
-          'image': doctorData['profileImageUrl'] ?? "assets/images/User.png",
+          'profileImageUrl': profileImageUrl, // Use the actual profile image URL
           'available': isAvailableToday,
           'hospitals': hospitalsList,
           'gender': doctorData['gender'] ?? 'Not specified',
           'city': doctorData['city'] ?? '',
-          'isInUserCity': doctorData['city'] == userCity,
         });
       }
       
@@ -930,6 +966,16 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
                                   style: GoogleFonts.poppins(
                                     fontSize: width * 0.035,
                                     color: Colors.grey.shade600,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                // Debug information
+                                SizedBox(height: height * 0.02),
+                                Text(
+                                  "Debug: Filters - Specialty: ${selectedSpecialty ?? widget.specialty ?? 'None'}, Gender: ${selectedGender ?? 'None'}",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: width * 0.025,
+                                    color: Colors.grey.shade400,
                                   ),
                                   textAlign: TextAlign.center,
                                 ),
@@ -1369,6 +1415,13 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
     final Size screenSize = MediaQuery.of(context).size;
     final double width = screenSize.width;
     
+    // Add debugging for doctors list
+    print("Building doctors list with ${filteredDoctors.length} doctors");
+    // Print each doctor's basic info
+    for (var doctor in filteredDoctors) {
+      print("Doctor in list: ${doctor['name']} - ${doctor['specialty']} - Image: ${doctor['profileImageUrl']}");
+    }
+    
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
       padding: EdgeInsets.fromLTRB(width * 0.05, width * 0.025, width * 0.05, width * 0.05),
@@ -1386,6 +1439,9 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
     final double width = screenSize.width;
     final double height = screenSize.height;
     
+    // Add debug print for this doctor's image URL
+    print("Building doctor card for ${doctor["name"]} with image URL: ${doctor["profileImageUrl"]}");
+    
     // Format doctor data to handle both string and numeric values for rating
     String ratingStr = doctor["rating"] is String ? 
         doctor["rating"] : doctor["rating"].toString();
@@ -1393,13 +1449,16 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
     String experienceStr = doctor["experience"] is String ? 
         doctor["experience"] : "${doctor["experience"]} years";
     
-    // Set default values for missing fields to ensure UI doesn't break
+    // Get default values for missing fields to ensure UI doesn't break
     bool isAvailable = doctor["available"] ?? true;
     String fee = doctor["fee"] ?? "Rs 2000";
-    String location = doctor["location"] ?? "Not specified";
+    String location = doctor["location"] ?? doctor["city"] ?? "Not specified";
     String gender = doctor["gender"] ?? "Not specified";
     bool isInUserCity = doctor["isInUserCity"] ?? false;
     String city = doctor["city"] ?? "";
+    
+    // Debug location display
+    print("Doctor location: ${doctor["location"]}, City: ${doctor["city"]}, Display: $location");
     
     // Get the appropriate gender icon
     IconData genderIcon = Icons.person;
@@ -1489,10 +1548,6 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: Colors.white,
-                            image: DecorationImage(
-                              image: AssetImage(doctor["image"]),
-                              fit: BoxFit.cover,
-                            ),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.1),
@@ -1505,6 +1560,16 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
                               width: 3,
                             ),
                           ),
+                          child: doctor["profileImageUrl"] != null && doctor["profileImageUrl"].toString().isNotEmpty
+                              ? CircleAvatar(
+                                  radius: width * 0.085,
+                                  backgroundImage: NetworkImage(doctor["profileImageUrl"]),
+                                )
+                              : Icon(
+                                  LucideIcons.user,
+                                  size: width * 0.08,
+                                  color: Colors.grey.shade400,
+                                ),
                         ),
                         if (isAvailable)
                           Positioned(
@@ -1563,14 +1628,14 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
                           Row(
                             children: [
                               Icon(
-                                getSpecialtyIcon(doctor["specialty"]),
+                                getSpecialtyIcon(doctor["specialty"] ?? doctor["specialization"]),
                                 color: Colors.white.withOpacity(0.9),
                                 size: width * 0.035,
                               ),
                               SizedBox(width: width * 0.01),
                               Flexible(
                                 child: Text(
-                                  doctor["specialty"],
+                                  doctor["specialty"] ?? doctor["specialization"] ?? "General Practitioner",
                                   style: GoogleFonts.poppins(
                                     fontSize: width * 0.03,
                                     fontWeight: FontWeight.w500,

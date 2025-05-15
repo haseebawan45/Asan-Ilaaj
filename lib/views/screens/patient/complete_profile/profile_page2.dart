@@ -10,6 +10,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:healthcare/utils/app_theme.dart';
+import 'package:healthcare/services/storage_service.dart';
 
 class CompleteProfilePatient2Screen extends StatefulWidget {
   final Map<String, dynamic>? profileData;
@@ -2861,13 +2862,19 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
         
         // Upload medical reports if available
         if (_medicalReport1 != null) {
-          final ref = firebase_storage.FirebaseStorage.instance
-              .ref()
-              .child('patients')
-              .child(userId)
-              .child('medical_report_1.jpg');
-          await ref.putFile(_medicalReport1!);
-          String downloadUrl = await ref.getDownloadURL();
+          // Create an instance of the StorageService
+          final storageService = StorageService();
+          
+          // Convert File to XFile for the storage service
+          final XFile report1XFile = XFile(_medicalReport1!.path);
+          
+          // Upload medical report using the service
+          String downloadUrl = await storageService.uploadDocumentImage(
+            file: report1XFile,
+            userId: userId,
+            isDoctor: false,
+            documentType: 'medical_report_1',
+          );
           
           await firestore.collection('patients').doc(userId).update({
             'medicalReport1Url': downloadUrl,
@@ -2875,13 +2882,19 @@ class _CompleteProfilePatient2ScreenState extends State<CompleteProfilePatient2S
         }
         
         if (_medicalReport2 != null) {
-          final ref = firebase_storage.FirebaseStorage.instance
-              .ref()
-              .child('patients')
-              .child(userId)
-              .child('medical_report_2.jpg');
-          await ref.putFile(_medicalReport2!);
-          String downloadUrl = await ref.getDownloadURL();
+          // Create an instance of the StorageService
+          final storageService = StorageService();
+          
+          // Convert File to XFile for the storage service
+          final XFile report2XFile = XFile(_medicalReport2!.path);
+          
+          // Upload medical report using the service
+          String downloadUrl = await storageService.uploadDocumentImage(
+            file: report2XFile,
+            userId: userId,
+            isDoctor: false,
+            documentType: 'medical_report_2',
+          );
           
           await firestore.collection('patients').doc(userId).update({
             'medicalReport2Url': downloadUrl,

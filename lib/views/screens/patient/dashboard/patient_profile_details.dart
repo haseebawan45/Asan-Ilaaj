@@ -428,12 +428,17 @@ class _PatientDetailProfileScreenState extends State<PatientDetailProfileScreen>
                       ),
                       child: CircleAvatar(
                         radius: 42,
-                        backgroundImage: profileImageUrl != null && profileImageUrl!.isNotEmpty
-                            ? NetworkImage(profileImageUrl!) as ImageProvider
-                            : const AssetImage("assets/images/User.png"),
-                        onBackgroundImageError: (exception, stackTrace) {
-                          // If network image fails to load, it will show the default image
-                        },
+                        backgroundColor: Colors.white,
+                        child: profileImageUrl != null && profileImageUrl!.isNotEmpty
+                            ? CircleAvatar(
+                                radius: 42,
+                                backgroundImage: NetworkImage(profileImageUrl!),
+                              )
+                            : Icon(
+                                LucideIcons.user,
+                                size: 30,
+                                color: Colors.grey.shade400,
+                              ),
                       ),
                     ),
                   ),

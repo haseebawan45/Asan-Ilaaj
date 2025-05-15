@@ -1625,9 +1625,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           : null,
                       child: appointment['patientImageUrl'] == null || appointment['patientImageUrl'].toString().isEmpty
                           ? Icon(
-                              Icons.person,
+                              LucideIcons.user,
+                              size: 24,
                               color: Colors.grey.shade400,
-                              size: screenWidth * imageSizeMultiplier,
                             )
                           : null,
                     ),
@@ -1903,12 +1903,19 @@ class _HomeScreenState extends State<HomeScreen> {
                           backgroundColor: Colors.white,
                           child: CircleAvatar(
                             radius: 33,
-                          backgroundColor: Colors.white,
-                          backgroundImage: _profileImageUrl != null && _profileImageUrl!.isNotEmpty
-                              ? NetworkImage(_profileImageUrl!)
-                              : AssetImage("assets/images/User.png") as ImageProvider,
+                            backgroundColor: Colors.white,
+                            child: _profileImageUrl != null && _profileImageUrl!.isNotEmpty
+                                ? CircleAvatar(
+                                    radius: 33,
+                                    backgroundImage: NetworkImage(_profileImageUrl!),
+                                  )
+                                : Icon(
+                                    LucideIcons.user,
+                                    size: 24,
+                                    color: Colors.grey.shade400,
+                                  ),
+                          ),
                         ),
-                      ),
                         IconButton(
                           onPressed: () => Navigator.pop(context),
                           icon: Container(
