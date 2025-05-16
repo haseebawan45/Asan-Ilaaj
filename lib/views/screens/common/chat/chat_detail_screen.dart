@@ -208,6 +208,8 @@ class AudioPlayerWidget extends StatefulWidget {
 class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
   final ValueNotifier<Duration> _progressNotifier = ValueNotifier(Duration.zero);
   final ValueNotifier<bool> _isLoadingNotifier = ValueNotifier(false);
+  final ValueNotifier<bool> _isDraggingNotifier = ValueNotifier(false);
+  final ValueNotifier<double> _dragProgressNotifier = ValueNotifier(0.0);
   StreamSubscription? _positionSubscription;
   bool _isInitialized = false;
   
@@ -245,6 +247,8 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
     _positionSubscription?.cancel();
     _progressNotifier.dispose();
     _isLoadingNotifier.dispose();
+    _isDraggingNotifier.dispose();
+    _dragProgressNotifier.dispose();
     super.dispose();
   }
 
@@ -252,7 +256,9 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
     if (widget.currentlyPlayingId == widget.messageId) {
       // Subscribe to position updates
       _positionSubscription = widget.audioPlayer.onPositionChanged.listen((position) {
-        _progressNotifier.value = position;
+        if (!_isDraggingNotifier.value) { // Only update if not currently dragging
+          _progressNotifier.value = position;
+        }
       });
 
       widget.audioPlayer.onPlayerComplete.listen((_) {
@@ -285,7 +291,9 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
       // Set up position subscription before starting playback
       _positionSubscription?.cancel();
       _positionSubscription = widget.audioPlayer.onPositionChanged.listen((position) {
-        _progressNotifier.value = position;
+        if (!_isDraggingNotifier.value) { // Only update if not currently dragging
+          _progressNotifier.value = position;
+        }
       });
       
       // Set up completion listener
@@ -304,6 +312,59 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
       widget.onPlayingStateChanged(null);
     } finally {
       _isLoadingNotifier.value = false;
+    }
+  }
+
+  // Method to seek to a specific position
+  Future<void> _seekToPosition(double value) async {
+    final duration = widget.audioDuration != null 
+      ? Duration(seconds: widget.audioDuration!) 
+      : Duration.zero;
+      
+    if (duration.inMilliseconds <= 0) return;
+    
+    final position = Duration(milliseconds: (duration.inMilliseconds * value).round());
+    
+    // Update progress notifier for immediate visual feedback
+    _progressNotifier.value = position;
+    
+    // Only perform actual seek if we're playing this audio
+    if (widget.currentlyPlayingId == widget.messageId) {
+      try {
+        await widget.audioPlayer.seek(position);
+      } catch (e) {
+        debugPrint('Error seeking: $e');
+      }
+    } else {
+      // If not currently playing, start playing from sought position
+      _isLoadingNotifier.value = true;
+      
+      try {
+        await widget.audioPlayer.setSource(UrlSource(widget.audioUrl));
+        await widget.audioPlayer.seek(position);
+        
+        // Set up position subscription
+        _positionSubscription?.cancel();
+        _positionSubscription = widget.audioPlayer.onPositionChanged.listen((newPosition) {
+          if (!_isDraggingNotifier.value) {
+            _progressNotifier.value = newPosition;
+          }
+        });
+        
+        // Set up completion listener
+        widget.audioPlayer.onPlayerComplete.listen((_) {
+          widget.onPlayingStateChanged(null);
+          _progressNotifier.value = Duration.zero;
+        });
+        
+        widget.onPlayingStateChanged(widget.messageId);
+        await widget.audioPlayer.resume();
+      } catch (e) {
+        debugPrint('Error playing from position: $e');
+        widget.onPlayingStateChanged(null);
+      } finally {
+        _isLoadingNotifier.value = false;
+      }
     }
   }
 
@@ -368,33 +429,79 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(2),
-                  child: Container(
-                    height: 3,
-                    decoration: BoxDecoration(
-                      color: (widget.isMyMessage ? Colors.white : widget.primaryColor).withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                    child: ValueListenableBuilder<Duration>(
-                      valueListenable: _progressNotifier,
-                      builder: (context, progress, _) {
-                        final double progressValue = duration.inMilliseconds > 0
-                            ? progress.inMilliseconds / duration.inMilliseconds
-                            : 0.0;
-                            
-                        return LinearProgressIndicator(
-                          value: isPlaying ? progressValue : 0.0,
-                          backgroundColor: Colors.transparent,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            widget.isMyMessage ? Colors.white : widget.primaryColor,
-                          ),
-                        );
-                      },
-                    ),
+                // Custom seekbar with improved touch target
+                Container(
+                  height: 20,  // Increased height for better touch target
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Track background
+                      Container(
+                        height: 3,
+                        decoration: BoxDecoration(
+                          color: (widget.isMyMessage ? Colors.white : widget.primaryColor).withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      // Progress indicator and slider combined
+                      ValueListenableBuilder<Duration>(
+                        valueListenable: _progressNotifier,
+                        builder: (context, progress, _) {
+                          double progressValue = duration.inMilliseconds > 0
+                              ? progress.inMilliseconds / duration.inMilliseconds
+                              : 0.0;
+                              
+                          // Clamp the value between 0 and 1
+                          progressValue = progressValue.clamp(0.0, 1.0);
+                          
+                          return ValueListenableBuilder<bool>(
+                            valueListenable: _isDraggingNotifier,
+                            builder: (context, isDragging, _) {
+                              return ValueListenableBuilder<double>(
+                                valueListenable: _dragProgressNotifier,
+                                builder: (context, dragProgress, _) {
+                                  // Use drag progress if dragging, otherwise use actual progress
+                                  final displayProgress = isDragging ? dragProgress : progressValue;
+                                  
+                                  return SliderTheme(
+                                    data: SliderThemeData(
+                                      trackHeight: 3,
+                                      thumbShape: RoundSliderThumbShape(
+                                        enabledThumbRadius: isDragging ? 6 : 0, // Only show thumb when dragging
+                                      ),
+                                      overlayShape: RoundSliderOverlayShape(
+                                        overlayRadius: 12,
+                                      ),
+                                      activeTrackColor: widget.isMyMessage ? Colors.white : widget.primaryColor,
+                                      inactiveTrackColor: Colors.transparent,
+                                      thumbColor: widget.isMyMessage ? Colors.white : widget.primaryColor,
+                                      overlayColor: (widget.isMyMessage ? Colors.white : widget.primaryColor).withOpacity(0.2),
+                                    ),
+                                    child: Slider(
+                                      value: displayProgress,
+                                      onChanged: (value) {
+                                        _isDraggingNotifier.value = true;
+                                        _dragProgressNotifier.value = value;
+                                      },
+                                      onChangeStart: (_) {
+                                        _isDraggingNotifier.value = true;
+                                      },
+                                      onChangeEnd: (value) {
+                                        _isDraggingNotifier.value = false;
+                                        _seekToPosition(value);
+                                      },
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
-                SizedBox(height: 8),
+                SizedBox(height: 4),
                 Row(
                   children: [
                     _micIcon,
@@ -402,14 +509,33 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                     ValueListenableBuilder<Duration>(
                       valueListenable: _progressNotifier,
                       builder: (context, progress, _) {
-                        final displayDuration = isPlaying ? progress : duration;
-                        return Text(
-                          _formatTime(displayDuration),
-                          style: TextStyle(
-                            color: widget.isMyMessage ? Colors.white.withOpacity(0.9) : Colors.grey.shade600,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
+                        return ValueListenableBuilder<bool>(
+                          valueListenable: _isDraggingNotifier,
+                          builder: (context, isDragging, _) {
+                            return ValueListenableBuilder<double>(
+                              valueListenable: _dragProgressNotifier,
+                              builder: (context, dragProgress, _) {
+                                // If dragging, show the time at drag position
+                                Duration displayDuration;
+                                if (isDragging) {
+                                  displayDuration = Duration(
+                                    milliseconds: (duration.inMilliseconds * dragProgress).round()
+                                  );
+                                } else {
+                                  displayDuration = isPlaying ? progress : duration;
+                                }
+                                
+                                return Text(
+                                  _formatTime(displayDuration),
+                                  style: TextStyle(
+                                    color: widget.isMyMessage ? Colors.white.withOpacity(0.9) : Colors.grey.shade600,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                );
+                              },
+                            );
+                          },
                         );
                       },
                     ),
