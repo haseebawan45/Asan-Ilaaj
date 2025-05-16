@@ -1283,15 +1283,25 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> wit
                                   imageErrorNotifier.value = true;
                                   imageLoadingNotifier.value = false;
                                 });
-                                return Image.asset(
-                                  'assets/images/User.png',
-                                  fit: BoxFit.cover,
+                                return Container(
+                                  color: statusColor.withOpacity(0.1),
+                                  alignment: Alignment.center,
+                                  child: Icon(
+                                    Icons.person,
+                                    size: 30,
+                                    color: statusColor.withOpacity(0.8),
+                                  ),
                                 );
                               },
                             )
-                          : Image.asset(
-                              'assets/images/User.png',
-                              fit: BoxFit.cover,
+                          : Container(
+                              color: statusColor.withOpacity(0.1),
+                              alignment: Alignment.center,
+                              child: Icon(
+                                Icons.person,
+                                size: 30,
+                                color: statusColor.withOpacity(0.8),
+                              ),
                             ),
                     ),
                   ),
