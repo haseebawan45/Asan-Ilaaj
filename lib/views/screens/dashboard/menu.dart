@@ -36,8 +36,8 @@ class MenuScreen extends StatefulWidget {
   const MenuScreen({
     super.key, 
     this.userType = UserType.doctor,
-    this.name = "Dr. Asmara",
-    this.role = "General Practitioner",
+    this.name = "Loading...",
+    this.role = "Please wait...",
   });
 
   @override
