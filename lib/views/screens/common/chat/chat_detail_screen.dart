@@ -207,6 +207,7 @@ class AudioPlayerWidget extends StatefulWidget {
 
 class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
   final ValueNotifier<Duration> _progressNotifier = ValueNotifier(Duration.zero);
+  final ValueNotifier<bool> _isLoadingNotifier = ValueNotifier(false);
   StreamSubscription? _positionSubscription;
   bool _isInitialized = false;
   
@@ -243,6 +244,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
   void dispose() {
     _positionSubscription?.cancel();
     _progressNotifier.dispose();
+    _isLoadingNotifier.dispose();
     super.dispose();
   }
 
@@ -265,25 +267,43 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
       await widget.audioPlayer.stop();
       widget.onPlayingStateChanged(null);
       _progressNotifier.value = Duration.zero;
-    } else {
-      // Stop any currently playing audio
-      if (widget.currentlyPlayingId != null) {
-        await widget.audioPlayer.stop();
-      }
+      return;
+    }
 
-      try {
-        widget.onPlayingStateChanged(widget.messageId);
-        await widget.audioPlayer.play(UrlSource(widget.audioUrl));
-        
-        // Setup new position subscription
-        _positionSubscription?.cancel();
-        _positionSubscription = widget.audioPlayer.onPositionChanged.listen((position) {
-          _progressNotifier.value = position;
-        });
-      } catch (e) {
-        debugPrint('Error playing audio: $e');
+    // Show loading state
+    _isLoadingNotifier.value = true;
+
+    // Stop any currently playing audio
+    if (widget.currentlyPlayingId != null) {
+      await widget.audioPlayer.stop();
+    }
+
+    try {
+      // Pre-load the audio source 
+      await widget.audioPlayer.setSource(UrlSource(widget.audioUrl));
+      
+      // Set up position subscription before starting playback
+      _positionSubscription?.cancel();
+      _positionSubscription = widget.audioPlayer.onPositionChanged.listen((position) {
+        _progressNotifier.value = position;
+      });
+      
+      // Set up completion listener
+      widget.audioPlayer.onPlayerComplete.listen((_) {
         widget.onPlayingStateChanged(null);
-      }
+        _progressNotifier.value = Duration.zero;
+      });
+      
+      // Notify playing state change before starting playback
+      widget.onPlayingStateChanged(widget.messageId);
+      
+      // Start playback with minimal delay
+      await widget.audioPlayer.resume();
+    } catch (e) {
+      debugPrint('Error playing audio: $e');
+      widget.onPlayingStateChanged(null);
+    } finally {
+      _isLoadingNotifier.value = false;
     }
   }
 
@@ -306,17 +326,42 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          InkWell(
-            onTap: _handlePlayPause,
-            borderRadius: BorderRadius.circular(30),
-            child: Container(
-              padding: EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: (widget.isMyMessage ? Colors.white : widget.primaryColor).withOpacity(0.2),
-                shape: BoxShape.circle,
-              ),
-              child: _playPauseIcons[isPlaying] ?? _playPauseIcons[false]!,
-            ),
+          ValueListenableBuilder<bool>(
+            valueListenable: _isLoadingNotifier,
+            builder: (context, isLoading, child) {
+              if (isLoading) {
+                return Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: (widget.isMyMessage ? Colors.white : widget.primaryColor).withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        widget.isMyMessage ? Colors.white : widget.primaryColor,
+                      ),
+                    ),
+                  ),
+                );
+              }
+              
+              return InkWell(
+                onTap: _handlePlayPause,
+                borderRadius: BorderRadius.circular(30),
+                child: Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: (widget.isMyMessage ? Colors.white : widget.primaryColor).withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: _playPauseIcons[isPlaying] ?? _playPauseIcons[false]!,
+                ),
+              );
+            },
           ),
           SizedBox(width: 8),
           Expanded(
