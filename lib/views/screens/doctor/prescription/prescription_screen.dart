@@ -17,6 +17,365 @@ import 'package:healthcare/utils/app_theme.dart';
 // Platform imports
 import 'dart:io' show Platform;
 
+// Audio player widget for better playback experience
+class AudioPlayerWidget extends StatefulWidget {
+  final String source;
+  final bool isUrl;
+  final String label;
+  final Function? onDelete;
+
+  const AudioPlayerWidget({
+    Key? key,
+    required this.source,
+    required this.isUrl,
+    required this.label,
+    this.onDelete,
+  }) : super(key: key);
+
+  @override
+  _AudioPlayerWidgetState createState() => _AudioPlayerWidgetState();
+}
+
+class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _isPlaying = false;
+  bool _isLoading = false;
+  bool _hasError = false;
+  String? _errorMessage;
+  Duration _position = Duration.zero;
+  Duration _duration = Duration.zero;
+  StreamSubscription? _positionSubscription;
+  StreamSubscription? _durationSubscription;
+  StreamSubscription? _playerStateSubscription;
+  
+  @override
+  void initState() {
+    super.initState();
+    _initializePlayer();
+  }
+  
+  Future<void> _initializePlayer() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _hasError = false;
+        _errorMessage = null;
+      });
+
+      // Setup listeners
+      _positionSubscription = _audioPlayer.onPositionChanged.listen((pos) {
+        if (mounted) {
+          setState(() => _position = pos);
+        }
+      });
+      
+      _durationSubscription = _audioPlayer.onDurationChanged.listen((dur) {
+        if (mounted) {
+          setState(() => _duration = dur);
+        }
+      });
+      
+      _playerStateSubscription = _audioPlayer.onPlayerStateChanged.listen((state) {
+        if (mounted) {
+          setState(() {
+            _isPlaying = state == PlayerState.playing;
+            if (state == PlayerState.completed) {
+              _position = _duration;
+              _isPlaying = false;
+            }
+          });
+        }
+      });
+      
+      // If it's a URL, we need to check its validity
+      if (widget.isUrl) {
+        if (!widget.source.startsWith('http')) {
+          setState(() {
+            _hasError = true;
+            _errorMessage = 'Invalid URL format';
+            _isLoading = false;
+          });
+          return;
+        }
+      } else {
+        // Check if file exists
+        final file = File(widget.source);
+        if (!(await file.exists())) {
+          setState(() {
+            _hasError = true;
+            _errorMessage = 'Audio file not found';
+            _isLoading = false;
+          });
+          return;
+        }
+      }
+      
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+          _errorMessage = 'Setup error: ${e.toString()}';
+          _isLoading = false;
+        });
+      }
+      print('Error initializing audio player: $e');
+    }
+  }
+  
+  Future<void> _playPause() async {
+    if (_hasError) return;
+    
+    try {
+      if (_isPlaying) {
+        await _audioPlayer.pause();
+      } else {
+        setState(() => _isLoading = true);
+        
+        // Set the source if we haven't started playing yet or if we're at the end
+        if (_position.inMilliseconds == 0 || _position >= _duration) {
+          Source audioSource = widget.isUrl 
+              ? UrlSource(widget.source)
+              : DeviceFileSource(widget.source);
+              
+          await _audioPlayer.play(audioSource);
+        } else {
+          // Resume from current position
+          await _audioPlayer.resume();
+        }
+        
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      setState(() {
+        _hasError = true;
+        _errorMessage = 'Playback error: ${e.toString()}';
+        _isLoading = false;
+      });
+      print('Error playing audio: $e');
+    }
+  }
+  
+  Future<void> _seekTo(double value) async {
+    if (_duration.inMilliseconds > 0) {
+      final position = Duration(milliseconds: (value * _duration.inMilliseconds).round());
+      await _audioPlayer.seek(position);
+    }
+  }
+  
+  @override
+  void dispose() {
+    _positionSubscription?.cancel();
+    _durationSubscription?.cancel();
+    _playerStateSubscription?.cancel();
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+  
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return "$minutes:$seconds";
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+        border: Border.all(
+          color: _hasError 
+              ? Colors.red.shade200 
+              : (_isPlaying 
+                  ? AppTheme.primaryTeal.withOpacity(0.5) 
+                  : Colors.grey.shade200),
+          width: 1.5,
+        ),
+      ),
+      margin: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              // Play/Pause button with gradient
+              Container(
+                width: screenWidth * 0.12,
+                height: screenWidth * 0.12,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: _hasError
+                        ? [Colors.red.shade300, Colors.red.shade400]
+                        : (_isPlaying 
+                            ? [Colors.green.shade400, Colors.green.shade600]
+                            : [AppTheme.primaryTeal, AppTheme.primaryTeal]),
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _hasError
+                          ? Colors.red.withOpacity(0.2)
+                          : (_isPlaying 
+                              ? Colors.green.withOpacity(0.3)
+                              : AppTheme.primaryTeal.withOpacity(0.2)),
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: _isLoading || _hasError ? null : _playPause,
+                    child: Center(
+                      child: _isLoading
+                          ? SizedBox(
+                              width: screenWidth * 0.05,
+                              height: screenWidth * 0.05,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2.5,
+                              ),
+                            )
+                          : Icon(
+                              _hasError 
+                                  ? Icons.error_outline
+                                  : (_isPlaying 
+                                      ? LucideIcons.pause 
+                                      : LucideIcons.play),
+                              color: Colors.white,
+                              size: screenWidth * 0.055,
+                            ),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.label,
+                      style: GoogleFonts.poppins(
+                        fontSize: screenWidth * 0.038,
+                        fontWeight: FontWeight.w600,
+                        color: _hasError ? Colors.red : Color(0xFF2C3E50),
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          _hasError 
+                              ? Icons.warning_amber_rounded
+                              : LucideIcons.music,
+                          size: screenWidth * 0.035,
+                          color: _hasError ? Colors.red : Colors.grey.shade600,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          _hasError 
+                              ? _errorMessage ?? 'Error'
+                              : _isPlaying 
+                                  ? '${_formatDuration(_position)} / ${_formatDuration(_duration)}' 
+                                  : _duration.inMilliseconds > 0 
+                                      ? _formatDuration(_duration)
+                                      : 'Tap to play',
+                          style: GoogleFonts.poppins(
+                            fontSize: screenWidth * 0.03,
+                            color: _hasError ? Colors.red : Colors.grey.shade600,
+                          ),
+                        ),
+                        if (_isPlaying) ...[
+                          SizedBox(width: 8),
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: Colors.green,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              if (widget.onDelete != null)
+                Container(
+                  width: screenWidth * 0.09,
+                  height: screenWidth * 0.09,
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: IconButton(
+                    icon: Icon(
+                      LucideIcons.trash2,
+                      color: Colors.red.shade400,
+                      size: screenWidth * 0.045,
+                    ),
+                    padding: EdgeInsets.zero,
+                    onPressed: () {
+                      _audioPlayer.stop();
+                      widget.onDelete?.call();
+                    },
+                  ),
+                ),
+            ],
+          ),
+          SizedBox(height: 12),
+          // Audio progress bar with draggable thumb
+          if (!_hasError && _duration.inMilliseconds > 0)
+            Container(
+              height: 24,
+              child: SliderTheme(
+                data: SliderThemeData(
+                  trackHeight: 6,
+                  thumbShape: RoundSliderThumbShape(enabledThumbRadius: 8),
+                  overlayShape: RoundSliderOverlayShape(overlayRadius: 16),
+                  trackShape: RoundedRectSliderTrackShape(),
+                  activeTrackColor: _isPlaying ? Colors.green : AppTheme.primaryTeal,
+                  inactiveTrackColor: Colors.grey.shade200,
+                  thumbColor: _isPlaying ? Colors.green : AppTheme.primaryTeal,
+                  overlayColor: (_isPlaying ? Colors.green : AppTheme.primaryTeal).withOpacity(0.2),
+                ),
+                child: Slider(
+                  value: _position.inMilliseconds > 0 && _duration.inMilliseconds > 0
+                      ? _position.inMilliseconds / _duration.inMilliseconds
+                      : 0.0,
+                  onChanged: (value) {
+                    _seekTo(value);
+                  },
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class PrescriptionScreen extends StatefulWidget {
   final String appointmentId;
   final String patientName;
@@ -51,16 +410,9 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
   
   // Voice recording related variables
   final _audioRecorder = AudioRecorder();
-  AudioPlayer _audioPlayer = AudioPlayer();
   bool _isRecording = false;
-  bool _isPlaying = false;
-  int _playingIndex = -1;
   String? _currentRecordingPath;
   Duration _recordingDuration = Duration.zero;
-  Duration _playbackPosition = Duration.zero;
-  Duration _playbackDuration = Duration.zero;
-  StreamSubscription? _positionSubscription;
-  StreamSubscription? _durationSubscription;
   
   // Timer for recording duration
   DateTime? _recordingStartTime;
@@ -93,9 +445,6 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
         }
       }
     }
-    
-    // Initialize audio player
-    _initializeAudioPlayer();
   }
 
   // Start speech to text recognition
@@ -161,50 +510,19 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
     }
   }
 
-  void _initializeAudioPlayer() {
-    _audioPlayer = AudioPlayer();
-    
-    // Setup duration listener
-    _audioPlayer.onDurationChanged.listen((Duration duration) {
-      setState(() {
-        _playbackDuration = duration;
-      });
-    });
-    
-    // Setup position listener
-    _audioPlayer.onPositionChanged.listen((Duration position) {
-      setState(() {
-        _playbackPosition = position;
-      });
-    });
-    
-    // Setup completion listener
-    _audioPlayer.onPlayerComplete.listen((_) {
-      setState(() {
-        _isPlaying = false;
-        _playingIndex = -1;
-        _playbackPosition = Duration.zero;
-      });
-    });
-    
-    // Setup state change listener
-    _audioPlayer.onPlayerStateChanged.listen((PlayerState state) {
-      if (state == PlayerState.completed) {
-        setState(() {
-          _isPlaying = false;
-          _playingIndex = -1;
-          _playbackPosition = Duration.zero;
-        });
-      }
-    });
-  }
-
   @override
   void dispose() {
     _prescriptionController.dispose();
-    _positionSubscription?.cancel();
-    _durationSubscription?.cancel();
-    _audioPlayer.dispose();
+    
+    // Stop recording if needed, just in case
+    try {
+      if (_isRecording) {
+        _audioRecorder.stop();
+      }
+    } catch (e) {
+      print('Error stopping recorder during dispose: $e');
+    }
+    
     _audioRecorder.dispose();
     super.dispose();
   }
@@ -402,15 +720,27 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
         }
       }
       
-      // Process voice notes one by one
+            // Process voice notes one by one with improved handling
       if (_recordedVoiceNotes.isNotEmpty) {
+        int successCount = 0;
+        int failCount = 0;
+        
         for (int i = 0; i < _recordedVoiceNotes.length; i++) {
           if (!mounted) return;  // Check if still mounted before each operation
           
           final File voiceFile = _recordedVoiceNotes[i];
           if (!(await voiceFile.exists())) {
             print('Voice file does not exist: ${voiceFile.path}');
+            failCount++;
             continue;  // Skip this file
+          }
+          
+          // Check file size to ensure it's not empty
+          int fileSize = await voiceFile.length();
+          if (fileSize <= 0) {
+            print('Voice file is empty: ${voiceFile.path}');
+            failCount++;
+            continue;  // Skip empty file
           }
           
           try {
@@ -419,29 +749,46 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
             
             // Create a reference to the file location
             final Reference storageRef = FirebaseStorage.instance
-                .ref()
-                .child('prescriptions')
-                .child(widget.appointmentId)
-                .child('voice_notes')
-                .child(fileName);
-                
-            // Create and execute the upload task
+              .ref()
+              .child('prescriptions')
+              .child(widget.appointmentId)
+              .child('voice_notes')
+              .child(fileName);
+              
+            // Create and execute the upload task with proper content type
             final TaskSnapshot uploadTask = await storageRef.putFile(
               voiceFile,
-              SettableMetadata(contentType: 'audio/m4a')
+              SettableMetadata(
+                contentType: 'audio/m4a',
+                customMetadata: {
+                  'fileName': fileName,
+                  'uploadedAt': DateTime.now().toIso8601String(),
+                }
+              )
             );
+            
+            // Only proceed if we're still mounted
+            if (!mounted) return;
             
             // Get download URL only if upload was successful
             if (uploadTask.state == TaskState.success) {
               final String downloadUrl = await storageRef.getDownloadURL();
               voiceNoteUrls.add(downloadUrl);
               print('Successfully uploaded voice note #$i: $downloadUrl');
+              successCount++;
+            } else {
+              print('Upload task failed for voice note #$i with state: ${uploadTask.state}');
+              failCount++;
             }
           } catch (uploadError) {
             print('Error uploading voice note #$i: $uploadError');
+            failCount++;
             // Continue with next voice note
           }
         }
+        
+        // Log summary of upload results
+        print('Voice note upload summary: $successCount successful, $failCount failed');
       }
       
       // Final check to ensure we're still mounted before Firestore update
@@ -501,6 +848,8 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
   Future<void> _startRecording() async {
     // Check if microphone permission is granted
     final status = await Permission.microphone.request();
+    if (!mounted) return;
+    
     if (status != PermissionStatus.granted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -514,6 +863,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
     try {
       // Get the temporary directory
       final directory = await getTemporaryDirectory();
+      if (!mounted) return;
       
       // Use .m4a format instead of .aac for better compatibility
       final filePath = '${directory.path}/voice_note_${DateTime.now().millisecondsSinceEpoch}.m4a';
@@ -540,6 +890,8 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
       
     } catch (e) {
       print('Error starting recording: $e');
+      if (!mounted) return;
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to start recording: ${e.toString()}'),
@@ -571,6 +923,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
       // Stop recording
       final path = await _audioRecorder.stop();
       
+      if (!mounted) return;
       setState(() {
         _isRecording = false;
         _recordingStartTime = null;
@@ -581,13 +934,24 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
         File recordedFile = File(path);
         
         // Verify file exists and has content
-        if (await recordedFile.exists()) {
+        final bool fileExists = await recordedFile.exists();
+        if (fileExists) {
           int fileSize = await recordedFile.length();
+          if (!mounted) return;
+          
           if (fileSize > 0) {
             print('Recorded file saved: $path (Size: $fileSize bytes)');
             setState(() {
               _recordedVoiceNotes.add(recordedFile);
             });
+            
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Voice note recorded successfully'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
+              ),
+            );
           } else {
             print('Warning: Recorded file exists but is empty: $path');
             ScaffoldMessenger.of(context).showSnackBar(
@@ -608,9 +972,19 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
         }
       } else {
         print('Error: No path returned from recorder.stop()');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Recording failed: Could not save audio file'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     } catch (e) {
       print('Error stopping recording: $e');
+      if (!mounted) return;
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to stop recording: ${e.toString()}'),
@@ -620,70 +994,8 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
     }
   }
   
-  // Play voice note
-  Future<void> _playVoiceNote(String source, bool isUrl, int index) async {
-    if (_isPlaying && _playingIndex == index) {
-      // Already playing this audio, pause it
-      await _pauseAudio();
-      return;
-    }
-    
-    if (_isPlaying) {
-      // Stop any currently playing audio
-      await _stopPlaying();
-    }
-    
-    try {
-      // Set playback source based on whether it's a URL or file
-      Source audioSource = isUrl 
-          ? UrlSource(source)
-          : DeviceFileSource(source);
-          
-      // Start playback with the appropriate source
-      await _audioPlayer.play(audioSource);
-      
-      setState(() {
-        _isPlaying = true;
-        _playingIndex = index;
-        _playbackPosition = Duration.zero;
-      });
-    } catch (e) {
-      print('Error playing audio: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to play audio: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-  
-  // Pause playing voice note
-  Future<void> _pauseAudio() async {
-    if (_isPlaying) {
-      await _audioPlayer.pause();
-      setState(() {
-        _isPlaying = false;
-      });
-    }
-  }
-  
-  // Resume playing voice note
-  Future<void> _resumeAudio() async {
-    if (!_isPlaying && _playingIndex != -1) {
-      await _audioPlayer.resume();
-      setState(() {
-        _isPlaying = true;
-      });
-    }
-  }
-  
   // Delete recorded voice note
   void _deleteRecordedVoiceNote(int index) {
-    if (_isPlaying && _playingIndex == index) {
-      _stopPlaying();
-    }
-    
     setState(() {
       _recordedVoiceNotes.removeAt(index);
     });
@@ -691,10 +1003,6 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
   
   // Delete existing voice note
   void _deleteExistingVoiceNote(int index) {
-    if (_isPlaying && _playingIndex == index) {
-      _stopPlaying();
-    }
-    
     setState(() {
       _existingVoiceNoteUrls.removeAt(index);
     });
@@ -706,24 +1014,6 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
     final minutes = twoDigits(duration.inMinutes.remainder(60));
     final seconds = twoDigits(duration.inSeconds.remainder(60));
     return "$minutes:$seconds";
-  }
-
-  double _getPlaybackProgress(int index) {
-    if (_playingIndex != index || _playbackPosition.inMilliseconds == 0 || _playbackDuration.inMilliseconds == 0) {
-      return 0.0;
-    }
-    return _playbackPosition.inMilliseconds / _playbackDuration.inMilliseconds;
-  }
-
-  Future<void> _stopPlaying() async {
-    if (_isPlaying) {
-      await _audioPlayer.stop();
-      setState(() {
-        _isPlaying = false;
-        _playingIndex = -1;
-        _playbackPosition = Duration.zero;
-      });
-    }
   }
 
   // Updated UI for displaying existing images with improved layout
@@ -1617,7 +1907,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
                     
                     SizedBox(height: screenSize.height * 0.025),
                     
-                    // Display existing voice notes
+                    // Display existing voice notes with improved UI
                     if (_existingVoiceNoteUrls.isNotEmpty) ...[
                       Padding(
                         padding: EdgeInsets.symmetric(vertical: screenSize.height * 0.015),
@@ -1658,197 +1948,25 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
                         ],
                       ),
                       SizedBox(height: screenSize.height * 0.015),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          return ListView.builder(
-                            shrinkWrap: true,
-                            physics: NeverScrollableScrollPhysics(),
-                            itemCount: _existingVoiceNoteUrls.length,
-                            itemBuilder: (context, index) {
-                              final url = _existingVoiceNoteUrls[index];
-                              final bool isPlayingThis = _isPlaying && _playingIndex == index;
-                              final bool isValidUrl = url.startsWith('http://') || url.startsWith('https://');
-                              
-                              return Container(
-                                margin: EdgeInsets.only(bottom: constraints.maxWidth * 0.03),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
-                                      blurRadius: 8,
-                                      offset: Offset(0, 2),
-                                    ),
-                                  ],
-                                  border: Border.all(
-                                    color: isPlayingThis 
-                                        ? Colors.green.withOpacity(0.5)
-                                        : isValidUrl ? Colors.grey.shade200 : Colors.red.shade200,
-                                    width: 1.5,
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: EdgeInsets.all(constraints.maxWidth * 0.04),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        crossAxisAlignment: CrossAxisAlignment.center,
-                                        children: [
-                                          Container(
-                                            width: constraints.maxWidth * 0.12,
-                                            height: constraints.maxWidth * 0.12,
-                                            decoration: BoxDecoration(
-                                              gradient: LinearGradient(
-                                                begin: Alignment.topLeft,
-                                                end: Alignment.bottomRight,
-                                                colors: isValidUrl
-                                                    ? (isPlayingThis 
-                                                        ? [Colors.green.shade400, Colors.green.shade600]
-                                                        : [AppTheme.primaryTeal, AppTheme.primaryTeal])
-                                                    : [Colors.red.shade300, Colors.red.shade400],
-                                              ),
-                                              borderRadius: BorderRadius.circular(12),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: isValidUrl
-                                                      ? (isPlayingThis 
-                                                          ? Colors.green.withOpacity(0.3)
-                                                          : AppTheme.primaryTeal.withOpacity(0.2))
-                                                      : Colors.red.withOpacity(0.2),
-                                                  blurRadius: 6,
-                                                  offset: Offset(0, 2),
-                                                ),
-                                              ],
-                                            ),
-                                            child: Material(
-                                              color: Colors.transparent,
-                                              borderRadius: BorderRadius.circular(12),
-                                              child: InkWell(
-                                                borderRadius: BorderRadius.circular(12),
-                                                onTap: isValidUrl 
-                                                    ? () {
-                                                        if (isPlayingThis) {
-                                                          _pauseAudio();
-                                                        } else {
-                                                          _playVoiceNote(url, true, index);
-                                                        }
-                                                      }
-                                                    : () {
-                                                        ScaffoldMessenger.of(context).showSnackBar(
-                                                          SnackBar(
-                                                            content: Text('Invalid URL format. Cannot play this voice note.'),
-                                                            backgroundColor: Colors.red,
-                                                          ),
-                                                        );
-                                                      },
-                                                child: Center(
-                                                  child: Icon(
-                                                    isValidUrl
-                                                        ? (isPlayingThis ? LucideIcons.pause : LucideIcons.play)
-                                                        : Icons.error_outline,
-                                                    color: Colors.white,
-                                                    size: constraints.maxWidth * 0.055,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          SizedBox(width: constraints.maxWidth * 0.04),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  'Voice Note ${index + 1}',
-                                                  style: GoogleFonts.poppins(
-                                                    fontSize: constraints.maxWidth * 0.038,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: Color(0xFF2C3E50),
-                                                  ),
-                                                ),
-                                                SizedBox(height: 4),
-                                                Row(
-                                                  children: [
-                                                    Icon(
-                                                      isValidUrl
-                                                          ? LucideIcons.music
-                                                          : Icons.warning_amber_rounded,
-                                                      size: constraints.maxWidth * 0.035,
-                                                      color: isValidUrl ? Colors.grey.shade600 : Colors.red,
-                                                    ),
-                                                    SizedBox(width: constraints.maxWidth * 0.01),
-                                                    Text(
-                                                      isValidUrl
-                                                          ? (isPlayingThis 
-                                                             ? '${_formatDuration(_playbackPosition)} / ${_formatDuration(_playbackDuration)}' 
-                                                             : 'Tap to play')
-                                                          : 'Invalid URL format',
-                                                      style: GoogleFonts.poppins(
-                                                        fontSize: constraints.maxWidth * 0.03,
-                                                        color: isValidUrl ? Colors.grey.shade600 : Colors.red,
-                                                      ),
-                                                    ),
-                                                    if (isPlayingThis) ...[
-                                                      SizedBox(width: constraints.maxWidth * 0.02),
-                                                      Container(
-                                                        width: constraints.maxWidth * 0.02,
-                                                        height: constraints.maxWidth * 0.02,
-                                                        decoration: BoxDecoration(
-                                                          color: Colors.green,
-                                                          shape: BoxShape.circle,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ],
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          Container(
-                                            width: constraints.maxWidth * 0.09,
-                                            height: constraints.maxWidth * 0.09,
-                                            decoration: BoxDecoration(
-                                              color: Colors.red.withOpacity(0.1),
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            child: IconButton(
-                                              icon: Icon(
-                                                LucideIcons.trash2,
-                                                color: Colors.red.shade400,
-                                                size: constraints.maxWidth * 0.045,
-                                              ),
-                                              padding: EdgeInsets.zero,
-                                              onPressed: () => _deleteExistingVoiceNote(index),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      if (isPlayingThis && _playbackDuration.inMilliseconds > 0) ...[
-                                        SizedBox(height: 12),
-                                        ClipRRect(
-                                          borderRadius: BorderRadius.circular(10),
-                                          child: LinearProgressIndicator(
-                                            value: _getPlaybackProgress(index),
-                                            backgroundColor: Colors.grey.shade200,
-                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
-                                            minHeight: 6,
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        itemCount: _existingVoiceNoteUrls.length,
+                        itemBuilder: (context, index) {
+                          final url = _existingVoiceNoteUrls[index];
+                          // Use the new AudioPlayerWidget
+                          return AudioPlayerWidget(
+                            source: url,
+                            isUrl: true,
+                            label: 'Voice Note ${index + 1}',
+                            onDelete: () => _deleteExistingVoiceNote(index),
                           );
-                        }
+                        },
                       ),
                       SizedBox(height: screenSize.height * 0.025),
                     ],
                     
-                    // Display newly recorded voice notes
+                    // Display newly recorded voice notes with improved UI
                     if (_recordedVoiceNotes.isNotEmpty) ...[
                       Padding(
                         padding: EdgeInsets.symmetric(vertical: screenSize.height * 0.015),
@@ -1895,166 +2013,12 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
                         itemCount: _recordedVoiceNotes.length,
                         itemBuilder: (context, index) {
                           final int actualIndex = index + _existingVoiceNoteUrls.length;
-                          final bool isPlayingThis = _playingIndex == actualIndex && _isPlaying;
-                          
-                          return Container(
-                            margin: EdgeInsets.only(bottom: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 8,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                              border: Border.all(
-                                color: _playingIndex == actualIndex && _isPlaying 
-                                    ? Theme.of(context).primaryColor.withOpacity(0.5)
-                                    : Colors.grey.shade200,
-                                width: 1.5,
-                              ),
-                            ),
-                            child: Padding(
-                              padding: EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      // Play/Pause button with gradient
-                                      Container(
-                                        width: 48,
-                                        height: 48,
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                            colors: _playingIndex == actualIndex && _isPlaying
-                                                ? [Colors.green.shade400, Colors.green.shade600]
-                                                : [Color(0xFF3366CC), Color(0xFF5E8EF7)],
-                                          ),
-                                          borderRadius: BorderRadius.circular(12),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: _playingIndex == actualIndex && _isPlaying
-                                                  ? Colors.green.withOpacity(0.3)
-                                                  : Color(0xFF3366CC).withOpacity(0.2),
-                                              blurRadius: 6,
-                                              offset: Offset(0, 2),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Material(
-                                          color: Colors.transparent,
-                                          borderRadius: BorderRadius.circular(12),
-                                          child: InkWell(
-                                            borderRadius: BorderRadius.circular(12),
-                                            onTap: () {
-                                              if (_playingIndex == actualIndex && _isPlaying) {
-                                                _pauseAudio();
-                                              } else if (_playingIndex == actualIndex && !_isPlaying) {
-                                                _resumeAudio();
-                                              } else {
-                                                _playVoiceNote(_recordedVoiceNotes[index].path, false, actualIndex);
-                                              }
-                                            },
-                                            child: Center(
-                                              child: Icon(
-                                                _playingIndex == actualIndex && _isPlaying 
-                                                  ? LucideIcons.pause 
-                                                  : LucideIcons.play,
-                                                color: Colors.white,
-                                                size: 22,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(width: 16),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'Voice Note ${actualIndex + 1}',
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 15,
-                                                fontWeight: FontWeight.w600,
-                                                color: Color(0xFF2C3E50),
-                                              ),
-                                            ),
-                                            SizedBox(height: 4),
-                                            Row(
-                                              children: [
-                                                Icon(
-                                                  LucideIcons.music,
-                                                  size: 14,
-                                                  color: Colors.grey.shade600,
-                                                ),
-                                                SizedBox(width: 4),
-                                                Text(
-                                                  _playingIndex == actualIndex && _isPlaying
-                                                    ? '${_formatDuration(_playbackPosition)} / ${_formatDuration(_playbackDuration)}'
-                                                    : 'Tap to play',
-                                                  style: GoogleFonts.poppins(
-                                                    fontSize: 12,
-                                                    color: Colors.grey.shade600,
-                                                  ),
-                                                ),
-                                                if (_playingIndex == actualIndex && _isPlaying) ...[
-                                                  SizedBox(width: 8),
-                                                  Container(
-                                                    width: 8,
-                                                    height: 8,
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.green,
-                                                      shape: BoxShape.circle,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Container(
-                                        width: 36,
-                                        height: 36,
-                                        decoration: BoxDecoration(
-                                          color: Colors.red.withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: IconButton(
-                                          icon: Icon(
-                                            LucideIcons.trash2,
-                                            color: Colors.red.shade400,
-                                            size: 18,
-                                          ),
-                                          padding: EdgeInsets.zero,
-                                          onPressed: () => _deleteRecordedVoiceNote(index),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 12),
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: LinearProgressIndicator(
-                                      value: _getPlaybackProgress(actualIndex),
-                                      backgroundColor: Colors.grey.shade200,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        _playingIndex == actualIndex && _isPlaying 
-                                          ? Colors.green 
-                                          : Theme.of(context).primaryColor
-                                      ),
-                                      minHeight: 6,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                          // Use the new AudioPlayerWidget for better UI and interaction
+                          return AudioPlayerWidget(
+                            source: _recordedVoiceNotes[index].path,
+                            isUrl: false,
+                            label: 'New Voice Note ${actualIndex + 1}',
+                            onDelete: () => _deleteRecordedVoiceNote(index),
                           );
                         },
                       ),
