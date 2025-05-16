@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui';
+import 'dart:async';  // Add Timer import
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
@@ -33,6 +34,352 @@ class AppColors {
   static const Color onlineGreen = AppTheme.success;
 }
 
+// Add this widget before the ChatDetailScreen class
+class RecordingIndicator extends StatefulWidget {
+  final bool isDoctor;
+  final VoidCallback onSend;
+  final VoidCallback onCancel;
+
+  const RecordingIndicator({
+    Key? key,
+    required this.isDoctor,
+    required this.onSend,
+    required this.onCancel,
+  }) : super(key: key);
+
+  @override
+  State<RecordingIndicator> createState() => _RecordingIndicatorState();
+}
+
+class _RecordingIndicatorState extends State<RecordingIndicator> {
+  final ValueNotifier<int> _durationNotifier = ValueNotifier<int>(0);
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _durationNotifier.dispose();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+      _durationNotifier.value++;
+    });
+  }
+
+  String _formatTime(int seconds) {
+    final minutes = seconds ~/ 60;
+    final remainingSeconds = seconds % 60;
+    return '$minutes:${remainingSeconds.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final Color primaryColor = widget.isDoctor ? AppColors.primaryPink : AppColors.primaryTeal;
+
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 12,
+      ),
+      child: Row(
+        children: [
+          // Animated recording indicator
+          AnimatedContainer(
+            duration: Duration(milliseconds: 300),
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.primaryPink.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: AnimatedContainer(
+                duration: Duration(milliseconds: 500),
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryPink,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primaryPink.withOpacity(0.5),
+                      blurRadius: 10,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Recording audio message...',
+                  style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primaryPink,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                ValueListenableBuilder<int>(
+                  valueListenable: _durationNotifier,
+                  builder: (context, duration, _) {
+                    return Text(
+                      _formatTime(duration),
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          // Send button
+          IconButton(
+            icon: Icon(LucideIcons.send),
+            onPressed: () {
+              _timer?.cancel();
+              widget.onSend();
+            },
+            color: primaryColor,
+            iconSize: 24,
+            tooltip: 'Send audio message',
+          ),
+          // Cancel button
+          IconButton(
+            icon: Icon(LucideIcons.trash2),
+            onPressed: () {
+              _timer?.cancel();
+              widget.onCancel();
+            },
+            color: Colors.red.shade400,
+            iconSize: 24,
+            tooltip: 'Cancel recording',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Add this widget before the ChatDetailScreen class
+class AudioPlayerWidget extends StatefulWidget {
+  final String messageId;
+  final String audioUrl;
+  final int? audioDuration;
+  final bool isMyMessage;
+  final Color primaryColor;
+  final AudioPlayer audioPlayer;
+  final String? currentlyPlayingId;
+  final Function(String?) onPlayingStateChanged;
+
+  const AudioPlayerWidget({
+    Key? key,
+    required this.messageId,
+    required this.audioUrl,
+    required this.audioDuration,
+    required this.isMyMessage,
+    required this.primaryColor,
+    required this.audioPlayer,
+    required this.currentlyPlayingId,
+    required this.onPlayingStateChanged,
+  }) : super(key: key);
+
+  @override
+  State<AudioPlayerWidget> createState() => _AudioPlayerWidgetState();
+}
+
+class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
+  final ValueNotifier<Duration> _progressNotifier = ValueNotifier(Duration.zero);
+  StreamSubscription? _positionSubscription;
+  bool _isInitialized = false;
+  
+  // Memoize these widgets
+  final Map<bool, Widget> _playPauseIcons = {};
+  late final Widget _micIcon;
+
+  @override
+  void initState() {
+    super.initState();
+    _setupAudioPlayer();
+    
+    // Pre-build play/pause icons to avoid rebuilds 
+    _playPauseIcons[true] = Icon(
+      LucideIcons.pause,
+      color: widget.isMyMessage ? Colors.white : widget.primaryColor,
+      size: 18,
+    );
+    
+    _playPauseIcons[false] = Icon(
+      LucideIcons.play,
+      color: widget.isMyMessage ? Colors.white : widget.primaryColor,
+      size: 18,
+    );
+    
+    _micIcon = Icon(
+      Icons.mic,
+      size: 14,
+      color: widget.isMyMessage ? Colors.white.withOpacity(0.7) : Colors.grey.shade600,
+    );
+  }
+
+  @override
+  void dispose() {
+    _positionSubscription?.cancel();
+    _progressNotifier.dispose();
+    super.dispose();
+  }
+
+  void _setupAudioPlayer() {
+    if (widget.currentlyPlayingId == widget.messageId) {
+      // Subscribe to position updates
+      _positionSubscription = widget.audioPlayer.onPositionChanged.listen((position) {
+        _progressNotifier.value = position;
+      });
+
+      widget.audioPlayer.onPlayerComplete.listen((_) {
+        widget.onPlayingStateChanged(null);
+        _progressNotifier.value = Duration.zero;
+      });
+    }
+  }
+
+  Future<void> _handlePlayPause() async {
+    if (widget.currentlyPlayingId == widget.messageId) {
+      await widget.audioPlayer.stop();
+      widget.onPlayingStateChanged(null);
+      _progressNotifier.value = Duration.zero;
+    } else {
+      // Stop any currently playing audio
+      if (widget.currentlyPlayingId != null) {
+        await widget.audioPlayer.stop();
+      }
+
+      try {
+        widget.onPlayingStateChanged(widget.messageId);
+        await widget.audioPlayer.play(UrlSource(widget.audioUrl));
+        
+        // Setup new position subscription
+        _positionSubscription?.cancel();
+        _positionSubscription = widget.audioPlayer.onPositionChanged.listen((position) {
+          _progressNotifier.value = position;
+        });
+      } catch (e) {
+        debugPrint('Error playing audio: $e');
+        widget.onPlayingStateChanged(null);
+      }
+    }
+  }
+
+  String _formatTime(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(duration.inMinutes);
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return "$minutes:$seconds";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isPlaying = widget.currentlyPlayingId == widget.messageId;
+    final duration = widget.audioDuration != null 
+        ? Duration(seconds: widget.audioDuration!) 
+        : Duration.zero;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          InkWell(
+            onTap: _handlePlayPause,
+            borderRadius: BorderRadius.circular(30),
+            child: Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: (widget.isMyMessage ? Colors.white : widget.primaryColor).withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: _playPauseIcons[isPlaying] ?? _playPauseIcons[false]!,
+            ),
+          ),
+          SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: Container(
+                    height: 3,
+                    decoration: BoxDecoration(
+                      color: (widget.isMyMessage ? Colors.white : widget.primaryColor).withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    child: ValueListenableBuilder<Duration>(
+                      valueListenable: _progressNotifier,
+                      builder: (context, progress, _) {
+                        final double progressValue = duration.inMilliseconds > 0
+                            ? progress.inMilliseconds / duration.inMilliseconds
+                            : 0.0;
+                            
+                        return LinearProgressIndicator(
+                          value: isPlaying ? progressValue : 0.0,
+                          backgroundColor: Colors.transparent,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            widget.isMyMessage ? Colors.white : widget.primaryColor,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                SizedBox(height: 8),
+                Row(
+                  children: [
+                    _micIcon,
+                    SizedBox(width: 4),
+                    ValueListenableBuilder<Duration>(
+                      valueListenable: _progressNotifier,
+                      builder: (context, progress, _) {
+                        final displayDuration = isPlaying ? progress : duration;
+                        return Text(
+                          _formatTime(displayDuration),
+                          style: TextStyle(
+                            color: widget.isMyMessage ? Colors.white.withOpacity(0.9) : Colors.grey.shade600,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: 8),
+        ],
+      ),
+    );
+  }
+}
+
 class ChatDetailScreen extends StatefulWidget {
   final ChatRoom chatRoom;
   final bool isDoctor;
@@ -53,11 +400,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final AudioPlayer _audioPlayer = AudioPlayer();
   final AudioRecorder _audioRecorder = AudioRecorder();
   
+  // Convert _currentlyPlayingId to a ValueNotifier
+  final ValueNotifier<String?> _currentlyPlayingIdNotifier = ValueNotifier<String?>(null);
+  
   String _currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
   String? _receiverId;
   bool _isRecording = false;
-  int _recordDuration = 0;
-  String? _currentlyPlayingId;
   String? _currentRecordingPath;
   DateTime? _recordingStartTime;
   
@@ -86,6 +434,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _messageController.dispose();
     _audioPlayer.dispose();
     _audioRecorder.dispose();
+    _currentlyPlayingIdNotifier.dispose();
     super.dispose();
   }
   
@@ -1090,36 +1439,17 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         _isRecording = true;
         _currentRecordingPath = filePath;
         _recordingStartTime = DateTime.now();
-        _recordDuration = 0;
       });
-      
-      // Start timer to update recording duration
-      _updateRecordingDuration();
     } catch (e) {
       debugPrint('Error starting recording: $e');
       _showErrorSnackBar('Failed to start recording');
     }
   }
   
-  // Update recording duration every second
-  void _updateRecordingDuration() {
-    if (!_isRecording || _recordingStartTime == null) return;
-    
-    Future.delayed(Duration(seconds: 1), () {
-      if (mounted && _isRecording) {
-        setState(() {
-          _recordDuration++;
-        });
-        _updateRecordingDuration(); // Continue updating
-      }
-    });
-  }
-  
   Future<void> _stopRecordingAndSend() async {
     if (!_isRecording || _currentRecordingPath == null || _receiverId == null) {
       setState(() {
         _isRecording = false;
-        _recordDuration = 0;
       });
       return;
     }
@@ -1146,13 +1476,16 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             _showSendingIndicator(isAudio: true);
             
             try {
+              // Get audio duration using audioplayer
+              final duration = await _getDurationFromFile(audioFile);
+              
               // Upload and send audio message
               await _chatService.sendAudioMessage(
                 roomId: widget.chatRoom.id,
                 senderId: _currentUserId,
                 receiverId: _receiverId!,
                 audioFile: audioFile,
-                audioDuration: _recordDuration,
+                audioDuration: duration,
               );
             } catch (e) {
               debugPrint('Error sending audio message: $e');
@@ -1173,11 +1506,25 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     } catch (e) {
       debugPrint('Error stopping recording: $e');
       _showErrorSnackBar('Failed to stop recording');
-    } finally {
-      // Clear duration regardless of success/failure
-      setState(() {
-        _recordDuration = 0;
-      });
+    }
+  }
+  
+  // Add helper method to get audio duration
+  Future<int> _getDurationFromFile(File audioFile) async {
+    try {
+      // Create a temporary player to get duration
+      final tempPlayer = AudioPlayer();
+      await tempPlayer.setSourceDeviceFile(audioFile.path);
+      final duration = await tempPlayer.getDuration() ?? Duration.zero;
+      await tempPlayer.dispose();
+      return duration.inSeconds;
+    } catch (e) {
+      debugPrint('Error getting audio duration: $e');
+      // Fallback to recording time if available
+      if (_recordingStartTime != null) {
+        return DateTime.now().difference(_recordingStartTime!).inSeconds;
+      }
+      return 0;
     }
   }
   
@@ -1193,43 +1540,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       // Reset state regardless of result
       setState(() {
         _isRecording = false;
-        _recordDuration = 0;
         _recordingStartTime = null;
         _currentRecordingPath = null;
-      });
-    }
-  }
-  
-  Future<void> _playAudio(String audioUrl, String messageId) async {
-    if (_currentlyPlayingId == messageId) {
-      await _audioPlayer.stop();
-      setState(() {
-        _currentlyPlayingId = null;
-      });
-      return;
-    }
-    
-    // Stop any currently playing audio
-    if (_currentlyPlayingId != null) {
-      await _audioPlayer.stop();
-    }
-    
-    setState(() {
-      _currentlyPlayingId = messageId;
-    });
-    
-    try {
-      await _audioPlayer.play(UrlSource(audioUrl));
-      
-      _audioPlayer.onPlayerComplete.listen((event) {
-        setState(() {
-          _currentlyPlayingId = null;
-        });
-      });
-    } catch (e) {
-      _showErrorSnackBar('Failed to play audio');
-      setState(() {
-        _currentlyPlayingId = null;
       });
     }
   }
@@ -1468,32 +1780,37 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   );
                 }
                 
-                return ListView.builder(
-                  physics: BouncingScrollPhysics(),
-                  reverse: true,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    final message = messages[index];
-                    final isMyMessage = message.senderId == _currentUserId;
-                    
-                    // Add date header if needed
-                    Widget? dateHeader;
-                    if (index == messages.length - 1 || 
-                        !_isSameDay(messages[index].timestamp, messages[index + 1].timestamp)) {
-                      dateHeader = _buildDateHeader(messages[index].timestamp);
-                    }
-                    
-                    return Column(
-                      children: [
-                        if (dateHeader != null) dateHeader,
-                        AnimatedSwitcher(
-                          duration: Duration(milliseconds: 300),
-                          child: _buildMessageItem(message, isMyMessage),
-                        ),
-                      ],
-                    );
-                  },
+                return RepaintBoundary(
+                  child: ListView.builder(
+                    physics: BouncingScrollPhysics(),
+                    reverse: true,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    itemCount: messages.length,
+                    itemBuilder: (context, index) {
+                      final message = messages[index];
+                      final isMyMessage = message.senderId == _currentUserId;
+                      
+                      // Add date header if needed
+                      Widget? dateHeader;
+                      if (index == messages.length - 1 || 
+                          !_isSameDay(messages[index].timestamp, messages[index + 1].timestamp)) {
+                        dateHeader = _buildDateHeader(messages[index].timestamp);
+                      }
+                      
+                      return Column(
+                        key: ValueKey(message.id), // Add a key to each message item
+                        children: [
+                          if (dateHeader != null) dateHeader,
+                          RepaintBoundary( // Wrap in RepaintBoundary to isolate paint operations
+                            child: AnimatedSwitcher(
+                              duration: Duration(milliseconds: 300),
+                              child: _buildMessageItem(message, isMyMessage),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                 );
               },
             ),
@@ -1501,85 +1818,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           
           // Recording indicator
           if (_isRecording)
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-              child: Row(
-                children: [
-                  // Animated recording indicator
-                  AnimatedContainer(
-                    duration: Duration(milliseconds: 300),
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryPink.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: AnimatedContainer(
-                        duration: Duration(milliseconds: 500),
-                        width: 16,
-                        height: 16,
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryPink,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primaryPink.withOpacity(0.5),
-                              blurRadius: 10,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Recording audio message...',
-                          style: GoogleFonts.poppins(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primaryPink,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _formatTime(_recordDuration),
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: Colors.grey.shade700,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Send button
-                  IconButton(
-                    icon: Icon(LucideIcons.send),
-                    onPressed: _stopRecordingAndSend,
-                    color: widget.isDoctor ? AppColors.primaryPink : AppColors.primaryTeal,
-                    iconSize: 24,
-                    tooltip: 'Send audio message',
-                  ),
-                  // Cancel button
-                  IconButton(
-                    icon: Icon(LucideIcons.trash2),
-                    onPressed: _cancelRecording,
-                    color: Colors.red.shade400,
-                    iconSize: 24,
-                    tooltip: 'Cancel recording',
-                  ),
-                ],
-              ),
+            RecordingIndicator(
+              isDoctor: widget.isDoctor,
+              onSend: _stopRecordingAndSend,
+              onCancel: _cancelRecording,
             ),
           
           // Message input
@@ -2035,83 +2277,29 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         );
         
       case MessageType.audio:
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              InkWell(
-                onTap: () {
-                  if (message.fileUrl != null) {
-                    _playAudio(message.fileUrl!, message.id);
-                  }
-                },
-                borderRadius: BorderRadius.circular(30),
-                            child: Container(
-                              padding: EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                    color: (isMyMessage ? Colors.white : primaryColor).withOpacity(0.2),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                    _currentlyPlayingId == message.id
-                        ? LucideIcons.pause
-                        : LucideIcons.play,
-                    color: isMyMessage ? Colors.white : primaryColor,
-                    size: 18,
-                  ),
-                ),
-              ),
-              SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(2),
-                      child: Container(
-                        height: 3,
-                        decoration: BoxDecoration(
-                          color: (isMyMessage ? Colors.white : primaryColor).withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                        child: _currentlyPlayingId == message.id
-                            ? LinearProgressIndicator(
-                                backgroundColor: Colors.transparent,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  isMyMessage ? Colors.white : primaryColor,
-                                ),
-                              )
-                            : null,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.mic,
-                          size: 14,
-                          color: isMyMessage ? Colors.white.withOpacity(0.7) : Colors.grey.shade600,
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          message.audioDuration != null
-                              ? _formatTime(message.audioDuration!)
-                              : '0:00',
-                          style: TextStyle(
-                            color: isMyMessage ? Colors.white.withOpacity(0.9) : Colors.grey.shade600,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: 8),
-            ],
-          ),
+        if (message.fileUrl == null) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            child: Text('Audio unavailable', style: TextStyle(color: isMyMessage ? Colors.white : Colors.grey)),
+          );
+        }
+        
+        return ValueListenableBuilder<String?>(
+          valueListenable: _currentlyPlayingIdNotifier,
+          builder: (context, currentlyPlayingId, _) {
+            return AudioPlayerWidget(
+              messageId: message.id,
+              audioUrl: message.fileUrl!, // We already check above that this is not null
+              audioDuration: message.audioDuration,
+              isMyMessage: isMyMessage,
+              primaryColor: primaryColor,
+              audioPlayer: _audioPlayer,
+              currentlyPlayingId: currentlyPlayingId,
+              onPlayingStateChanged: (String? newPlayingId) {
+                _currentlyPlayingIdNotifier.value = newPlayingId;
+              },
+            );
+          },
         );
         
       case MessageType.document:
