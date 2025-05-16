@@ -354,107 +354,152 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
         final patientId = appointmentData['patientId'] as String?;
         
         if (patientId != null) {
-          // Get patient data
-          final patientSnapshot = await _firestore
-              .collection('users')
-              .doc(patientId)
-              .get();
+          try {
+            // Get patient data from the patients collection first (more reliable)
+            final patientProfileDoc = await _firestore
+                .collection('patients')
+                .doc(patientId)
+                .get();
+                
+            if (patientProfileDoc.exists) {
+              final patientProfileData = patientProfileDoc.data()!;
+              // Get patient display name
+              String patientName = patientProfileData['fullName'] ?? patientProfileData['name'] ?? 'Unknown';
               
-          if (patientSnapshot.exists) {
-            final patientData = patientSnapshot.data()!;
-            
-            // Get hospital data
-            String hospitalName = appointmentData['hospitalName'] ?? 'Unknown Hospital';
-            String hospitalLocation = 'Unknown Location';
-            
-            if (appointmentData.containsKey('hospitalId')) {
-              final hospitalSnapshot = await _firestore
-                  .collection('hospitals')
-                  .doc(appointmentData['hospitalId'])
-                  .get();
+              // Get and validate the profile image URL
+              String? profileImageUrl;
+              if (patientProfileData.containsKey('profileImageUrl') && 
+                  patientProfileData['profileImageUrl'] != null && 
+                  patientProfileData['profileImageUrl'].toString().isNotEmpty) {
+                profileImageUrl = _validateAndFixImageUrl(patientProfileData['profileImageUrl'].toString());
+                debugPrint('Found patient image URL: $profileImageUrl');
+              }
+              
+              // Fallback to the users collection if needed
+              if (!patientProfileDoc.exists) {
+                final userDoc = await _firestore
+                    .collection('users')
+                    .doc(patientId)
+                    .get();
+                    
+                if (userDoc.exists) {
+                  final userData = userDoc.data()!;
                   
-              if (hospitalSnapshot.exists) {
-                final hospitalData = hospitalSnapshot.data()!;
-                hospitalName = hospitalData['name'] ?? hospitalName;
-                hospitalLocation = hospitalData['city'] ?? hospitalLocation;
-              }
-            }
-            
-            // Format date from appointment
-            String formattedDate = 'Unknown Date';
-            if (appointmentData.containsKey('date') && appointmentData['date'] is String) {
-              // Handle string date format in DD/MM/YYYY format from appointment_booking_flow.dart
-              formattedDate = appointmentData['date'];
-            } else if (appointmentData.containsKey('createdAt') && appointmentData['createdAt'] is Timestamp) {
-              // Fallback to created timestamp
-              final timestamp = appointmentData['createdAt'] as Timestamp;
-              final date = timestamp.toDate();
-              formattedDate = '${date.day} ${_getMonthName(date.month)} ${date.year}';
-            }
-            
-            // Calculate last visit
-            String lastVisit = 'N/A';
-            DateTime? appointmentDateTime;
-            
-            // Try to parse the date string from the appointment
-            if (appointmentData.containsKey('date') && appointmentData['date'] is String) {
-              try {
-                // Parse date like "15/4/2023"
-                List<String> parts = appointmentData['date'].toString().split('/');
-                if (parts.length == 3) {
-                  appointmentDateTime = DateTime(
-                    int.parse(parts[2]), // year
-                    int.parse(parts[1]), // month
-                    int.parse(parts[0]), // day
-                  );
+                  if (patientName == 'Unknown') {
+                    patientName = userData['fullName'] ?? userData['name'] ?? 'Unknown';
+                  }
+                  
+                  // Try to get profile image if we don't have one yet
+                  if (profileImageUrl == null && 
+                      userData.containsKey('profileImageUrl') && 
+                      userData['profileImageUrl'] != null) {
+                    profileImageUrl = _validateAndFixImageUrl(userData['profileImageUrl'].toString());
+                    debugPrint('Found patient image from users collection: $profileImageUrl');
+                  }
                 }
-              } catch (e) {
-                debugPrint('Error parsing date: $e');
               }
-            }
-            
-            // If parsing failed, use createdAt as fallback
-            if (appointmentDateTime == null && appointmentData.containsKey('createdAt')) {
-              if (appointmentData['createdAt'] is Timestamp) {
-                appointmentDateTime = (appointmentData['createdAt'] as Timestamp).toDate();
-              }
-            }
-            
-            if (appointmentDateTime != null) {
-              final now = DateTime.now();
-              final difference = now.difference(appointmentDateTime);
               
-              if (difference.inDays == 0) {
-                lastVisit = 'Today';
-              } else if (difference.inDays == 1) {
-                lastVisit = 'Yesterday';
-              } else if (difference.inDays < 7) {
-                lastVisit = '${difference.inDays} days ago';
-              } else if (difference.inDays < 30) {
-                lastVisit = '${(difference.inDays / 7).floor()} weeks ago';
-              } else {
-                lastVisit = '${(difference.inDays / 30).floor()} months ago';
+              // Get hospital data
+              String hospitalName = appointmentData['hospitalName'] ?? 'Unknown Hospital';
+              String hospitalLocation = 'Unknown Location';
+              
+              if (appointmentData.containsKey('hospitalId')) {
+                final hospitalSnapshot = await _firestore
+                    .collection('hospitals')
+                    .doc(appointmentData['hospitalId'])
+                    .get();
+                    
+                if (hospitalSnapshot.exists) {
+                  final hospitalData = hospitalSnapshot.data()!;
+                  hospitalName = hospitalData['name'] ?? hospitalName;
+                  hospitalLocation = hospitalData['city'] ?? hospitalLocation;
+                }
               }
+              
+              // Format date from appointment
+              String formattedDate = 'Unknown Date';
+              if (appointmentData.containsKey('date') && appointmentData['date'] is String) {
+                // Handle string date format in DD/MM/YYYY format from appointment_booking_flow.dart
+                formattedDate = appointmentData['date'];
+              } else if (appointmentData.containsKey('createdAt') && appointmentData['createdAt'] is Timestamp) {
+                // Fallback to created timestamp
+                final timestamp = appointmentData['createdAt'] as Timestamp;
+                final date = timestamp.toDate();
+                formattedDate = '${date.day} ${_getMonthName(date.month)} ${date.year}';
+              }
+              
+              // Calculate last visit
+              String lastVisit = 'N/A';
+              DateTime? appointmentDateTime;
+              
+              // Try to parse the date string from the appointment
+              if (appointmentData.containsKey('date') && appointmentData['date'] is String) {
+                try {
+                  // Parse date like "15/4/2023"
+                  List<String> parts = appointmentData['date'].toString().split('/');
+                  if (parts.length == 3) {
+                    appointmentDateTime = DateTime(
+                      int.parse(parts[2]), // year
+                      int.parse(parts[1]), // month
+                      int.parse(parts[0]), // day
+                    );
+                  }
+                } catch (e) {
+                  debugPrint('Error parsing date: $e');
+                }
+              }
+              
+              // If parsing failed, use createdAt as fallback
+              if (appointmentDateTime == null && appointmentData.containsKey('createdAt')) {
+                if (appointmentData['createdAt'] is Timestamp) {
+                  appointmentDateTime = (appointmentData['createdAt'] as Timestamp).toDate();
+                }
+              }
+              
+              if (appointmentDateTime != null) {
+                final now = DateTime.now();
+                final difference = now.difference(appointmentDateTime);
+                
+                if (difference.inDays == 0) {
+                  lastVisit = 'Today';
+                } else if (difference.inDays == 1) {
+                  lastVisit = 'Yesterday';
+                } else if (difference.inDays < 7) {
+                  lastVisit = '${difference.inDays} days ago';
+                } else if (difference.inDays < 30) {
+                  lastVisit = '${(difference.inDays / 7).floor()} weeks ago';
+                } else {
+                  lastVisit = '${(difference.inDays / 30).floor()} months ago';
+                }
+              }
+              
+              // Get patient information for display
+              String patientAge = patientProfileData['age'] != null ? 
+                  '${patientProfileData['age']} Years' : 'Unknown';
+              String patientLocation = patientProfileData['city'] ?? 
+                  patientProfileData['address'] ?? 'Unknown';
+              
+              // Format data
+              newPatientsData.add({
+                "patientId": patientId,
+                "name": patientName,
+                "age": patientAge,
+                "location": patientLocation,
+                "image": profileImageUrl,
+                "lastVisit": lastVisit,
+                "condition": appointmentData['reason'] ?? appointmentData['diagnosis'] ?? 'General Checkup',
+                "appointment": {
+                  "id": appointmentDoc.id,
+                  "date": formattedDate,
+                  "time": appointmentData['time'] ?? appointmentData['timeSlot'] ?? 'Unknown Time',
+                  "hospital": "$hospitalName, $hospitalLocation",
+                  "reason": appointmentData['reason'] ?? 'Consultation',
+                  "status": appointmentData['status'] ?? 'Pending'
+                }
+              });
             }
-            
-            // Format data
-            newPatientsData.add({
-              "patientId": patientId,
-              "name": patientData['fullName'] ?? patientData['name'] ?? 'Unknown',
-              "age": patientData['age'] != null ? '${patientData['age']} Years' : 'Unknown',
-              "location": patientData['city'] ?? patientData['address'] ?? 'Unknown',
-              "image": patientData['profileImageUrl'] ?? '',
-              "lastVisit": lastVisit,
-              "condition": appointmentData['reason'] ?? appointmentData['diagnosis'] ?? 'General Checkup',
-              "appointment": {
-                "id": appointmentDoc.id,
-                "date": formattedDate,
-                "time": appointmentData['time'] ?? appointmentData['timeSlot'] ?? 'Unknown Time',
-                "hospital": "$hospitalName, $hospitalLocation",
-                "reason": appointmentData['reason'] ?? 'Consultation',
-                "status": appointmentData['status'] ?? 'Pending'
-              }
-            });
+          } catch (e) {
+            debugPrint('Error processing patient data: $e');
           }
         }
       }
@@ -1115,6 +1160,11 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
     final fontSize = screenWidth * 0.035;
     final padding = screenWidth * 0.04;
     
+    // Create value notifiers for image loading state
+    final ValueNotifier<bool> imageLoadingNotifier = ValueNotifier<bool>(true);
+    final ValueNotifier<bool> imageErrorNotifier = ValueNotifier<bool>(false);
+    final String? patientImageUrl = patient["image"];
+    
     return Container(
       margin: EdgeInsets.only(bottom: screenWidth * 0.035),
       decoration: BoxDecoration(
@@ -1175,11 +1225,39 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: patient["image"] != null && patient["image"].toString().isNotEmpty
+                          child: patientImageUrl != null && patientImageUrl.isNotEmpty
                               ? Image.network(
-                                  patient["image"],
+                                  patientImageUrl,
                                   fit: BoxFit.cover,
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) {
+                                      // Image is loaded - update loading state and return child
+                                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                                        imageLoadingNotifier.value = false;
+                                      });
+                                      return child;
+                                    } else {
+                                      // Image is still loading - show progress indicator
+                                      return Container(
+                                        color: AppTheme.primaryTeal.withOpacity(0.1),
+                                        alignment: Alignment.center,
+                                        child: CircularProgressIndicator(
+                                          color: AppTheme.primaryTeal,
+                                          value: loadingProgress.expectedTotalBytes != null
+                                              ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                              : null,
+                                          strokeWidth: 2,
+                                        ),
+                                      );
+                                    }
+                                  },
                                   errorBuilder: (context, error, stackTrace) {
+                                    debugPrint('Error loading patient image: $error');
+                                    // Update error state
+                                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                                      imageErrorNotifier.value = true;
+                                      imageLoadingNotifier.value = false;
+                                    });
                                     return Container(
                                       color: AppTheme.primaryTeal.withOpacity(0.1),
                                       alignment: Alignment.center,
@@ -1187,20 +1265,6 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
                                         Icons.person,
                                         size: 35,
                                         color: AppTheme.primaryTeal,
-                                      ),
-                                    );
-                                  },
-                                  loadingBuilder: (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return Container(
-                                      color: AppTheme.primaryTeal.withOpacity(0.1),
-                                      alignment: Alignment.center,
-                                      child: CircularProgressIndicator(
-                                        color: AppTheme.primaryTeal,
-                                        value: loadingProgress.expectedTotalBytes != null
-                                            ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                            : null,
-                                        strokeWidth: 2,
                                       ),
                                     );
                                   },
@@ -1793,5 +1857,30 @@ class _PatientsScreenState extends State<PatientsScreen> with SingleTickerProvid
         ),
       ],
     );
+  }
+
+  // Add this helper method to validate and fix image URLs
+  String? _validateAndFixImageUrl(String? url) {
+    if (url == null || url.isEmpty) return null;
+    
+    // Trim any whitespace
+    url = url.trim();
+    
+    // Check if URL starts with http:// or https://
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      // Try to fix if it's a firebase storage URL missing the protocol
+      if (url.contains('firebasestorage.googleapis.com')) {
+        return 'https://$url';
+      }
+      return null; // Can't fix, return null
+    }
+    
+    // Check for extra whitespace or quotes in the URL
+    if (url.contains(' ') || url.contains('"') || url.contains("'")) {
+      // Remove quotes and encode whitespace
+      url = url.replaceAll('"', '').replaceAll("'", '').replaceAll(' ', '%20');
+    }
+    
+    return url;
   }
 }
