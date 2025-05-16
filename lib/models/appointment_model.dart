@@ -11,6 +11,7 @@ class AppointmentModel {
   final String? prescription;
   final String? notes;
   final double? fee;
+  final String? patientImageUrl;
 
   AppointmentModel({
     required this.id,
@@ -23,6 +24,7 @@ class AppointmentModel {
     this.prescription,
     this.notes,
     this.fee,
+    this.patientImageUrl,
   });
 
   factory AppointmentModel.fromJson(Map<String, dynamic> json) {
@@ -137,6 +139,7 @@ class AppointmentModel {
       prescription: json['prescription'] as String?,
       notes: json['notes'] as String?,
       fee: json['fee'] != null ? (json['fee'] as num).toDouble() : null,
+      patientImageUrl: json['patientImageUrl'] as String?,
     );
   }
 
@@ -152,6 +155,7 @@ class AppointmentModel {
       'prescription': prescription,
       'notes': notes,
       'fee': fee,
+      'patientImageUrl': patientImageUrl,
     };
   }
 
