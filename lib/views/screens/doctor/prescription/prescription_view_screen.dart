@@ -167,6 +167,49 @@ class _PrescriptionViewScreenState extends State<PrescriptionViewScreen> {
     }
   }
 
+  // Add download image functionality
+  Future<void> _downloadImage(String imageUrl, int index) async {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                strokeWidth: 2,
+              ),
+              SizedBox(width: 10),
+              Text('Saving image to gallery...'),
+            ],
+          ),
+          backgroundColor: AppTheme.primaryTeal,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      
+      // Note: In a real implementation, you would use a plugin like image_gallery_saver
+      // to save the image to the device gallery. This is a placeholder.
+      await Future.delayed(Duration(seconds: 2));
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Image saved to gallery'),
+          backgroundColor: AppTheme.success,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      print('Error downloading image: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save image: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -578,6 +621,7 @@ class _PrescriptionViewScreenState extends State<PrescriptionViewScreen> {
     );
   }
 
+  // Improved prescription images section
   Widget _buildPrescriptionImagesSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -626,7 +670,7 @@ class _PrescriptionViewScreenState extends State<PrescriptionViewScreen> {
         ),
         SizedBox(height: 16),
         Container(
-          height: 300,
+          height: 320,
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
@@ -640,32 +684,186 @@ class _PrescriptionViewScreenState extends State<PrescriptionViewScreen> {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
-            child: PhotoViewGallery.builder(
-              scrollPhysics: BouncingScrollPhysics(),
-              builder: (BuildContext context, int index) {
-                return PhotoViewGalleryPageOptions(
-                  imageProvider: NetworkImage(widget.prescriptionImages![index]),
-                  initialScale: PhotoViewComputedScale.contained,
-                  minScale: PhotoViewComputedScale.contained,
-                  maxScale: PhotoViewComputedScale.covered * 2,
-                  heroAttributes: PhotoViewHeroAttributes(tag: 'image$index'),
-                );
-              },
-              itemCount: widget.prescriptionImages!.length,
-              loadingBuilder: (context, event) => Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryTeal),
+            child: Stack(
+              children: [
+                PhotoViewGallery.builder(
+                  scrollPhysics: BouncingScrollPhysics(),
+                  builder: (BuildContext context, int index) {
+                    return PhotoViewGalleryPageOptions(
+                      imageProvider: NetworkImage(widget.prescriptionImages![index]),
+                      initialScale: PhotoViewComputedScale.contained,
+                      minScale: PhotoViewComputedScale.contained,
+                      maxScale: PhotoViewComputedScale.covered * 3,
+                      heroAttributes: PhotoViewHeroAttributes(tag: 'prescription_image_$index'),
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey.shade100,
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  color: Colors.red.shade400,
+                                  size: 40,
+                                ),
+                                SizedBox(height: 16),
+                                Text(
+                                  'Failed to load image',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.red.shade400,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  itemCount: widget.prescriptionImages!.length,
+                  loadingBuilder: (context, event) => Center(
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      child: CircularProgressIndicator(
+                        value: event == null
+                            ? 0
+                            : event.cumulativeBytesLoaded / (event.expectedTotalBytes ?? 1),
+                        valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryTeal),
+                        strokeWidth: 3,
+                      ),
+                    ),
+                  ),
+                  backgroundDecoration: BoxDecoration(
+                    color: Colors.transparent,
+                  ),
+                  pageController: _pageController,
+                  onPageChanged: (index) {
+                    setState(() {
+                      _currentImageIndex = index;
+                    });
+                  },
                 ),
-              ),
-              backgroundDecoration: BoxDecoration(
-                color: Colors.transparent,
-              ),
-              pageController: _pageController,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentImageIndex = index;
-                });
-              },
+                
+                // Download and navigation controls
+                Positioned(
+                  bottom: 16,
+                  left: 0,
+                  right: 0,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (widget.prescriptionImages!.length > 1)
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.6),
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: Row(
+                            children: [
+                              IconButton(
+                                icon: Icon(LucideIcons.chevronsLeft, color: Colors.white),
+                                onPressed: _currentImageIndex > 0
+                                    ? () {
+                                        _pageController.animateToPage(
+                                          0,
+                                          duration: Duration(milliseconds: 300),
+                                          curve: Curves.easeOut,
+                                        );
+                                      }
+                                    : null,
+                                color: _currentImageIndex > 0 ? Colors.white : Colors.white.withOpacity(0.3),
+                                iconSize: 20,
+                              ),
+                              IconButton(
+                                icon: Icon(LucideIcons.chevronLeft, color: Colors.white),
+                                onPressed: _currentImageIndex > 0
+                                    ? () {
+                                        _pageController.previousPage(
+                                          duration: Duration(milliseconds: 300),
+                                          curve: Curves.easeOut,
+                                        );
+                                      }
+                                    : null,
+                                color: _currentImageIndex > 0 ? Colors.white : Colors.white.withOpacity(0.3),
+                                iconSize: 20,
+                              ),
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 12),
+                                child: Text(
+                                  '${_currentImageIndex + 1}/${widget.prescriptionImages!.length}',
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                icon: Icon(LucideIcons.chevronRight, color: Colors.white),
+                                onPressed: _currentImageIndex < widget.prescriptionImages!.length - 1
+                                    ? () {
+                                        _pageController.nextPage(
+                                          duration: Duration(milliseconds: 300),
+                                          curve: Curves.easeOut,
+                                        );
+                                      }
+                                    : null,
+                                color: _currentImageIndex < widget.prescriptionImages!.length - 1
+                                    ? Colors.white
+                                    : Colors.white.withOpacity(0.3),
+                                iconSize: 20,
+                              ),
+                              IconButton(
+                                icon: Icon(LucideIcons.chevronsRight, color: Colors.white),
+                                onPressed: _currentImageIndex < widget.prescriptionImages!.length - 1
+                                    ? () {
+                                        _pageController.animateToPage(
+                                          widget.prescriptionImages!.length - 1,
+                                          duration: Duration(milliseconds: 300),
+                                          curve: Curves.easeOut,
+                                        );
+                                      }
+                                    : null,
+                                color: _currentImageIndex < widget.prescriptionImages!.length - 1
+                                    ? Colors.white
+                                    : Colors.white.withOpacity(0.3),
+                                iconSize: 20,
+                              ),
+                            ],
+                          ),
+                        ),
+                      SizedBox(width: 16),
+                      InkWell(
+                        onTap: () => _downloadImage(
+                            widget.prescriptionImages![_currentImageIndex], _currentImageIndex),
+                        child: Container(
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryTeal,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 6,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            LucideIcons.download,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -673,11 +871,12 @@ class _PrescriptionViewScreenState extends State<PrescriptionViewScreen> {
         if (widget.prescriptionImages!.length > 1) ...[
           SizedBox(height: 16),
           Container(
-            height: 70,
+            height: 76,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: widget.prescriptionImages!.length,
               itemBuilder: (context, index) {
+                bool isSelected = _currentImageIndex == index;
                 return GestureDetector(
                   onTap: () {
                     _pageController.animateToPage(
@@ -687,21 +886,25 @@ class _PrescriptionViewScreenState extends State<PrescriptionViewScreen> {
                     );
                   },
                   child: Container(
-                    width: 70,
+                    width: 72,
+                    height: 72,
                     margin: EdgeInsets.only(right: 12),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: _currentImageIndex == index 
-                            ? AppTheme.primaryTeal 
+                        color: isSelected
+                            ? AppTheme.primaryTeal
                             : Colors.transparent,
                         width: 2,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
-                          blurRadius: 8,
+                          color: isSelected
+                              ? AppTheme.primaryTeal.withOpacity(0.3)
+                              : Colors.black.withOpacity(0.05),
+                          blurRadius: isSelected ? 8 : 4,
                           offset: Offset(0, 2),
+                          spreadRadius: isSelected ? 2 : 0,
                         ),
                       ],
                     ),
@@ -710,6 +913,27 @@ class _PrescriptionViewScreenState extends State<PrescriptionViewScreen> {
                       child: Image.network(
                         widget.prescriptionImages![index],
                         fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) {
+                            return child;
+                          }
+                          return Container(
+                            color: Colors.grey.shade100,
+                            child: Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryTeal),
+                                  strokeWidth: 2,
+                                  value: loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                      : null,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ),

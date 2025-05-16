@@ -212,15 +212,29 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
   // Method to pick images from gallery
   Future<void> _pickImages() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(
-      source: ImageSource.gallery,
+    
+    // Enable multi-image selection
+    final pickedFiles = await picker.pickMultiImage(
       imageQuality: 85,
     );
     
-    if (pickedFile != null) {
+    if (pickedFiles.isNotEmpty) {
       setState(() {
-        _selectedImages.add(File(pickedFile.path));
+        for (var pickedFile in pickedFiles) {
+          _selectedImages.add(File(pickedFile.path));
+        }
       });
+      
+      // Show success message for multiple images
+      if (pickedFiles.length > 1) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${pickedFiles.length} images selected'),
+            backgroundColor: AppTheme.success,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
   
@@ -236,11 +250,89 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
       setState(() {
         _selectedImages.add(File(pickedFile.path));
       });
+      
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Photo captured'),
+          backgroundColor: AppTheme.success,
+          duration: Duration(seconds: 2),
+        ),
+      );
     }
   }
   
-  // Method to save prescription
+  // View image fullscreen
+  void _viewImage(String? url, bool isLocalFile, int index) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            iconTheme: IconThemeData(color: Colors.white),
+            title: Text(
+              isLocalFile ? 'New Image ${index + 1}' : 'Image ${index + 1}',
+              style: GoogleFonts.poppins(color: Colors.white),
+            ),
+            actions: [
+              if (isLocalFile)
+                IconButton(
+                  icon: Icon(LucideIcons.trash2, color: Colors.red.shade400),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    setState(() {
+                      _selectedImages.removeAt(index);
+                    });
+                  },
+                ),
+              if (!isLocalFile)
+                IconButton(
+                  icon: Icon(LucideIcons.trash2, color: Colors.red.shade400),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    setState(() {
+                      _existingImageUrls.removeAt(index);
+                    });
+                  },
+                ),
+            ],
+          ),
+          body: Center(
+            child: InteractiveViewer(
+              panEnabled: true,
+              minScale: 0.5,
+              maxScale: 4,
+              child: isLocalFile
+                ? Image.file(
+                    File(url!),
+                    fit: BoxFit.contain,
+                  )
+                : Image.network(
+                    url!,
+                    fit: BoxFit.contain,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Center(
+                        child: CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                              : null,
+                          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryTeal),
+                        ),
+                      );
+                    },
+                  ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Updated method to save prescription with reliable file upload processing
   Future<void> _savePrescription() async {
+    // Validation check
     if (_prescriptionController.text.trim().isEmpty && 
         _selectedImages.isEmpty && 
         _existingImageUrls.isEmpty && 
@@ -255,57 +347,119 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
       return;
     }
     
+    // Set loading state
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
     });
     
     try {
       final String doctorId = FirebaseAuth.instance.currentUser!.uid;
-      final List<String> imageUrls = List.from(_existingImageUrls);
-      final List<String> voiceNoteUrls = List.from(_existingVoiceNoteUrls);
       
-      // Upload new images to Firebase Storage
+      // Create a local copy of existing URLs to avoid modification issues
+      final List<String> imageUrls = List<String>.from(_existingImageUrls);
+      final List<String> voiceNoteUrls = List<String>.from(_existingVoiceNoteUrls);
+      
+      // Process images one by one
       if (_selectedImages.isNotEmpty) {
-        for (File image in _selectedImages) {
-          final Reference ref = FirebaseStorage.instance
-              .ref()
-              .child('prescriptions')
-              .child(widget.appointmentId)
-              .child('images')
-              .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
+        for (int i = 0; i < _selectedImages.length; i++) {
+          if (!mounted) return;  // Check if still mounted before each operation
           
-          await ref.putFile(image);
-          final String downloadUrl = await ref.getDownloadURL();
-          imageUrls.add(downloadUrl);
+          final File imageFile = _selectedImages[i];
+          if (!(await imageFile.exists())) {
+            print('Image file does not exist: ${imageFile.path}');
+            continue;  // Skip this file
+          }
+          
+          try {
+            // Generate a unique file name with timestamp and index
+            final String fileName = 'image_${DateTime.now().millisecondsSinceEpoch}_$i.jpg';
+            
+            // Create a reference to the file location
+            final Reference storageRef = FirebaseStorage.instance
+                .ref()
+                .child('prescriptions')
+                .child(widget.appointmentId)
+                .child('images')
+                .child(fileName);
+                
+            // Create and execute the upload task
+            final TaskSnapshot uploadTask = await storageRef.putFile(
+              imageFile,
+              SettableMetadata(contentType: 'image/jpeg')
+            );
+            
+            // Get download URL only if upload was successful
+            if (uploadTask.state == TaskState.success) {
+              final String downloadUrl = await storageRef.getDownloadURL();
+              imageUrls.add(downloadUrl);
+              print('Successfully uploaded image #$i: $downloadUrl');
+            }
+          } catch (uploadError) {
+            print('Error uploading image #$i: $uploadError');
+            // Continue with next image
+          }
         }
       }
       
-      // Upload voice notes to Firebase Storage
+      // Process voice notes one by one
       if (_recordedVoiceNotes.isNotEmpty) {
-        for (File voiceNote in _recordedVoiceNotes) {
-          final Reference ref = FirebaseStorage.instance
-              .ref()
-              .child('prescriptions')
-              .child(widget.appointmentId)
-              .child('voice_notes')
-              .child('${DateTime.now().millisecondsSinceEpoch}.m4a');
+        for (int i = 0; i < _recordedVoiceNotes.length; i++) {
+          if (!mounted) return;  // Check if still mounted before each operation
           
-          await ref.putFile(voiceNote);
-          final String downloadUrl = await ref.getDownloadURL();
-          voiceNoteUrls.add(downloadUrl);
+          final File voiceFile = _recordedVoiceNotes[i];
+          if (!(await voiceFile.exists())) {
+            print('Voice file does not exist: ${voiceFile.path}');
+            continue;  // Skip this file
+          }
+          
+          try {
+            // Generate a unique file name with timestamp and index
+            final String fileName = 'voice_${DateTime.now().millisecondsSinceEpoch}_$i.m4a';
+            
+            // Create a reference to the file location
+            final Reference storageRef = FirebaseStorage.instance
+                .ref()
+                .child('prescriptions')
+                .child(widget.appointmentId)
+                .child('voice_notes')
+                .child(fileName);
+                
+            // Create and execute the upload task
+            final TaskSnapshot uploadTask = await storageRef.putFile(
+              voiceFile,
+              SettableMetadata(contentType: 'audio/m4a')
+            );
+            
+            // Get download URL only if upload was successful
+            if (uploadTask.state == TaskState.success) {
+              final String downloadUrl = await storageRef.getDownloadURL();
+              voiceNoteUrls.add(downloadUrl);
+              print('Successfully uploaded voice note #$i: $downloadUrl');
+            }
+          } catch (uploadError) {
+            print('Error uploading voice note #$i: $uploadError');
+            // Continue with next voice note
+          }
         }
       }
       
-      // Update appointment document in Firestore
-      await _firestore.collection('appointments').doc(widget.appointmentId).update({
+      // Final check to ensure we're still mounted before Firestore update
+      if (!mounted) return;
+      
+      // Prepare the data to update
+      final Map<String, dynamic> prescriptionData = {
         'prescription': _prescriptionController.text,
         'prescriptionImages': imageUrls,
         'voiceNotes': voiceNoteUrls,
         'prescriptionUpdatedAt': firestore.FieldValue.serverTimestamp(),
         'prescribedBy': doctorId,
-      });
+      };
       
-      // Show success message
+      // Update Firestore document
+      await _firestore.collection('appointments').doc(widget.appointmentId).update(prescriptionData);
+      
+      // Show success message and pop screen
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -313,20 +467,29 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pop(context, true); // Return true to indicate success
+        
+        // Return success and close screen
+        Navigator.pop(context, true);
       }
     } catch (e) {
-      print('Error saving prescription: $e');
+      // Handle any errors
+      print('Error in prescription saving process: $e');
+      
       if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error saving prescription: ${e.toString()}'),
+            content: Text('Failed to save prescription: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
       }
     } finally {
-      if (mounted) {
+      // Ensure loading state is reset if we're still showing this screen
+      if (mounted && _isLoading) {
         setState(() {
           _isLoading = false;
         });
@@ -561,6 +724,291 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
         _playbackPosition = Duration.zero;
       });
     }
+  }
+
+  // Updated UI for displaying existing images with improved layout
+  Widget _buildExistingImagesSection(double screenWidth, double screenHeight) {
+    if (_existingImageUrls.isEmpty) return SizedBox.shrink();
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Existing Images',
+              style: GoogleFonts.poppins(
+                fontSize: screenWidth * 0.04,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.darkText,
+              ),
+            ),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryTeal.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '${_existingImageUrls.length} images',
+                style: GoogleFonts.poppins(
+                  fontSize: screenWidth * 0.035,
+                  color: AppTheme.primaryTeal,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: screenHeight * 0.015),
+        Container(
+          height: screenHeight * 0.15,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: _existingImageUrls.length,
+            itemBuilder: (context, index) {
+              double itemWidth = screenWidth * 0.3;
+              return Container(
+                width: itemWidth,
+                margin: EdgeInsets.only(right: screenWidth * 0.03),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    GestureDetector(
+                      onTap: () => _viewImage(_existingImageUrls[index], false, index),
+                      child: Hero(
+                        tag: 'existing_image_$index',
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            _existingImageUrls[index],
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) {
+                                return child;
+                              }
+                              return Container(
+                                color: Colors.grey.shade100,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    value: loadingProgress.expectedTotalBytes != null
+                                        ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                        : null,
+                                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryTeal),
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _existingImageUrls.removeAt(index);
+                          });
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(screenWidth * 0.015),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.9),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: screenWidth * 0.04,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 8,
+                      left: 8,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Image ${index + 1}',
+                          style: GoogleFonts.poppins(
+                            fontSize: screenWidth * 0.03,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Updated UI for displaying newly selected images with improved layout
+  Widget _buildSelectedImagesSection(double screenWidth, double screenHeight) {
+    if (_selectedImages.isEmpty) return SizedBox.shrink();
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'New Images',
+              style: GoogleFonts.poppins(
+                fontSize: screenWidth * 0.04,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.darkText,
+              ),
+            ),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppTheme.success.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '${_selectedImages.length} images',
+                style: GoogleFonts.poppins(
+                  fontSize: screenWidth * 0.035,
+                  color: AppTheme.success,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: screenHeight * 0.015),
+        Container(
+          height: screenHeight * 0.15,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: _selectedImages.length,
+            itemBuilder: (context, index) {
+              double itemWidth = screenWidth * 0.3;
+              return Container(
+                width: itemWidth,
+                margin: EdgeInsets.only(right: screenWidth * 0.03),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    GestureDetector(
+                      onTap: () => _viewImage(_selectedImages[index].path, true, index),
+                      child: Hero(
+                        tag: 'new_image_$index',
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.file(
+                            _selectedImages[index],
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedImages.removeAt(index);
+                          });
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(screenWidth * 0.015),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.9),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: screenWidth * 0.04,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 8,
+                      left: 8,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'New ${index + 1}',
+                          style: GoogleFonts.poppins(
+                            fontSize: screenWidth * 0.03,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -916,7 +1364,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
                         Expanded(
                           child: ElevatedButton.icon(
                             onPressed: _pickImages,
-                            icon: Icon(LucideIcons.image),
+                            icon: Icon(LucideIcons.images),
                             label: Text(
                               'Gallery',
                               style: GoogleFonts.poppins(
@@ -941,173 +1389,15 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
                     SizedBox(height: screenSize.height * 0.025),
                     
                     // Display existing images with improved layout
-                    if (_existingImageUrls.isNotEmpty) ...[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Existing Images',
-                            style: GoogleFonts.poppins(
-                              fontSize: screenSize.width * 0.04,
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.darkText,
-                            ),
-                          ),
-                          Text(
-                            '${_existingImageUrls.length} images',
-                            style: GoogleFonts.poppins(
-                              fontSize: screenSize.width * 0.035,
-                              color: AppTheme.mediumText,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: screenSize.height * 0.015),
-                      Container(
-                        height: screenSize.height * 0.15,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _existingImageUrls.length,
-                          itemBuilder: (context, index) {
-                            double itemWidth = screenSize.width * 0.3;
-                            return Container(
-                              width: itemWidth,
-                              margin: EdgeInsets.only(right: screenSize.width * 0.03),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 8,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Image.network(
-                                      _existingImageUrls[index],
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 8,
-                                    right: 8,
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          _existingImageUrls.removeAt(index);
-                                        });
-                                      },
-                                      child: Container(
-                                        padding: EdgeInsets.all(screenSize.width * 0.015),
-                                        decoration: BoxDecoration(
-                                          color: Colors.red.withOpacity(0.9),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                          Icons.close,
-                                          color: Colors.white,
-                                          size: screenSize.width * 0.04,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      SizedBox(height: screenSize.height * 0.025),
-                    ],
+                    if (_existingImageUrls.isNotEmpty) 
+                      _buildExistingImagesSection(screenSize.width, screenSize.height),
                     
-                    // Display newly selected images
-                    if (_selectedImages.isNotEmpty) ...[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'New Images',
-                            style: GoogleFonts.poppins(
-                              fontSize: screenSize.width * 0.04,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF2C3E50),
-                            ),
-                          ),
-                          Text(
-                            '${_selectedImages.length} images',
-                            style: GoogleFonts.poppins(
-                              fontSize: screenSize.width * 0.035,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: screenSize.height * 0.015),
-                      Container(
-                        height: screenSize.height * 0.15,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _selectedImages.length,
-                          itemBuilder: (context, index) {
-                            double itemWidth = screenSize.width * 0.3;
-                            return Container(
-                              width: itemWidth,
-                              margin: EdgeInsets.only(right: screenSize.width * 0.03),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 8,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Image.file(
-                                      _selectedImages[index],
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 8,
-                                    right: 8,
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          _selectedImages.removeAt(index);
-                                        });
-                                      },
-                                      child: Container(
-                                        padding: EdgeInsets.all(screenSize.width * 0.015),
-                                        decoration: BoxDecoration(
-                                          color: Colors.red.withOpacity(0.9),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                          Icons.close,
-                                          color: Colors.white,
-                                          size: screenSize.width * 0.04,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
+                    if (_existingImageUrls.isNotEmpty && _selectedImages.isNotEmpty)
+                      SizedBox(height: screenSize.height * 0.025),
+                    
+                    // Display newly selected images with improved layout
+                    if (_selectedImages.isNotEmpty)
+                      _buildSelectedImagesSection(screenSize.width, screenSize.height),
                     
                     SizedBox(height: 20),
                     
