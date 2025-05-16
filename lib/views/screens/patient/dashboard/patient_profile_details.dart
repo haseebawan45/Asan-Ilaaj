@@ -8,7 +8,6 @@ import 'package:path/path.dart' as path;
 import 'package:image_picker/image_picker.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
-import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:file_selector/file_selector.dart';
 
 import 'package:intl/intl.dart';
@@ -857,39 +856,8 @@ class _PatientDetailProfileScreenState extends State<PatientDetailProfileScreen>
   }
 
   void _viewDocument(String url) {
-    if (url.toLowerCase().endsWith('.pdf')) {
-      // Open PDF in external app instead of built-in viewer
-      _openDocumentInExternalApp(url);
-    } else {
-      // View Image - keep using internal viewer
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => Scaffold(
-            appBar: AppBar(
-              title: Text(
-                'Medical Report',
-                style: GoogleFonts.poppins(),
-              ),
-            ),
-            body: PhotoViewGallery.builder(
-              itemCount: 1,
-              builder: (context, index) {
-                return PhotoViewGalleryPageOptions(
-                  imageProvider: NetworkImage(url),
-                  minScale: PhotoViewComputedScale.contained,
-                  maxScale: PhotoViewComputedScale.covered * 2,
-                );
-              },
-              scrollPhysics: const BouncingScrollPhysics(),
-              backgroundDecoration: const BoxDecoration(
-                color: Colors.black,
-              ),
-            ),
-          ),
-        ),
-      );
-    }
+    // Always open documents in external app for better performance and smaller app size
+    _openDocumentInExternalApp(url);
   }
 
   Future<void> _openDocumentInExternalApp(String url) async {
@@ -907,7 +875,7 @@ class _PatientDetailProfileScreenState extends State<PatientDetailProfileScreen>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Could not open document. Please install a PDF reader app.'),
+              content: Text('Could not open document. Please install a suitable viewer app.'),
               behavior: SnackBarBehavior.floating,
             ),
           );
