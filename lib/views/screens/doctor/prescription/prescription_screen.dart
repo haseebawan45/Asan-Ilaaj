@@ -539,7 +539,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
     if (pickedFiles.isNotEmpty) {
       setState(() {
         for (var pickedFile in pickedFiles) {
-          _selectedImages.add(File(pickedFile.path));
+        _selectedImages.add(File(pickedFile.path));
         }
       });
       
@@ -695,10 +695,10 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
             
             // Create a reference to the file location
             final Reference storageRef = FirebaseStorage.instance
-                .ref()
-                .child('prescriptions')
-                .child(widget.appointmentId)
-                .child('images')
+              .ref()
+              .child('prescriptions')
+              .child(widget.appointmentId)
+              .child('images')
                 .child(fileName);
                 
             // Create and execute the upload task
@@ -710,7 +710,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
             // Get download URL only if upload was successful
             if (uploadTask.state == TaskState.success) {
               final String downloadUrl = await storageRef.getDownloadURL();
-              imageUrls.add(downloadUrl);
+          imageUrls.add(downloadUrl);
               print('Successfully uploaded image #$i: $downloadUrl');
             }
           } catch (uploadError) {
@@ -773,7 +773,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
             // Get download URL only if upload was successful
             if (uploadTask.state == TaskState.success) {
               final String downloadUrl = await storageRef.getDownloadURL();
-              voiceNoteUrls.add(downloadUrl);
+          voiceNoteUrls.add(downloadUrl);
               print('Successfully uploaded voice note #$i: $downloadUrl');
               successCount++;
             } else {
@@ -973,14 +973,14 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
       } else {
         print('Error: No path returned from recorder.stop()');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
               content: Text('Recording failed: Could not save audio file'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
     } catch (e) {
       print('Error stopping recording: $e');
       if (!mounted) return;
@@ -1244,7 +1244,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
                       right: 8,
                       child: GestureDetector(
                         onTap: () {
-                          setState(() {
+      setState(() {
                             _selectedImages.removeAt(index);
                           });
                         },
@@ -1949,11 +1949,11 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
                       ),
                       SizedBox(height: screenSize.height * 0.015),
                       ListView.builder(
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemCount: _existingVoiceNoteUrls.length,
-                        itemBuilder: (context, index) {
-                          final url = _existingVoiceNoteUrls[index];
+                            shrinkWrap: true,
+                            physics: NeverScrollableScrollPhysics(),
+                            itemCount: _existingVoiceNoteUrls.length,
+                            itemBuilder: (context, index) {
+                              final url = _existingVoiceNoteUrls[index];
                           // Use the new AudioPlayerWidget
                           return AudioPlayerWidget(
                             source: url,
