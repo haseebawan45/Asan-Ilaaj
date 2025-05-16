@@ -35,7 +35,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
   StreamSubscription? _positionSubscription;
   StreamSubscription? _durationSubscription;
   StreamSubscription? _playerStateSubscription;
-  
+
   @override
   void initState() {
     super.initState();
@@ -65,11 +65,11 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
       
       _playerStateSubscription = _audioPlayer.onPlayerStateChanged.listen((state) {
         if (mounted) {
-          setState(() {
+      setState(() {
             _isPlaying = state == PlayerState.playing;
             if (state == PlayerState.completed) {
               _position = _duration;
-              _isPlaying = false;
+        _isPlaying = false;
             }
           });
         }
@@ -78,7 +78,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
       // If it's a URL, we need to check its validity
       if (widget.isUrl) {
         if (!widget.source.startsWith('http')) {
-          setState(() {
+        setState(() {
             _hasError = true;
             _errorMessage = 'Invalid URL format';
             _isLoading = false;
@@ -141,7 +141,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
       await _audioPlayer.seek(position);
     }
   }
-  
+
   @override
   void dispose() {
     _positionSubscription?.cancel();
@@ -157,7 +157,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
     final seconds = twoDigits(duration.inSeconds.remainder(60));
     return "$minutes:$seconds";
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -631,8 +631,8 @@ class _PrescriptionViewScreenState extends State<PrescriptionViewScreen> {
                   decoration: BoxDecoration(
                     color: AppTheme.primaryTeal.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
+            ),
+            child: Text(
                     'MEDICATION DETAILS',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
@@ -644,12 +644,12 @@ class _PrescriptionViewScreenState extends State<PrescriptionViewScreen> {
                 ),
                 SizedBox(height: 12),
                 Text(
-                  widget.prescription!,
-                  style: GoogleFonts.poppins(
-                    fontSize: 15,
-                    color: AppTheme.darkText,
-                    height: 1.6,
-                  ),
+              widget.prescription!,
+              style: GoogleFonts.poppins(
+                fontSize: 15,
+                color: AppTheme.darkText,
+                height: 1.6,
+              ),
                 ),
               ],
             ),
@@ -674,64 +674,64 @@ class _PrescriptionViewScreenState extends State<PrescriptionViewScreen> {
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryTeal.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  LucideIcons.mic,
-                  color: AppTheme.primaryTeal,
-                  size: 20,
-                ),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryTeal.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
               ),
-              SizedBox(width: 12),
-              Text(
-                'Voice Notes',
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.darkText,
-                ),
+              child: Icon(
+                LucideIcons.mic,
+                color: AppTheme.primaryTeal,
+                size: 20,
               ),
-              Spacer(),
-              Container(
+            ),
+            SizedBox(width: 12),
+            Text(
+              'Voice Notes',
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.darkText,
+              ),
+            ),
+            Spacer(),
+            Container(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryTeal.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${widget.voiceNotes!.length} notes',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: AppTheme.primaryTeal,
-                  ),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryTeal.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '${widget.voiceNotes!.length} notes',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.primaryTeal,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
+        ),
           SizedBox(height: 16),
           Divider(color: Colors.grey.shade200),
-          SizedBox(height: 16),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            itemCount: widget.voiceNotes!.length,
-            itemBuilder: (context, index) {
-              final url = widget.voiceNotes![index];
-              final bool isValidUrl = url.startsWith('http://') || url.startsWith('https://');
-              
-              if (!isValidUrl) {
-                return SizedBox.shrink(); // Skip invalid URLs
-              }
-              
+        SizedBox(height: 16),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: NeverScrollableScrollPhysics(),
+          itemCount: widget.voiceNotes!.length,
+          itemBuilder: (context, index) {
+            final url = widget.voiceNotes![index];
+            final bool isValidUrl = url.startsWith('http://') || url.startsWith('https://');
+            
+            if (!isValidUrl) {
+              return SizedBox.shrink(); // Skip invalid URLs
+            }
+            
               // Use the AudioPlayerWidget for better UI and interaction
               return AudioPlayerWidget(
                 source: url,
@@ -747,93 +747,93 @@ class _PrescriptionViewScreenState extends State<PrescriptionViewScreen> {
 
   // Improved prescription images section
   Widget _buildPrescriptionImagesSection() {
-    return Container(
+            return Container(
       padding: EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
             color: Colors.black.withOpacity(0.04),
             blurRadius: 12,
             offset: Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
+                child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryTeal.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                LucideIcons.image,
+                color: AppTheme.primaryTeal,
+                size: 20,
+              ),
+            ),
+            SizedBox(width: 12),
+            Text(
+              'Prescription Images',
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.darkText,
+              ),
+            ),
+            Spacer(),
+            if (widget.prescriptionImages!.length > 1)
               Container(
-                padding: EdgeInsets.all(10),
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppTheme.primaryTeal.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                child: Icon(
-                  LucideIcons.image,
-                  color: AppTheme.primaryTeal,
-                  size: 20,
-                ),
-              ),
-              SizedBox(width: 12),
-              Text(
-                'Prescription Images',
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.darkText,
-                ),
-              ),
-              Spacer(),
-              if (widget.prescriptionImages!.length > 1)
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryTeal.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '${_currentImageIndex + 1}/${widget.prescriptionImages!.length}',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: AppTheme.primaryTeal,
-                    ),
+                child: Text(
+                  '${_currentImageIndex + 1}/${widget.prescriptionImages!.length}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.primaryTeal,
                   ),
                 ),
-            ],
-          ),
-          SizedBox(height: 16),
+              ),
+          ],
+        ),
+        SizedBox(height: 16),
           Divider(color: Colors.grey.shade200),
           SizedBox(height: 16),
           
           // Main image view with improved UI
-          Container(
+        Container(
             height: 350,
-            decoration: BoxDecoration(
+          decoration: BoxDecoration(
               color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
                   color: Colors.black.withOpacity(0.06),
-                  blurRadius: 12,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
               child: Stack(
                 children: [
                   PhotoViewGallery.builder(
-                    scrollPhysics: BouncingScrollPhysics(),
-                    builder: (BuildContext context, int index) {
-                      return PhotoViewGalleryPageOptions(
-                        imageProvider: NetworkImage(widget.prescriptionImages![index]),
-                        initialScale: PhotoViewComputedScale.contained,
-                        minScale: PhotoViewComputedScale.contained,
+              scrollPhysics: BouncingScrollPhysics(),
+              builder: (BuildContext context, int index) {
+                return PhotoViewGalleryPageOptions(
+                  imageProvider: NetworkImage(widget.prescriptionImages![index]),
+                  initialScale: PhotoViewComputedScale.contained,
+                  minScale: PhotoViewComputedScale.contained,
                         maxScale: PhotoViewComputedScale.covered * 3,
                         heroAttributes: PhotoViewHeroAttributes(tag: 'prescription_image_$index'),
                         errorBuilder: (context, error, stackTrace) {
@@ -862,32 +862,32 @@ class _PrescriptionViewScreenState extends State<PrescriptionViewScreen> {
                             ),
                           );
                         },
-                      );
-                    },
-                    itemCount: widget.prescriptionImages!.length,
-                    loadingBuilder: (context, event) => Center(
+                );
+              },
+              itemCount: widget.prescriptionImages!.length,
+              loadingBuilder: (context, event) => Center(
                       child: Container(
                         width: 36,
                         height: 36,
-                        child: CircularProgressIndicator(
+                child: CircularProgressIndicator(
                           value: event == null
                               ? 0
                               : event.cumulativeBytesLoaded / (event.expectedTotalBytes ?? 1),
-                          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryTeal),
+                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryTeal),
                           strokeWidth: 3,
                         ),
-                      ),
-                    ),
-                    backgroundDecoration: BoxDecoration(
-                      color: Colors.transparent,
-                    ),
-                    pageController: _pageController,
-                    onPageChanged: (index) {
-                      setState(() {
-                        _currentImageIndex = index;
-                      });
-                    },
-                  ),
+                ),
+              ),
+              backgroundDecoration: BoxDecoration(
+                color: Colors.transparent,
+              ),
+              pageController: _pageController,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentImageIndex = index;
+                });
+              },
+            ),
                   
                   // Top indicator for zooming instructions
                   Positioned(
@@ -1042,10 +1042,10 @@ class _PrescriptionViewScreenState extends State<PrescriptionViewScreen> {
                   ),
                 ],
               ),
-            ),
           ),
-          
-          if (widget.prescriptionImages!.length > 1) ...[
+        ),
+        
+        if (widget.prescriptionImages!.length > 1) ...[
             SizedBox(height: 20),
             Text(
               'All Images',
@@ -1056,52 +1056,52 @@ class _PrescriptionViewScreenState extends State<PrescriptionViewScreen> {
               ),
             ),
             SizedBox(height: 12),
-            Container(
+          Container(
               height: 80,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: widget.prescriptionImages!.length,
-                itemBuilder: (context, index) {
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: widget.prescriptionImages!.length,
+              itemBuilder: (context, index) {
                   bool isSelected = _currentImageIndex == index;
-                  return GestureDetector(
-                    onTap: () {
-                      _pageController.animateToPage(
-                        index,
-                        duration: Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
-                    },
-                    child: Container(
+                return GestureDetector(
+                  onTap: () {
+                    _pageController.animateToPage(
+                      index,
+                      duration: Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                  child: Container(
                       width: 80,
                       height: 80,
-                      margin: EdgeInsets.only(right: 12),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
+                    margin: EdgeInsets.only(right: 12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
                           color: isSelected
-                              ? AppTheme.primaryTeal
-                              : Colors.transparent,
+                            ? AppTheme.primaryTeal 
+                            : Colors.transparent,
                           width: 2.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
+                      ),
+                      boxShadow: [
+                        BoxShadow(
                             color: isSelected
                                 ? AppTheme.primaryTeal.withOpacity(0.3)
                                 : Colors.black.withOpacity(0.05),
                             blurRadius: isSelected ? 8 : 4,
-                            offset: Offset(0, 2),
+                          offset: Offset(0, 2),
                             spreadRadius: isSelected ? 2 : 0,
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
                             Image.network(
-                              widget.prescriptionImages![index],
-                              fit: BoxFit.cover,
+                        widget.prescriptionImages![index],
+                        fit: BoxFit.cover,
                               loadingBuilder: (context, child, loadingProgress) {
                                 if (loadingProgress == null) {
                                   return child;
@@ -1118,11 +1118,11 @@ class _PrescriptionViewScreenState extends State<PrescriptionViewScreen> {
                                         value: loadingProgress.expectedTotalBytes != null
                                             ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
                                             : null,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
+                      ),
+                    ),
+                  ),
+                );
+              },
                             ),
                             if (isSelected)
                               Positioned.fill(
@@ -1150,9 +1150,9 @@ class _PrescriptionViewScreenState extends State<PrescriptionViewScreen> {
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                              ),
-                            ),
-                          ],
+            ),
+          ),
+        ],
                         ),
                       ),
                     ),
