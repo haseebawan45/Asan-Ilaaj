@@ -440,26 +440,32 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         });
         
-                  // Get patient details
-            String patientName = "Patient";
-            String? patientImageUrl;
+        // Get patient details
+        String patientName = "Patient";
+        String? patientImageUrl;
+        
+        if (processedData['patientId'] != null) {
+          try {
+            // Only check the patients collection for profile images
+            final patientDoc = await _firestore
+                .collection('patients')
+                .doc(processedData['patientId'])
+                .get();
             
-            if (processedData['patientId'] != null) {
-              try {
-                final patientDoc = await _firestore
-                    .collection('users')
-                    .doc(processedData['patientId'])
-                    .get();
-                
-                if (patientDoc.exists) {
-                  final patientData = patientDoc.data();
-                  patientName = patientData?['fullName'] ?? "Patient";
-                  patientImageUrl = patientData?['profileImageUrl'];
-                }
-              } catch (e) {
-                print('Error fetching patient data: $e');
+            if (patientDoc.exists) {
+              final patientData = patientDoc.data();
+              patientName = patientData?['fullName'] ?? patientData?['name'] ?? "Patient";
+              
+              // Try to get profile image URL
+              if (patientData?['profileImageUrl'] != null && patientData!['profileImageUrl'].toString().isNotEmpty) {
+                patientImageUrl = _validateAndFixImageUrl(patientData['profileImageUrl'].toString());
+                print('Found patient image: $patientImageUrl');
               }
             }
+          } catch (e) {
+            print('Error fetching patient data: $e');
+          }
+        }
         
         // Get hospital details - check multiple possible field names
         String hospitalName = "Not specified";
@@ -587,6 +593,31 @@ class _HomeScreenState extends State<HomeScreen> {
         UIHelper.applyPinkStatusBar();
       }
     }
+  }
+
+  // Helper method to validate and fix image URLs
+  String? _validateAndFixImageUrl(String? url) {
+    if (url == null || url.isEmpty) return null;
+    
+    // Trim any whitespace
+    url = url.trim();
+    
+    // Check if URL starts with http:// or https://
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      // Try to fix if it's a firebase storage URL missing the protocol
+      if (url.contains('firebasestorage.googleapis.com')) {
+        return 'https://$url';
+      }
+      return null; // Can't fix, return null
+    }
+    
+    // Check for extra whitespace or quotes in the URL
+    if (url.contains(' ') || url.contains('"') || url.contains("'")) {
+      // Remove quotes and encode whitespace
+      url = url.replaceAll('"', '').replaceAll("'", '').replaceAll(' ', '%20');
+    }
+    
+    return url;
   }
 
   Future<void> _refreshData() async {
@@ -1556,6 +1587,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final double detailSpacing = screenWidth * 0.02;
     final bool isSmallScreen = screenWidth < 360;
     
+    // Track if we're trying to load the image
+    final ValueNotifier<bool> imageLoadingNotifier = ValueNotifier<bool>(true);
+    final ValueNotifier<bool> imageErrorNotifier = ValueNotifier<bool>(false);
+    final String? patientImageUrl = appointment['patientImageUrl'];
+    
     return GestureDetector(
       onTap: () {
         // Navigate to appointment details using the helper method for status bar preservation
@@ -1605,7 +1641,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               child: Row(
                 children: [
-                  // Patient image
+                  // Patient image with proper error handling
                   Container(
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
@@ -1617,19 +1653,82 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     ),
-                    child: CircleAvatar(
-                      radius: screenWidth * imageSizeMultiplier,
-                      backgroundColor: Colors.grey.shade200,
-                      backgroundImage: appointment['patientImageUrl'] != null && appointment['patientImageUrl'].toString().isNotEmpty
-                          ? NetworkImage(appointment['patientImageUrl'])
-                          : null,
-                      child: appointment['patientImageUrl'] == null || appointment['patientImageUrl'].toString().isEmpty
-                          ? Icon(
-                              LucideIcons.user,
-                              size: 24,
-                              color: Colors.grey.shade400,
-                            )
-                          : null,
+                    child: ValueListenableBuilder<bool>(
+                      valueListenable: imageErrorNotifier,
+                      builder: (context, hasError, _) {
+                        return ValueListenableBuilder<bool>(
+                          valueListenable: imageLoadingNotifier,
+                          builder: (context, isLoading, _) {
+                            // Check if we have a valid image URL to display
+                            final bool shouldShowImage = !hasError && patientImageUrl != null && patientImageUrl.isNotEmpty;
+                            
+                            if (shouldShowImage) {
+                              // Use a separate Image widget to properly track loading state
+                              return Container(
+                                width: screenWidth * imageSizeMultiplier * 2,
+                                height: screenWidth * imageSizeMultiplier * 2,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.grey.shade200,
+                                ),
+                                child: ClipOval(
+                                  child: Image.network(
+                                    patientImageUrl!,
+                                    fit: BoxFit.cover,
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) {
+                                        // Image is loaded
+                                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                                          imageLoadingNotifier.value = false;
+                                        });
+                                        return child;
+                                      } else {
+                                        // Image is still loading
+                                        return Center(
+                                          child: SizedBox(
+                                            width: screenWidth * imageSizeMultiplier * 0.6,
+                                            height: screenWidth * imageSizeMultiplier * 0.6,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                              value: loadingProgress.expectedTotalBytes != null
+                                                ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                                : null,
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    errorBuilder: (context, error, stackTrace) {
+                                      print('Error loading patient image: $error');
+                                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                                        imageErrorNotifier.value = true;
+                                        imageLoadingNotifier.value = false;
+                                      });
+                                      return Icon(
+                                        LucideIcons.user,
+                                        size: screenWidth * imageSizeMultiplier * 0.7,
+                                        color: Colors.grey.shade400,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              );
+                            } else {
+                              // Show default avatar with user icon
+                              return CircleAvatar(
+                                radius: screenWidth * imageSizeMultiplier,
+                                backgroundColor: Colors.grey.shade200,
+                                child: Icon(
+                                  LucideIcons.user,
+                                  size: screenWidth * imageSizeMultiplier * 0.7,
+                                  color: Colors.grey.shade400,
+                                ),
+                              );
+                            }
+                          },
+                        );
+                      },
                     ),
                   ),
                   SizedBox(width: horizontalPadding * 0.6),

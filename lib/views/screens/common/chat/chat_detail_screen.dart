@@ -1953,34 +1953,34 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 
                 return RepaintBoundary(
                   child: ListView.builder(
-                    physics: BouncingScrollPhysics(),
-                    reverse: true,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                    itemCount: messages.length,
-                    itemBuilder: (context, index) {
-                      final message = messages[index];
-                      final isMyMessage = message.senderId == _currentUserId;
-                      
-                      // Add date header if needed
-                      Widget? dateHeader;
-                      if (index == messages.length - 1 || 
-                          !_isSameDay(messages[index].timestamp, messages[index + 1].timestamp)) {
-                        dateHeader = _buildDateHeader(messages[index].timestamp);
-                      }
-                      
-                      return Column(
+                  physics: BouncingScrollPhysics(),
+                  reverse: true,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final message = messages[index];
+                    final isMyMessage = message.senderId == _currentUserId;
+                    
+                    // Add date header if needed
+                    Widget? dateHeader;
+                    if (index == messages.length - 1 || 
+                        !_isSameDay(messages[index].timestamp, messages[index + 1].timestamp)) {
+                      dateHeader = _buildDateHeader(messages[index].timestamp);
+                    }
+                    
+                    return Column(
                         key: ValueKey(message.id), // Add a key to each message item
-                        children: [
-                          if (dateHeader != null) dateHeader,
+                      children: [
+                        if (dateHeader != null) dateHeader,
                           RepaintBoundary( // Wrap in RepaintBoundary to isolate paint operations
                             child: AnimatedSwitcher(
-                              duration: Duration(milliseconds: 300),
-                              child: _buildMessageItem(message, isMyMessage),
+                          duration: Duration(milliseconds: 300),
+                          child: _buildMessageItem(message, isMyMessage),
                             ),
-                          ),
-                        ],
-                      );
-                    },
+                        ),
+                      ],
+                    );
+                  },
                   ),
                 );
               },
@@ -2449,7 +2449,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         
       case MessageType.audio:
         if (message.fileUrl == null) {
-          return Container(
+        return Container(
             padding: const EdgeInsets.all(16),
             child: Text('Audio unavailable', style: TextStyle(color: isMyMessage ? Colors.white : Colors.grey)),
           );
