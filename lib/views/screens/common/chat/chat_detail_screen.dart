@@ -13,6 +13,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:healthcare/utils/app_theme.dart';
+import 'package:record/record.dart';
 
 import '../../../../models/chat_message_model.dart';
 import '../../../../models/chat_room_model.dart';
@@ -50,12 +51,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final ChatService _chatService = ChatService();
   final TextEditingController _messageController = TextEditingController();
   final AudioPlayer _audioPlayer = AudioPlayer();
+  final AudioRecorder _audioRecorder = AudioRecorder();
   
   String _currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
   String? _receiverId;
   bool _isRecording = false;
   int _recordDuration = 0;
   String? _currentlyPlayingId;
+  String? _currentRecordingPath;
+  DateTime? _recordingStartTime;
   
   // Streams for online status
   Stream<bool>? _contactOnlineStatusStream;
@@ -81,6 +85,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _updateUserOnlineStatus(false);
     _messageController.dispose();
     _audioPlayer.dispose();
+    _audioRecorder.dispose();
     super.dispose();
   }
   
@@ -529,7 +534,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     }
   }
   
-  void _showSendingIndicator({bool isDocument = false}) {
+  void _showSendingIndicator({bool isDocument = false, bool isAudio = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -543,7 +548,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               ),
             ),
             SizedBox(width: 16),
-            Text(isDocument ? 'Sending document...' : 'Sending image...'),
+            Text(
+              isDocument ? 'Sending document...' : 
+              isAudio ? 'Sending audio message...' : 'Sending image...'),
           ],
         ),
         duration: Duration(seconds: 2),
@@ -1053,38 +1060,144 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
   
-  void _startRecording() {
-    // This would start recording, but for now we'll just show a dialog
-    // The record package might need configuration specific to your needs
-    setState(() {
-      _isRecording = true;
-      _recordDuration = 0;
-    });
+  Future<void> _startRecording() async {
+    // Check if microphone permission is granted
+    final status = await Permission.microphone.request();
+    if (status != PermissionStatus.granted) {
+      _showErrorSnackBar('Microphone permission is required to record audio');
+      return;
+    }
     
-    // Simulated timer for recording duration
-    Stream.periodic(const Duration(seconds: 1)).listen((event) {
-      if (_isRecording) {
+    try {
+      // Get the temporary directory
+      final directory = await getTemporaryDirectory();
+      
+      // Use .m4a format for better compatibility
+      final filePath = '${directory.path}/audio_message_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      
+      // Start recording with compatible settings
+      await _audioRecorder.start(
+        const RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          bitRate: 128000,
+          sampleRate: 44100,
+          numChannels: 2,
+        ),
+        path: filePath,
+      );
+      
+      setState(() {
+        _isRecording = true;
+        _currentRecordingPath = filePath;
+        _recordingStartTime = DateTime.now();
+        _recordDuration = 0;
+      });
+      
+      // Start timer to update recording duration
+      _updateRecordingDuration();
+    } catch (e) {
+      debugPrint('Error starting recording: $e');
+      _showErrorSnackBar('Failed to start recording');
+    }
+  }
+  
+  // Update recording duration every second
+  void _updateRecordingDuration() {
+    if (!_isRecording || _recordingStartTime == null) return;
+    
+    Future.delayed(Duration(seconds: 1), () {
+      if (mounted && _isRecording) {
         setState(() {
           _recordDuration++;
         });
+        _updateRecordingDuration(); // Continue updating
       }
     });
   }
   
-  void _stopRecordingAndSend() {
-    // Simulate sending an audio message
-    _showErrorSnackBar('Audio message sent (simulated)');
-    setState(() {
-      _isRecording = false;
-      _recordDuration = 0;
-    });
+  Future<void> _stopRecordingAndSend() async {
+    if (!_isRecording || _currentRecordingPath == null || _receiverId == null) {
+      setState(() {
+        _isRecording = false;
+        _recordDuration = 0;
+      });
+      return;
+    }
+    
+    try {
+      // Stop recording
+      final path = await _audioRecorder.stop();
+      
+      // Reset recording state immediately to improve UI responsiveness
+      setState(() {
+        _isRecording = false;
+        _recordingStartTime = null;
+      });
+      
+      if (path != null) {
+        // Create file object
+        File audioFile = File(path);
+        
+        // Verify file exists and has content
+        if (await audioFile.exists()) {
+          int fileSize = await audioFile.length();
+          if (fileSize > 0) {
+            // Show sending indicator
+            _showSendingIndicator(isAudio: true);
+            
+            try {
+              // Upload and send audio message
+              await _chatService.sendAudioMessage(
+                roomId: widget.chatRoom.id,
+                senderId: _currentUserId,
+                receiverId: _receiverId!,
+                audioFile: audioFile,
+                audioDuration: _recordDuration,
+              );
+            } catch (e) {
+              debugPrint('Error sending audio message: $e');
+              _showErrorSnackBar('Failed to send audio message');
+            }
+          } else {
+            debugPrint('Warning: Recorded file exists but is empty: $path');
+            _showErrorSnackBar('Recording failed: Audio file is empty');
+          }
+        } else {
+          debugPrint('Warning: Recorded file does not exist: $path');
+          _showErrorSnackBar('Recording failed: Audio file not found');
+        }
+      } else {
+        debugPrint('Error: No path returned from recorder.stop()');
+        _showErrorSnackBar('Failed to record audio');
+      }
+    } catch (e) {
+      debugPrint('Error stopping recording: $e');
+      _showErrorSnackBar('Failed to stop recording');
+    } finally {
+      // Clear duration regardless of success/failure
+      setState(() {
+        _recordDuration = 0;
+      });
+    }
   }
   
-  void _cancelRecording() {
-    setState(() {
-      _isRecording = false;
-      _recordDuration = 0;
-    });
+  Future<void> _cancelRecording() async {
+    try {
+      if (_isRecording) {
+        // Stop the recorder but discard the file
+        await _audioRecorder.stop();
+      }
+    } catch (e) {
+      debugPrint('Error canceling recording: $e');
+    } finally {
+      // Reset state regardless of result
+      setState(() {
+        _isRecording = false;
+        _recordDuration = 0;
+        _recordingStartTime = null;
+        _currentRecordingPath = null;
+      });
+    }
   }
   
   Future<void> _playAudio(String audioUrl, String messageId) async {
@@ -1396,26 +1509,33 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               ),
               child: Row(
                 children: [
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryPink.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      Container(
+                  // Animated recording indicator
+                  AnimatedContainer(
+                    duration: Duration(milliseconds: 300),
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryPink.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: AnimatedContainer(
+                        duration: Duration(milliseconds: 500),
                         width: 16,
                         height: 16,
                         decoration: BoxDecoration(
                           color: AppColors.primaryPink,
                           shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primaryPink.withOpacity(0.5),
+                              blurRadius: 10,
+                              spreadRadius: 2,
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -1423,9 +1543,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Recording...',
-                          style: TextStyle(
-                            fontSize: 16,
+                          'Recording audio message...',
+                          style: GoogleFonts.poppins(
+                            fontSize: 15,
                             fontWeight: FontWeight.w600,
                             color: AppColors.primaryPink,
                           ),
@@ -1433,23 +1553,30 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                         const SizedBox(height: 4),
                         Text(
                           _formatTime(_recordDuration),
-                          style: TextStyle(
+                          style: GoogleFonts.poppins(
                             fontSize: 14,
-                            color: AppColors.lightText,
+                            color: Colors.grey.shade700,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
                   ),
+                  // Send button
                   IconButton(
-                    icon: const Icon(Icons.send),
+                    icon: Icon(LucideIcons.send),
                     onPressed: _stopRecordingAndSend,
                     color: widget.isDoctor ? AppColors.primaryPink : AppColors.primaryTeal,
+                    iconSize: 24,
+                    tooltip: 'Send audio message',
                   ),
+                  // Cancel button
                   IconButton(
-                    icon: const Icon(Icons.delete),
+                    icon: Icon(LucideIcons.trash2),
                     onPressed: _cancelRecording,
-                    color: AppColors.primaryPink,
+                    color: Colors.red.shade400,
+                    iconSize: 24,
+                    tooltip: 'Cancel recording',
                   ),
                 ],
               ),
@@ -1526,11 +1653,23 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                         ),
                         Padding(
                           padding: const EdgeInsets.only(right: 8.0),
-                          child: IconButton(
-                            icon: Icon(LucideIcons.mic),
-                            onPressed: _startRecording,
-                            color: AppColors.lightText,
-                            iconSize: 20,
+                          child: Material(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(20),
+                            child: InkWell(
+                              onTap: _startRecording,
+                              borderRadius: BorderRadius.circular(20),
+                              child: Container(
+                                padding: EdgeInsets.all(10),
+                                child: Icon(
+                                  LucideIcons.mic,
+                                  color: widget.isDoctor 
+                                      ? AppColors.primaryPink.withOpacity(0.8)
+                                      : AppColors.primaryTeal.withOpacity(0.8),
+                                  size: 20,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -1908,13 +2047,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   }
                 },
                 borderRadius: BorderRadius.circular(30),
-                child: Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
+                            child: Container(
+                              padding: EdgeInsets.all(8),
+                              decoration: BoxDecoration(
                     color: (isMyMessage ? Colors.white : primaryColor).withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
                     _currentlyPlayingId == message.id
                         ? LucideIcons.pause
                         : LucideIcons.play,
@@ -2022,7 +2161,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               IconButton(
                 icon: Icon(
                   LucideIcons.externalLink,
-                  size: 20,
+                                size: 20,
                   color: isMyMessage ? Colors.white : primaryColor,
                 ),
                 onPressed: () {
@@ -2093,9 +2232,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 color: Colors.black.withOpacity(0.1),
                 blurRadius: 10,
                 offset: Offset(0, -5),
-              ),
-            ],
-          ),
+                        ),
+                      ],
+                    ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
