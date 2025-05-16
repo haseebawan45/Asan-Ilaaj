@@ -8,7 +8,6 @@ import 'package:healthcare/services/financial_repository.dart';
 import 'package:healthcare/models/transaction_model.dart';
 import 'package:healthcare/utils/navigation_helper.dart';
 import 'package:healthcare/views/screens/bottom_navigation_bar.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:healthcare/utils/app_theme.dart';
 
 class FinancialAnalyticsScreen extends StatefulWidget {
@@ -259,84 +258,69 @@ class _FinancialAnalyticsScreenState extends State<FinancialAnalyticsScreen> wit
             : RefreshIndicator(
                 onRefresh: _loadFinancialData,
                 color: AppTheme.primaryPink,
-                child: Stack(
+                child: Column(
                   children: [
-                    SafeArea(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    Container(
+                      padding: EdgeInsets.only(
+                        top: MediaQuery.of(context).padding.top,
+                        left: 20,
+                        right: 20,
+                        bottom: 20,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryPink,
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(30),
+                          bottomRight: Radius.circular(30),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          // Custom app bar with matching style
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryPink,
-                              borderRadius: BorderRadius.only(
-                                bottomLeft: Radius.circular(20),
-                                bottomRight: Radius.circular(20),
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppTheme.primaryPink.withOpacity(0.3),
-                                  spreadRadius: 0,
-                                  blurRadius: 10,
-                                  offset: Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                // Back button
-                                GestureDetector(
-                                  onTap: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                  child: Icon(
-                                    Icons.arrow_back,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                
-                                // Title
-                                Text(
-                                  "Financial Analytics",
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                
-                                // Empty container to balance the layout
-                                SizedBox(width: 24),
-                              ],
+                          // Back button
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).pop();
+                            },
+                            child: Icon(
+                              Icons.arrow_back,
+                              color: Colors.white,
                             ),
                           ),
                           
-                          // Content
-                          Expanded(
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
-                  child: !_hasFinancialData 
-                    ? _buildNoDataView()
-                    : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSectionHeader("Financial Summary"),
-                        const SizedBox(height: 20),
-                        _buildFinanceCards(),
-                        const SizedBox(height: 25),
-                        _buildInsightsCard(),
-                        const SizedBox(height: 25),
-                        _buildSectionHeader("Earnings Breakdown"),
-                        const SizedBox(height: 20),
-                        _buildEarningsChart(),
-                      ],
-                    ),
+                          // Title
+                          Text(
+                            "Financial Analytics",
+                            style: GoogleFonts.poppins(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
                             ),
                           ),
+                          
+                          // Empty container to balance the layout
+                          SizedBox(width: 24),
                         ],
+                      ),
+                    ),
+                    
+                    // Content
+                    Expanded(
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
+                        child: !_hasFinancialData 
+                          ? _buildNoDataView()
+                          : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSectionHeader("Financial Summary"),
+                              const SizedBox(height: 20),
+                              _buildFinanceCards(),
+                              const SizedBox(height: 25),
+                              _buildInsightsCard(),
+                            ],
+                          ),
                       ),
                     ),
                   ],
@@ -664,199 +648,6 @@ class _FinancialAnalyticsScreenState extends State<FinancialAnalyticsScreen> wit
                 ),
               ),
             ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEarningsChart() {
-    // Filter only months with data
-    final monthsWithData = _monthlyData
-        .asMap()
-        .entries
-        .where((entry) => (entry.value['income'] as num) > 0)
-        .toList();
-    
-    if (monthsWithData.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Text(
-            "No earnings data available for the current year",
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              color: AppTheme.mediumText,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      );
-    }
-    
-    // Create bar chart data
-    List<BarChartGroupData> barGroups = [];
-    
-    for (var entry in monthsWithData) {
-      final monthIndex = entry.value['month'] as int;
-      final income = (entry.value['income'] as num).toDouble();
-      final expense = (entry.value['expense'] as num).toDouble();
-      
-      barGroups.add(
-        BarChartGroupData(
-          x: monthIndex,
-          barRods: [
-            BarChartRodData(
-              toY: income,
-              color: AppTheme.primaryTeal,
-              width: 15,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            BarChartRodData(
-              toY: expense,
-              color: AppTheme.error,
-              width: 15,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ],
-        ),
-      );
-    }
-    
-    return SlideTransition(
-      position: Tween<Offset>(
-        begin: const Offset(0, 0.5),
-        end: Offset.zero,
-      ).animate(CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.3, 0.9, curve: Curves.easeOut),
-      )),
-      child: FadeTransition(
-        opacity: Tween<double>(
-          begin: 0.0,
-          end: 1.0,
-        ).animate(CurvedAnimation(
-          parent: _controller,
-          curve: const Interval(0.3, 0.9, curve: Curves.easeOut),
-        )),
-        child: Container(
-          height: 300,
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Monthly Income vs Expenses",
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.darkText,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  _buildLegendItem(AppTheme.primaryTeal, "Income"),
-                  const SizedBox(width: 20),
-                  _buildLegendItem(AppTheme.error, "Expenses"),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Expanded(
-                child: BarChart(
-                  BarChartData(
-                    barGroups: barGroups,
-                    titlesData: FlTitlesData(
-                      rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      leftTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 40,
-                          getTitlesWidget: (value, meta) {
-                            if (value == 0) return const SizedBox.shrink();
-                            final formatter = NumberFormat.compact();
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 8.0),
-                              child: Text(
-                                formatter.format(value),
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  color: AppTheme.mediumText,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          getTitlesWidget: (value, meta) {
-                            final monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
-                              child: Text(
-                                monthNames[value.toInt()],
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppTheme.mediumText,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    borderData: FlBorderData(show: false),
-                    gridData: FlGridData(
-                      horizontalInterval: 5000,
-                      getDrawingHorizontalLine: (value) => FlLine(
-                        color: Colors.grey.shade200,
-                        strokeWidth: 1,
-                      ),
-                      drawVerticalLine: false,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-  
-  Widget _buildLegendItem(Color color, String label) {
-    return Row(
-      children: [
-        Container(
-          width: 14,
-          height: 14,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(3),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            color: AppTheme.mediumText,
           ),
         ),
       ],
