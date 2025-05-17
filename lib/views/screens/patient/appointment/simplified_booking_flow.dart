@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'dart:async'; // Import for timer functionality
 import 'package:healthcare/utils/app_theme.dart'; // Import AppTheme
+import '../../../../widgets/firebase_cached_image.dart';
 
 // Responsive utilities
 class ResponsiveUtils {
@@ -976,39 +977,38 @@ class _SimplifiedBookingFlowState extends State<SimplifiedBookingFlow> with Sing
                   height: 70,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: primaryColor.withOpacity(0.2),
-                        blurRadius: 12,
-                        offset: Offset(0, 4),
-                        spreadRadius: 2,
-                      ),
-                    ],
                     border: Border.all(
                       color: Colors.white,
                       width: 3,
                     ),
-                    image: (_doctorData.containsKey('profileImageUrl') && _doctorData['profileImageUrl'] != null) 
-                          ? DecorationImage(
-                              image: NetworkImage(_doctorData['profileImageUrl']),
-                      fit: BoxFit.cover,
-                            )
-                          : (_doctorData.containsKey('image') && _doctorData['image'] != null)
-                              ? DecorationImage(
-                                  image: NetworkImage(_doctorData['image']),
-                                  fit: BoxFit.cover,
-                                )
-                              : null,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: Offset(0, 5),
+                      ),
+                    ],
                   ),
-                  child: (!_doctorData.containsKey('profileImageUrl') || _doctorData['profileImageUrl'] == null) &&
-                        (!_doctorData.containsKey('image') || _doctorData['image'] == null)
-                      ? Icon(
-                          Icons.person,
-                          color: Colors.grey.shade400,
-                          size: 30,
-                        )
-                      : null,
+                  child: ClipOval(
+                    child: (_doctorData.containsKey('profileImageUrl') && _doctorData['profileImageUrl'] != null)
+                        ? FirebaseCachedImage(
+                            imageUrl: _doctorData['profileImageUrl'],
+                            fit: BoxFit.cover,
+                          )
+                        : (_doctorData.containsKey('image') && _doctorData['image'] != null)
+                            ? FirebaseCachedImage(
+                                imageUrl: _doctorData['image'],
+                                fit: BoxFit.cover,
+                              )
+                            : Container(
+                                color: Colors.grey[200],
+                                child: Icon(
+                                  Icons.person,
+                                  color: Colors.grey.shade400,
+                                  size: 30,
+                                ),
+                              ),
+                  ),
                 ),
                 SizedBox(width: padding * 0.8),
                 

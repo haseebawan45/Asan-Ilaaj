@@ -14,6 +14,7 @@ import 'package:healthcare/models/chat_room_model.dart';
 import 'package:healthcare/services/chat_service.dart';
 import 'package:healthcare/utils/app_theme.dart';
 import 'package:healthcare/views/screens/patient/appointment/simplified_booking_flow.dart';
+import '../../../widgets/firebase_cached_image.dart';
 
 class AppointmentDetailsScreen extends StatefulWidget {
   final String? appointmentId;
@@ -1000,17 +1001,13 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                 ),
               ],
             ),
-            child: CircleAvatar(
-              radius: 35,
-              backgroundImage: _getDoctorImageProvider(),
-              backgroundColor: Colors.grey.shade200,
-              onBackgroundImageError: (exception, stackTrace) {
-                print('Error loading doctor image: $exception');
-                // If network image fails, fall back to asset image
-                setState(() {
-                  _doctorImage = 'assets/images/User.png';
-                });
-              },
+            child: ClipOval(
+              child: Container(
+                width: 70,
+                height: 70,
+                color: Colors.grey.shade200,
+                child: _getDoctorImageWidget(),
+              ),
             ),
           ),
           SizedBox(width: 15),
@@ -1063,17 +1060,27 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
     );
   }
 
-  // Helper method to get doctor image provider with proper error handling
-  ImageProvider _getDoctorImageProvider() {
+  // Then revert _getDoctorImageProvider to a simpler version that only decides between asset and network image
+  Widget _getDoctorImageWidget() {
     if (_doctorImage.startsWith('assets')) {
-      return AssetImage(_doctorImage);
+      return Image.asset(
+        _doctorImage,
+        fit: BoxFit.cover,
+        width: 70,
+        height: 70,
+      );
     } else {
-      try {
-        return NetworkImage(_doctorImage);
-      } catch (e) {
-        print('Error creating NetworkImage provider: $e');
-        return AssetImage('assets/images/User.png');
-      }
+      return FirebaseCachedImage(
+        imageUrl: _doctorImage,
+        width: 70,
+        height: 70,
+        fit: BoxFit.cover,
+        errorWidget: Icon(
+          LucideIcons.user,
+          size: 30,
+          color: Colors.grey.shade500,
+        ),
+      );
     }
   }
 
@@ -1110,26 +1117,13 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
                 ),
               ],
             ),
-            child: CircleAvatar(
-              radius: 35,
-              backgroundImage: _getPatientImageProvider(),
-              backgroundColor: Colors.grey.shade200,
-              onBackgroundImageError: (exception, stackTrace) {
-                print('Error loading patient image: $exception');
-                setState(() {
-                  // Remove the problematic image URL
-                  _appointmentData['patientImageUrl'] = '';
-                });
-              },
-              child: (!_appointmentData.containsKey('patientImageUrl') || 
-                     _appointmentData['patientImageUrl'] == null ||
-                     _appointmentData['patientImageUrl'].toString().isEmpty)
-                ? Icon(
-                LucideIcons.user,
-                    color: Colors.grey.shade500,
-                    size: 28,
-                  )
-                : null,
+            child: ClipOval(
+              child: Container(
+                width: 70,
+                height: 70,
+                color: Colors.grey.shade200,
+                child: _getPatientImageWidget(),
+              ),
             ),
           ),
           SizedBox(width: 15),
@@ -1321,26 +1315,30 @@ class _AppointmentDetailsScreenState extends State<AppointmentDetailsScreen> {
     );
   }
   
-  // Helper method to get patient image provider with proper error handling
-  ImageProvider? _getPatientImageProvider() {
+  // Add a new method for patient image
+  Widget _getPatientImageWidget() {
     if (!_appointmentData.containsKey('patientImageUrl') || 
         _appointmentData['patientImageUrl'] == null ||
         _appointmentData['patientImageUrl'].toString().isEmpty) {
-      return null;
+      return Icon(
+        LucideIcons.user,
+        color: Colors.grey.shade500,
+        size: 30,
+      );
     }
     
-    try {
-      String imageUrl = _appointmentData['patientImageUrl'].toString();
-      // Retry loading if the URL doesn't start with http or https
-      if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
-        print('Invalid patient image URL format: $imageUrl');
-        return null;
-      }
-      return NetworkImage(imageUrl);
-    } catch (e) {
-      print('Error creating patient image provider: $e');
-      return null;
-    }
+    String imageUrl = _appointmentData['patientImageUrl'].toString();
+    return FirebaseCachedImage(
+      imageUrl: imageUrl,
+      width: 70,
+      height: 70,
+      fit: BoxFit.cover,
+      errorWidget: Icon(
+        LucideIcons.user,
+        size: 30,
+        color: Colors.grey.shade500,
+      ),
+    );
   }
 
   Widget _buildHospitalSection() {

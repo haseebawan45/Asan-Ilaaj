@@ -17,6 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../../../../services/cache_service.dart';
 import 'package:healthcare/utils/app_theme.dart';
+import '../../../../widgets/firebase_cached_image.dart';
 
 class PatientMenuScreen extends StatefulWidget {
   final String name;
@@ -394,18 +395,18 @@ class _PatientMenuScreenState extends State<PatientMenuScreen> {
                                           ],
                                         ),
                                         child: CircleAvatar(
-                                          radius: screenSize.width * 0.1,
-                                          backgroundColor: Colors.white,
-                                          child: profileImageUrl != null && profileImageUrl!.isNotEmpty
-                                              ? CircleAvatar(
-                                                  radius: screenSize.width * 0.1,
-                                                  backgroundImage: NetworkImage(profileImageUrl!),
-                                                )
-                                              : Icon(
-                                                  LucideIcons.user,
-                                                  size: screenSize.width * 0.06,
-                                                  color: Colors.grey.shade400,
+                                          radius: 50,
+                                          backgroundColor: Colors.grey[200],
+                                          child: profileImageUrl != null
+                                            ? ClipOval(
+                                                child: FirebaseCachedImage(
+                                                  imageUrl: profileImageUrl!,
+                                                  width: 100,
+                                                  height: 100,
+                                                  circular: true,
                                                 ),
+                                              )
+                                            : Icon(Icons.person, size: 50, color: Colors.grey[400]),
                                         ),
                                       ),
                                     ),

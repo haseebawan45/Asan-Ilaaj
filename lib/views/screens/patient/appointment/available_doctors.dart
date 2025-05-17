@@ -9,6 +9,7 @@ import 'package:healthcare/views/screens/patient/appointment/simplified_booking_
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import '../../../../widgets/firebase_cached_image.dart';
 
 class DoctorsScreen extends StatefulWidget {
   final String? specialty;
@@ -1561,9 +1562,11 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
                             ),
                           ),
                           child: doctor["profileImageUrl"] != null && doctor["profileImageUrl"].toString().isNotEmpty
-                              ? CircleAvatar(
-                                  radius: width * 0.085,
-                                  backgroundImage: NetworkImage(doctor["profileImageUrl"]),
+                              ? FirebaseCachedImage(
+                                  imageUrl: doctor["profileImageUrl"],
+                                  width: width * 0.16, 
+                                  height: width * 0.16,
+                                  circular: true,
                                 )
                               : Icon(
                                   LucideIcons.user,

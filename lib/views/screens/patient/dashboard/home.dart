@@ -25,6 +25,7 @@ import 'package:healthcare/views/screens/common/chat/chat_list_screen.dart';
 import 'package:healthcare/views/screens/patient/nursing/home_nursing_services.dart';
 import 'package:healthcare/utils/app_theme.dart';
 import 'package:healthcare/views/screens/common/signin.dart';
+import '../../../../widgets/firebase_cached_image.dart';
 
 // Disease category model
 class DiseaseCategory {
@@ -1302,10 +1303,21 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> with SingleTicker
                     tag: 'profileImageHeader',
                     child: CircleAvatar(
                       radius: screenSize.width * 0.07,
-                      backgroundColor: Colors.white,
-                      backgroundImage: profileImageUrl != null
-                          ? NetworkImage(profileImageUrl!)
-                          : AssetImage('assets/images/User.png') as ImageProvider,
+                      backgroundColor: Colors.grey[200],
+                      child: profileImageUrl != null && profileImageUrl!.isNotEmpty
+                          ? ClipOval(
+                              child: FirebaseCachedImage(
+                                imageUrl: profileImageUrl!,
+                                width: screenSize.width * 0.14,
+                                height: screenSize.width * 0.14,
+                                circular: true,
+                              ),
+                            )
+                          : Icon(
+                              LucideIcons.user,
+                              size: screenSize.width * 0.05,
+                              color: Colors.grey[400],
+                            ),
                     ),
                   ),
                 ),
@@ -2380,9 +2392,20 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> with SingleTicker
                     ),
                     child: CircleAvatar(
                       radius: screenSize.width * 0.06,
-                      backgroundImage: appointment['doctorImage'].startsWith('assets/')
-                          ? AssetImage(appointment['doctorImage'])
-                          : NetworkImage(appointment['doctorImage']) as ImageProvider,
+                      backgroundColor: Colors.grey[200],
+                      child: appointment['doctorImage'].toString().startsWith('assets/')
+                          ? Image.asset(
+                              appointment['doctorImage'],
+                              width: screenSize.width * 0.12,
+                              height: screenSize.width * 0.12,
+                              fit: BoxFit.cover,
+                            )
+                          : FirebaseCachedImage(
+                              imageUrl: appointment['doctorImage'],
+                              width: screenSize.width * 0.12,
+                              height: screenSize.width * 0.12,
+                              circular: true,
+                            ),
                     ),
                   ),
                   SizedBox(width: horizontalPadding * 0.75),
